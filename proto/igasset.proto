@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package indigo.asset.pb;
+
+/*************************************************\
+ *        Indigo Assets Protocol Buffers         *
+ *                                               *
+ * All engine persistence for renderables should *
+ *  be in a format listed below.                 *
+\*************************************************/
+
+/**
+ * Flat texture definition - specifies a solid RGBA from
+ *  which the engine can generate a flat image
+ */
+message FlatTextureDef {
+  float r = 1;
+  float g = 2;
+  float b = 3;
+  float a = 4;
+}
+
+/**
+ * Raw data buffer containing PNG data for a texture
+ */
+message PngTextureDef {
+  bytes data = 1;
+  bool is_srgb = 2;
+}
+
+/**
+ * Raw data buffer containing Draco encoded 3D geometry
+ */
+message DracoPbrGeometryDef {
+  bytes data = 1;
+}
+
+/**
+ * WGSL shader (preferred for web targets apparently)
+ */
+message WgslSource {
+  enum ShaderType {
+    UNKNOWN = 0;
+    VERTEX = 1;
+    FRAGMENT = 2;
+    COMPUTE = 3;
+  }
+
+  ShaderType shader_type = 1;
+  string shader_source = 2;
+  string entry_point = 3;
+}
+
+/**
+ * Container for a single Indigo asset of any form
+ */
+message SingleAsset {
+  // Unique string identifier for this asset
+  string name = 1;
+
+  oneof asset {
+    FlatTextureDef flat_texture_def = 2;
+    PngTextureDef png_texture_def = 3;
+    DracoPbrGeometryDef draco_geo = 4;
+    WgslSource wgsl_source = 5;
+  }
+
+  // Next token: 6
+}
+
+/**
+ * Asset pack - contains a group of resources that can be
+ *  persisted and sent across the wire together in a single
+ *  message.
+ * Try to pack assets together in logical ways - for example,
+ *  one asset pack might contain low-LOD textures, the base
+ *  model, and vital animations for a character, and further
+ *  asset packs could contain supplementary animations and
+ *  higher LOD textures for that character.
+ */
+message AssetPack {
+  repeated SingleAsset assets = 1;
+}

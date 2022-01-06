@@ -1,0 +1,5 @@
+#cmakedefine IG_ENABLE_THREADS
+#cmakedefine IG_ENABLE_LOGGING
+#cmakedefine IG_GL_DEBUG_CONTEXT
+#cmakedefine IG_ZERO_NEW_ALLOCATIONS
+#cmakedefine IG_ENABLE_GRAPHICS_DEBUGGING

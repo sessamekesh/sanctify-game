@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="indigo::core::PodVector&lt;*&gt;">
+    <DisplayString>{{ size={size_} }}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">size_</Item>
+      <Item Name="[capacity]" ExcludeView="simple">capacity_</Item>
+      <ArrayItems>
+        <Size>size_</Size>
+        <ValuePointer>typed_data_</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+  <Type Name="indigo::core::Vector&lt;*&gt;">
+    <DisplayString>{{ size={size_} }}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">size_</Item>
+      <Item Name="[capacity]" ExcludeView="simple">capacity_</Item>
+      <ArrayItems>
+        <Size>size_</Size>
+        <ValuePointer>data_</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+  <Type Name="core::RawBuffer">
+	  <DisplayString>{{ size={size_} }}</DisplayString>
+	  <Expand>
+		  <Item Name="[size]" ExcludeView="simple">size_</Item>
+		  <Item Name="[owns_data]" ExcludeView="simple">owns_data_</Item>
+		  <ArrayItems>
+			  <Size>size_</Size>
+			  <ValuePointer>data_</ValuePointer>
+		  </ArrayItems>
+	  </Expand>
+  </Type>
+</AutoVisualizer>

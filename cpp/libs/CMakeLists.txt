@@ -1,0 +1,4 @@
+add_subdirectory(igasync)
+add_subdirectory(igcore)
+add_subdirectory(igplatform)
+add_subdirectory(igasset)
