@@ -152,49 +152,6 @@ IgpackLoader::ExtractWgslShaderPromiseT IgpackLoader::extract_wgsl_shader(
   return rsl;
 }
 
-IgpackLoader::ExtractHeightmapPromiseT IgpackLoader::extract_heightmap(
-    std::string asset_name,
-    std::shared_ptr<core::TaskList> extract_task_list) const {
-  return file_promise_->then<ExtractHeightmapT>(
-      [asset_name](const core::Either<pb::AssetPack, IgpackExtractError>& rsl)
-          -> ExtractHeightmapT {
-        if (rsl.is_right()) {
-          return core::right(rsl.get_right());
-        }
-
-        const auto& asset_pack = rsl.get_left();
-        for (int i = 0; i < asset_pack.assets_size(); i++) {
-          const auto& asset = asset_pack.assets(i);
-          if (asset.name() != asset_name) {
-            continue;
-          }
-
-          if (!asset.has_heightmap_data()) {
-            core::Logger::err(kLogLabel)
-                << "Resource " << asset_name << " is not a heightmap resource";
-            return core::right(IgpackExtractError::WrongResourceType);
-          }
-
-          auto heightmap_rsl = Heightmap::Create(asset.heightmap_data());
-          if (heightmap_rsl.is_right()) {
-            auto& errs = heightmap_rsl.get_right();
-            auto& errout = core::Logger::err(kLogLabel)
-                           << "Heightmap generation for " << asset_name
-                           << " failed:" << std::endl;
-            for (int i = 0; i < errs.size(); i++) {
-              errout << "-- " << to_string(errs[i]) << "\n";
-            }
-            return core::right(IgpackExtractError::AssetExtractError);
-          }
-
-          return core::left(heightmap_rsl.left_move());
-        }
-
-        return core::right(IgpackExtractError::ResourceNotFound);
-      },
-      extract_task_list, "ExtractHeightmap");
-}
-
 IgpackLoader::ExtractRgbaImagePromiseT IgpackLoader::extract_rgba_image(
     std::string asset_name,
     std::shared_ptr<core::TaskList> extract_task_list) const {

@@ -51,6 +51,55 @@ FetchContent_MakeAvailable(draco)
 # STB
 add_subdirectory(stb EXCLUDE_FROM_ALL)
 
+# Dawn (only on native builds)
+IF (WIN32 OR UNIX)
+  FetchContent_Declare(
+    depot_tools
+    GIT_REPOSITORY "https://chromium.googlesource.com/chromium/tools/depot_tools.git"
+    GIT_TAG "9552069c06705e149b156bcc70b84c1636f22f5e"
+  )
+  FetchContent_Declare(
+    dawn
+    GIT_REPOSITORY "https://dawn.googlesource.com/dawn"
+    GIT_TAG "e009ad7edd6882ca0f749bf1d8d52b844ffb56ae"
+  )
+  FetchContent_MakeAvailable(depot_tools)
+
+  message(STATUS "Depot tools directory: ${depot_tools_SOURCE_DIR}")
+  if (NOT dawn_POPULATED)
+    FetchContent_Populate(dawn)
+
+    if (NOT EXISTS "${dawn_SOURCE_DIR}/.gclient")
+      execute_process(
+        COMMAND ${CMAKE_COMMAND} -E copy
+          "${dawn_SOURCE_DIR}/scripts/standalone.gclient"
+          "${dawn_SOURCE_DIR}/.gclient"
+          RESULT_VARIABLE copy_rsl)
+      if (NOT ${copy_rsl} EQUAL 0)
+        message(FATAL "Error copying gclient config for DAWN!")
+      endif ()
+    endif ()
+
+    set(ENV{DEPOT_TOOLS_WIN_TOOLCHAIN} 0)
+    if (WIN32)
+      execute_process(
+        COMMAND cmd /C "${depot_tools_SOURCE_DIR}/gclient.bat" "sync"
+        WORKING_DIRECTORY "${dawn_SOURCE_DIR}"
+        RESULT_VARIABLE gclient_sync_rsl)
+    elseif (UNIX)
+      execute_process(
+        COMMAND bash -c "${depot_tools_SOURCE_DIR}/gclient.py" "sync"
+        WORKING_DIRECTORY "${dawn_SOURCE_DIR}"
+        RESULT_VARIABLE gclient_sync_rsl)
+    endif ()
+    if (NOT ${gclient_sync_rsl} EQUAL 0)
+      message(FATAL "Error syncing Dawn dependencies")
+    endif ()
+
+    add_subdirectory(${dawn_SOURCE_DIR} ${dawn_BINARY_DIR})
+  endif ()
+endif ()
+
 if (MSVC)
   add_library(draco_lib ALIAS draco)
 else ()

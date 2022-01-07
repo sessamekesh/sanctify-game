@@ -7,7 +7,6 @@
  */
 
 #include <igasset/draco_decoder.h>
-#include <igasset/heightmap.h>
 #include <igasset/image_data.h>
 #include <igasset/proto/igasset.pb.h>
 #include <igasync/promise.h>
@@ -47,14 +46,6 @@ class IgpackLoader {
   typedef std::shared_ptr<core::Promise<ExtractWgslShaderT>>
       ExtractWgslShaderPromiseT;
   ExtractWgslShaderPromiseT extract_wgsl_shader(
-      std::string asset_name,
-      std::shared_ptr<core::TaskList> extract_task_list) const;
-
-  // Heightmap
-  typedef core::Either<Heightmap, IgpackExtractError> ExtractHeightmapT;
-  typedef std::shared_ptr<core::Promise<ExtractHeightmapT>>
-      ExtractHeightmapPromiseT;
-  ExtractHeightmapPromiseT extract_heightmap(
       std::string asset_name,
       std::shared_ptr<core::TaskList> extract_task_list) const;
 
