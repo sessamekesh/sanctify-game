@@ -29,7 +29,7 @@ add_library(igasset STATIC ${HEADER_LIST} ${SRC_LIST})
 target_include_directories(igasset PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
   "${CMAKE_BINARY_DIR}"
-  "${PROJECT_SOURCE_DIR}/extern/draco/src")
+  "${draco_SOURCE_DIR}/src")
 
 target_link_libraries(igasset PUBLIC igasset_proto igcore igasync draco_lib igplatform stb)
 
