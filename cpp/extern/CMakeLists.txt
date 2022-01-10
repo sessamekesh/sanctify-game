@@ -51,6 +51,16 @@ FetchContent_MakeAvailable(draco)
 # STB
 add_subdirectory(stb EXCLUDE_FROM_ALL)
 
+# GLFW (only on native builds)
+if (WIN32 OR UNIX)
+  FetchContent_Declare(
+    glfw
+    GIT_REPOSITORY "https://github.com/glfw/glfw/"
+    GIT_TAG "df8d7bc892937a8b0f7c604c92a9f64f383cf48c"
+  )
+  FetchContent_MakeAvailable(glfw)
+endif ()
+
 # Dawn (only on native builds)
 IF (WIN32 OR UNIX)
   FetchContent_Declare(
@@ -105,5 +115,3 @@ if (MSVC)
 else ()
   add_library(draco_lib ALIAS draco_static)
 endif ()
-
-# add_executable(protoc ALIAS protobuf::protoc)
