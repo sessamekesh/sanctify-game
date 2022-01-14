@@ -41,7 +41,6 @@ class UboBase {
 
  protected:
   wgpu::Buffer buffer_;
-  T data_;
   core::DirtyablePod<T> data_;
 };
 

@@ -124,3 +124,14 @@ wgpu::BindGroupEntry iggpu::buffer_bind_group_entry(uint32_t binding,
   entry.offset = offset;
   return entry;
 }
+
+wgpu::Buffer iggpu::create_empty_buffer(const wgpu::Device& device,
+                                        uint32_t size,
+                                        wgpu::BufferUsage usage) {
+  wgpu::BufferDescriptor desc{};
+  desc.size = size;
+  desc.usage = usage | wgpu::BufferUsage::CopyDst;
+  desc.mappedAtCreation = false;
+
+  return device.CreateBuffer(&desc);
+}

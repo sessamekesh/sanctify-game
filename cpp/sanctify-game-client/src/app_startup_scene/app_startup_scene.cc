@@ -27,7 +27,7 @@ void AppStartupScene::setup_render_state(const AppBase& base) {
   wgpu::ShaderModule fs_module = iggpu::create_shader_module(
       base.Device, sanctify::kStartupShaderFsSrc, "StartupShaderFs");
 
-  wgpu::ColorTargetState color_target{};
+  wgpu::ColorTargetState color_target;
   color_target.format = base.preferred_swap_chain_texture_format();
   color_target.writeMask = wgpu::ColorWriteMask::All;
 
@@ -91,6 +91,10 @@ void AppStartupScene::render() {
   wgpu::CommandBuffer buffer = command_encoder.Finish();
 
   device.GetQueue().Submit(1, &buffer);
+
+#ifndef __EMSCRIPTEN__
+  base_->SwapChain.Present();
+#endif
 }
 
 bool AppStartupScene::should_quit() { return false; }

@@ -34,8 +34,8 @@ class SanctifyClientApp
 
   // Expose to app entry point
   void update(float dt);
-  void render(uint32_t vp_width, uint32_t vp_height);
-  void run_tasks_for(float ms);
+  void render();
+  void run_tasks_for(float dt_s);
   bool should_quit();
 
  private:

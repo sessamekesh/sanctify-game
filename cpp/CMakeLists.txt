@@ -14,6 +14,7 @@ set(IG_BUILD_TESTS "ON" CACHE BOOL "Build unit tests")
 set(IG_TOOL_WRANGLE_PATH "" CACHE FILEPATH "Where to import/export the tool wrangling cmake file (native builds should export a tool wrangle file, and web builds import a wrangle file for pre-build native binaries)")
 set(IG_ENABLE_THREADS "ON" CACHE BOOL "Enable multithreaded build")
 set(IG_ENABLE_GRAPHICS_DEBUGGING "OFF" CACHE BOOL "Enable graphics debugging options (e.g. export HLSL debug symbols)")
+set(IG_ENABLE_LOGGING "ON" CACHE BOOL "Include logging statements in the build")
 
 #
 # Global project settings

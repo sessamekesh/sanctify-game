@@ -104,7 +104,10 @@ void SanctifyClientApp::update(float dt) {
   active_scene_->update(dt);
 }
 
-void SanctifyClientApp::render(uint32_t vp_width, uint32_t vp_height) {
+void SanctifyClientApp::render() {
+  int vp_width, vp_height;
+  glfwGetFramebufferSize(app_base_->Window, &vp_width, &vp_height);
+
   if (vp_width != next_swap_chain_width_ ||
       vp_height != next_swap_chain_height_) {
     next_swap_chain_width_ = vp_width;
@@ -131,10 +134,10 @@ void SanctifyClientApp::render(uint32_t vp_width, uint32_t vp_height) {
   active_scene_->render();
 }
 
-void SanctifyClientApp::run_tasks_for(float ms) {
+void SanctifyClientApp::run_tasks_for(float dt_s) {
   {
     auto start = std::chrono::high_resolution_clock::now();
-    auto end = start + std::chrono::microseconds((uint32_t)(ms * 1000.f));
+    auto end = start + std::chrono::microseconds((uint32_t)(dt_s * 1000000.f));
     while (main_thread_task_list_->execute_next()) {
       if (std::chrono::high_resolution_clock::now() > end) {
         break;
