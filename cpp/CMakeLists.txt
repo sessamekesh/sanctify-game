@@ -36,6 +36,7 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(extern)
 include(cmake/import_build_tools.cmake)
+include(cmake/add_wasm_target.cmake)
 include(cmake/add_proto_lib.cmake)
 add_subdirectory(libs)
 include(cmake/export_build_tools.cmake)

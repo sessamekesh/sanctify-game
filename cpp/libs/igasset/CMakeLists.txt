@@ -33,5 +33,6 @@ target_include_directories(igasset PUBLIC
 
 target_link_libraries(igasset PUBLIC igasset_proto igcore igasync draco_lib igplatform stb)
 
-set_property(TARGET igasset PROPERTY CXX_STANDARD 17)
-target_compile_features(igasset PUBLIC cxx_std_17)
+if (EMSCRIPTEN)
+  set_wasm_target_properties(TARGET_NAME igasset AS_LIB 1)
+endif ()

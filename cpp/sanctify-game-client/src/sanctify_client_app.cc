@@ -47,7 +47,7 @@ std::shared_ptr<SanctifyClientApp> SanctifyClientApp::Create(uint32_t width,
       app_base, main_thread_task_list, main_thread_executor, executor_threads));
 #else
   auto app = std::shared_ptr<SanctifyClientApp>(new SanctifyClientApp(
-      app_base, main_thread_task_list, main_thread_executor))
+      app_base, main_thread_task_list, main_thread_executor));
 #endif
 
   auto startup_scene = std::shared_ptr<AppStartupScene>(

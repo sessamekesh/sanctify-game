@@ -18,5 +18,6 @@ target_include_directories(igplatform PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/includ
 
 target_link_libraries(igplatform PUBLIC igcore igasync)
 
-set_property(TARGET igplatform PROPERTY CXX_STANDARD 17)
-target_compile_features(igplatform PUBLIC cxx_std_17)
+if (EMSCRIPTEN)
+  set_wasm_target_properties(TARGET_NAME igplatform AS_LIB 1)
+endif ()

@@ -18,6 +18,7 @@
 #include <webgpu/webgpu_cpp.h>
 
 #include <memory>
+#include <string>
 #include <unordered_map>
 
 using indigo::core::Either;

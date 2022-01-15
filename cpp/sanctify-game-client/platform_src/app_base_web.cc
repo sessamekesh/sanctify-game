@@ -14,7 +14,7 @@ void print_glfw_error(int code, const char* msg) {
 }  // namespace
 
 AppBase::~AppBase() {
-  if (Window != nullpltr) {
+  if (Window != nullptr) {
     glfwDestroyWindow(Window);
     Window = nullptr;
   }
@@ -57,7 +57,7 @@ Either<std::shared_ptr<AppBase>, AppBaseCreateError> AppBase::Create(
 
   WGPUDevice raw_device = emscripten_webgpu_get_device();
   if (!raw_device) {
-    return core::right(DemoBaseCreateError::WGPUDeviceCreationFailed);
+    return core::right(AppBaseCreateError::WGPUDeviceCreationFailed);
   }
 
   wgpu::Device device = wgpu::Device::Acquire(raw_device);
@@ -76,7 +76,7 @@ wgpu::TextureFormat AppBase::preferred_swap_chain_texture_format() const {
   return wgpu::TextureFormat::BGRA8Unorm;
 }
 
-void AppBase::resize_swap_chain(int width, int height) {
+void AppBase::resize_swap_chain(uint32_t width, uint32_t height) {
   // SwapChain.Configure(preferred_swap_chain_texture_format(),
   //                    wgpu::TextureUsage::RenderAttachment, width, height);
   wgpu::SwapChainDescriptor swap_desc{};
@@ -90,4 +90,8 @@ void AppBase::resize_swap_chain(int width, int height) {
 
   Width = width;
   Height = height;
+
+  if (SwapChain == nullptr) {
+    Logger::err("SwapChainResize") << "Failed to recreate swap chain";
+  }
 }

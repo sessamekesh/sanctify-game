@@ -52,7 +52,7 @@ FetchContent_MakeAvailable(draco)
 add_subdirectory(stb EXCLUDE_FROM_ALL)
 
 # GLFW (only on native builds)
-if (WIN32 OR UNIX)
+if (NOT EMSCRIPTEN)
   FetchContent_Declare(
     glfw
     GIT_REPOSITORY "https://github.com/glfw/glfw/"
@@ -62,7 +62,7 @@ if (WIN32 OR UNIX)
 endif ()
 
 # Dawn (only on native builds)
-IF (WIN32 OR UNIX)
+IF (NOT EMSCRIPTEN)
   FetchContent_Declare(
     depot_tools
     GIT_REPOSITORY "https://chromium.googlesource.com/chromium/tools/depot_tools.git"

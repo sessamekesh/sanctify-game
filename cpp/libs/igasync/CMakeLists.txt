@@ -26,8 +26,9 @@ target_include_directories(igasync PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 target_link_libraries(igasync PUBLIC igcore)
 
-set_property(TARGET igasync PROPERTY CXX_STANDARD 17)
-target_compile_features(igasync PUBLIC cxx_std_17)
+if (EMSCRIPTEN)
+  set_wasm_target_properties(TARGET_NAME igasync AS_LIB 1)
+endif ()
 
 if (IG_BUILD_TESTS)
   set(TEST_SRC_LIST

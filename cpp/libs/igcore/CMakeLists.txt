@@ -46,6 +46,10 @@ target_link_libraries(igcore PUBLIC glm)
 set_property(TARGET igcore PROPERTY CXX_STANDARD 17)
 target_compile_features(igcore PUBLIC cxx_std_17)
 
+if (EMSCRIPTEN)
+  set_wasm_target_properties(TARGET_NAME igcore AS_LIB 1)
+endif ()
+
 if (IG_BUILD_TESTS)
   set(TEST_SRC_LIST
     "test/either_test.cc"
