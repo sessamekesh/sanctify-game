@@ -40,6 +40,7 @@ Either<std::shared_ptr<AppBase>, AppBaseCreateError> AppBase::Create(
   auto window = glfwCreateWindow(width, height, "App Base", nullptr, nullptr);
 
   WGPUSurfaceDescriptorFromCanvasHTMLSelector canv_desc{};
+  canv_desc.chain.sType = WGPUSType_SurfaceDescriptorFromCanvasHTMLSelector;
   canv_desc.selector = "#app_canvas";
 
   WGPUSurfaceDescriptor surface_desc{};

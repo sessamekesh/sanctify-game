@@ -1,0 +1,9 @@
+{
+  "name": "@indigo/sanctify-game-wasm-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "dependencies": {
+    "@webgpu/types": "^0.1.9"
+  }
+}

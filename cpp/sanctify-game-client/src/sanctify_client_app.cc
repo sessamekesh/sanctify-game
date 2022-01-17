@@ -2,6 +2,10 @@
 #include <igcore/log.h>
 #include <sanctify_client_app.h>
 
+#ifdef EMSCRIPTEN
+#include <emscripten/html5.h>
+#endif
+
 using namespace sanctify;
 
 namespace {
@@ -105,8 +109,12 @@ void SanctifyClientApp::update(float dt) {
 }
 
 void SanctifyClientApp::render() {
-  int vp_width, vp_height;
+  int vp_width = 0, vp_height = 0;
+#ifdef EMSCRIPTEN
+  emscripten_get_canvas_element_size("#app_canvas", &vp_width, &vp_height);
+#else
   glfwGetFramebufferSize(app_base_->Window, &vp_width, &vp_height);
+#endif
 
   if (vp_width != next_swap_chain_width_ ||
       vp_height != next_swap_chain_height_) {
@@ -126,8 +134,8 @@ void SanctifyClientApp::render() {
     swap_chain_height_ = next_swap_chain_height_;
     // TODO (sessamekesh): Re-enable this when it becomes clear why this is
     // freaking out on your old shitty laptop (which needs to be supported)
-    // demo_base_->resize_swap_chain(next_swap_chain_width_,
-    //                              next_swap_chain_height_);
+    app_base_->resize_swap_chain(next_swap_chain_width_,
+                                 next_swap_chain_height_);
     active_scene_->on_viewport_resize(swap_chain_width_, swap_chain_height_);
   }
 
