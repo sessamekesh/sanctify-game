@@ -17,8 +17,6 @@ class AppStartupScene : public ISceneBase {
                   std::shared_ptr<ISceneConsumer> scene_consumer,
                   std::shared_ptr<TaskList> main_thread_task_list);
 
-  ~AppStartupScene() = default;
-
   void update(float dt) override;
   void render() override;
   bool should_quit() override;

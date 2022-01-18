@@ -48,6 +48,12 @@ FetchContent_Declare(
 set(DRACO_JS_GLUE OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(draco)
 
+if (MSVC)
+  add_library(draco_lib ALIAS draco)
+else ()
+  add_library(draco_lib ALIAS draco_static)
+endif ()
+
 # STB
 add_subdirectory(stb EXCLUDE_FROM_ALL)
 
@@ -110,8 +116,34 @@ IF (NOT EMSCRIPTEN)
   endif ()
 endif ()
 
-if (MSVC)
-  add_library(draco_lib ALIAS draco)
-else ()
-  add_library(draco_lib ALIAS draco_static)
+# Recast Navigation (used for navigation)
+
+set(RECASTNAVIGATION_DEMO OFF CACHE BOOL "" FORCE)
+set(RECASTNAVIGATION_TESTS OFF CACHE BOOL "" FORCE)
+set(RECASTNAVIGATION_EXAMPLES OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+  recastnavigation
+  GIT_REPOSITORY "https://github.com/recastnavigation/recastnavigation"
+  GIT_TAG "c5cbd53024c8a9d8d097a4371215e3342d2fdc87"
+)
+FetchContent_MakeAvailable(recastnavigation)
+
+# CLIUtils (used in tooling builds)
+if (NOT EMSCRIPTEN)
+  FetchContent_Declare(
+    cli11
+    GIT_REPOSITORY "https://github.com/CLIUtils/CLI11"
+    GIT_TAG "5ba63620dc478bcdeb0e0feabc9990ac523c7643"
+  )
+  FetchContent_MakeAvailable(cli11)
+endif ()
+
+# Assimp (used in tooling builds)
+if (NOT EMSCRIPTEN)
+  FetchContent_Declare(
+    assimp
+    GIT_REPOSITORY "https://github.com/assimp/assimp"
+    GIT_TAG "3cca102531466f5e5f0af0d90858a23ad83ce662"
+  )
+  FetchContent_MakeAvailable(assimp)
 endif ()

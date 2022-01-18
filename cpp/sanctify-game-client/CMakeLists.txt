@@ -1,13 +1,38 @@
+#
+# Sources (most often modified, keep at top)
+#
 set(header_list
   "platform_src/app_base.h"
   "src/app_startup_scene/startup_shader_src.h"
   "src/app_startup_scene/app_startup_scene.h"
+  "src/game_scene/game_scene.h"
+  "src/game_scene/game_scene_factory.h"
   "src/sanctify_client_app.h")
 
 set(src_list
   "src/app_startup_scene/app_startup_scene.cc"
+  "src/game_scene/game_scene.cc"
+  "src/game_scene/game_scene_factory.cc"
   "src/sanctify_client_app.cc")
 
+#
+# Asset Packs
+#
+set(asset_root "${PROJECT_SOURCE_DIR}/../assets")
+
+build_ig_asset_pack_plan(
+  TARGET_NAME terrain-geo-igpack
+  PLAN resources/terrain-geo.igpack-plan
+  INDIR "${asset_root}"
+  INFILES
+    "sanctify_arena/sanctify-arena.fbx"
+  TARGET_OUTPUT_FILES
+    "resources/terrain-geo.igpack"
+)
+
+#
+# Target definition
+#
 if (NOT EMSCRIPTEN)
   set(platform_src_list
     "platform_src/app_base_native.cc"

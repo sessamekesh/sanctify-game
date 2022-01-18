@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package indigo.igpackgen.pb;
+
+/*************************************************\
+ *         Indigo Asset Pack Plan Proto          *
+ *                                               *
+ * Declarative format for loading and processing *
+ *  raw asset source files, and compiling them   *
+ *  into asset packs that can later be used by   *
+ *  the Indigo engine.                           *
+\*************************************************/
+
+message CopyWgslSourceAction {
+  enum ShaderType {
+    UNKNOWN = 0;
+    VERTEX = 1;
+    FRAGMENT = 2;
+    COMPUTE = 3;
+  }
+
+  string input_file_path = 1;
+  ShaderType shader_type = 2;
+  string entry_point = 3;
+
+  string igasset_name = 4;
+}
+
+message DracoConversionParams {
+  int32 compression_speed = 1;
+  int32 decompression_speed = 2;
+}
+
+message AssimpToStaticDracoGeoAction {
+  string input_file_path = 1;
+  repeated string assimp_mesh_names = 2;
+  DracoConversionParams draco_params = 3;
+
+  string mesh_igasset_name = 4;
+}
+
+message SingleAction {
+  oneof request {
+    CopyWgslSourceAction copy_wgsl_source = 1;
+    AssimpToStaticDracoGeoAction assimp_to_static_draco_geo = 2;
+  }
+}
+
+message SingleIgpackPlan {
+  string asset_pack_file_path = 1;
+  repeated SingleAction actions = 2;
+}
+
+message IgpackGenPlan {
+  repeated SingleIgpackPlan plan = 1;
+}

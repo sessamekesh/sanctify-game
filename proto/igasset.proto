@@ -31,8 +31,11 @@ message PngTextureDef {
 /**
  * Raw data buffer containing Draco encoded 3D geometry
  */
-message DracoPbrGeometryDef {
+message DracoGeometryDef {
   bytes data = 1;
+
+  bool has_pos_norm = 2;
+  bool has_texcoords = 3;
 }
 
 /**
@@ -61,7 +64,7 @@ message SingleAsset {
   oneof asset {
     FlatTextureDef flat_texture_def = 2;
     PngTextureDef png_texture_def = 3;
-    DracoPbrGeometryDef draco_geo = 4;
+    DracoGeometryDef draco_geo = 4;
     WgslSource wgsl_source = 5;
   }
 
