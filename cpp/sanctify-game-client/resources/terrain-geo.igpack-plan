@@ -2,16 +2,32 @@ plan {
   asset_pack_file_path: "resources/terrain-geo.igpack"
   actions {
     assimp_to_static_draco_geo {
+      mesh_igasset_name: "arenaBaseGeo"
       input_file_path: "sanctify_arena/sanctify-arena.fbx"
       assimp_mesh_names: "ArenaBase"
-      mesh_igasset_name: "arenaBaseGeo"
     }
   }
   actions {
     assimp_to_static_draco_geo {
+      mesh_igasset_name: "arenaDecorationsGeo"
       input_file_path: "sanctify_arena/sanctify-arena.fbx"
       assimp_mesh_names: "ArenaDecorations"
-      mesh_igasset_name: "arenaDecorationsGeo"
+    }
+  }
+  actions {
+    copy_wgsl_source {
+      igasset_name: "solidVertWgsl"
+      input_file_path: "engine/solid_3d.vert.wgsl"
+      shader_type: VERTEX
+      entry_point: "main"
+    }
+  }
+  actions {
+    copy_wgsl_source {
+      igasset_name: "solidFragWgsl"
+      input_file_path: "engine/solid_3d.frag.wgsl"
+      shader_type: FRAGMENT
+      entry_point: "main"
     }
   }
 }

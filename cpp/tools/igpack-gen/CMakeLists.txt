@@ -22,7 +22,7 @@ set (SRC_LIST
 
 add_executable(igpack-gen ${SRC_LIST} ${HEADER_LIST})
 
-target_link_libraries(igpack-gen PRIVATE
+target_link_libraries(igpack-gen PUBLIC
     igasset stb igasset_proto igpack_plan_proto draco_lib CLI11
     assimp)
 target_include_directories(igpack-gen PRIVATE "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/extern/draco/src" .)

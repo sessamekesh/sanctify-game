@@ -3,16 +3,31 @@
 #
 set(header_list
   "platform_src/app_base.h"
-  "src/app_startup_scene/startup_shader_src.h"
   "src/app_startup_scene/app_startup_scene.h"
+  "src/app_startup_scene/startup_shader_src.h"
+  "src/game_scene/factory_util/build_terrain_shit.h"
   "src/game_scene/game_scene.h"
   "src/game_scene/game_scene_factory.h"
+  "src/io/arena_camera_controller/arena_camera_input.h"
+  "src/io/arena_camera_controller/arena_camera_mouse_input_listener.h"
+  "src/io/glfw_event_emitter.h"
+  "src/render/camera/arena_camera.h"
+  "src/render/terrain/terrain_geo.h"
+  "src/render/terrain/terrain_pipeline.h"
+  "src/util/camera_util.h"
   "src/sanctify_client_app.h")
 
 set(src_list
+  "src/game_scene/factory_util/build_terrain_shit.cc"
   "src/app_startup_scene/app_startup_scene.cc"
   "src/game_scene/game_scene.cc"
   "src/game_scene/game_scene_factory.cc"
+  "src/io/arena_camera_controller/arena_camera_mouse_input_listener.cc"
+  "src/io/glfw_event_emitter.cc"
+  "src/render/camera/arena_camera.cc"
+  "src/render/terrain/terrain_geo.cc"
+  "src/render/terrain/terrain_pipeline.cc"
+  "src/util/camera_util.cc"
   "src/sanctify_client_app.cc")
 
 #
@@ -26,6 +41,8 @@ build_ig_asset_pack_plan(
   INDIR "${asset_root}"
   INFILES
     "sanctify_arena/sanctify-arena.fbx"
+    "engine/solid_3d.vert.wgsl"
+    "engine/solid_3d.frag.wgsl"
   TARGET_OUTPUT_FILES
     "resources/terrain-geo.igpack"
 )
@@ -46,6 +63,8 @@ endif ()
 add_executable(sanctify-game-client ${header_list} ${src_list} ${platform_src_list})
 target_link_libraries(sanctify-game-client PUBLIC igasync igplatform igcore iggpu)
 target_include_directories(sanctify-game-client PRIVATE platform_src src)
+add_dependencies(sanctify-game-client
+  terrain-geo-igpack)
 
 if (EMSCRIPTEN)
   set_wasm_target_properties(TARGET_NAME sanctify-game-client EXPORT_NAME SanctifyGameClient)

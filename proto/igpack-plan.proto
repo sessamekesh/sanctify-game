@@ -24,6 +24,7 @@ message CopyWgslSourceAction {
   string entry_point = 3;
 
   string igasset_name = 4;
+  bool strip_comments_and_such = 5;
 }
 
 message DracoConversionParams {

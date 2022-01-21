@@ -51,6 +51,8 @@ class Vector : public IVec<T> {
   T& operator[](size_t i) override { return data_[i]; }
   const T& operator[](size_t i) const override { return data_[i]; }
 
+  T& last() { return data_[this->size_ - 1]; }
+
   bool delete_at(size_t i, bool preserve_order = true) override {
     if (i >= this->size_) return false;
 

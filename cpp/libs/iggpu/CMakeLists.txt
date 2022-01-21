@@ -1,4 +1,5 @@
 set(header_list
+  "include/iggpu/texture.h"
   "include/iggpu/ubo_base.h"
   "include/iggpu/util.h")
 

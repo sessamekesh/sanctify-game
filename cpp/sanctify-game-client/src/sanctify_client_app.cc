@@ -54,8 +54,8 @@ std::shared_ptr<SanctifyClientApp> SanctifyClientApp::Create(uint32_t width,
       app_base, main_thread_task_list, main_thread_executor));
 #endif
 
-  auto startup_scene = std::shared_ptr<AppStartupScene>(
-      new AppStartupScene(app_base, app, main_thread_task_list));
+  auto startup_scene = std::shared_ptr<AppStartupScene>(new AppStartupScene(
+      app_base, app, main_thread_task_list, async_task_list));
 
   app->set_scene(startup_scene);
   app->swap_chain_format_ = app_base->preferred_swap_chain_texture_format();

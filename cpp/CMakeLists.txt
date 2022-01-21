@@ -1,3 +1,5 @@
+# NOTICE - keep this version as is - moving above 3.14 breaks protocol buffer integration in a remarkably weird way
+# for Windows builds. One day I'd love to figure out what the hell is going on, but today is not that day.
 cmake_minimum_required(VERSION 3.14)
 
 project(
@@ -34,9 +36,9 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 # 4) Tools (e.g. asset bundling tool)
 # 5) Exported applications (game server, game client)
 
+include(cmake/add_wasm_target.cmake)
 add_subdirectory(extern)
 include(cmake/import_build_tools.cmake)
-include(cmake/add_wasm_target.cmake)
 include(cmake/add_proto_lib.cmake)
 add_subdirectory(libs)
 add_subdirectory(tools)

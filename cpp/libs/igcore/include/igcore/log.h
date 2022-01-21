@@ -40,9 +40,19 @@ class LogWrapper {
     ss_ << "\r\n";
     *o_ << ss_.str();
   }
+
+  LogWrapper(LogWrapper&& r) noexcept : o_(r.o_), ss_(std::move(r.ss_)) {}
+  LogWrapper& operator=(LogWrapper&& r) noexcept {
+    o_ = r.o_;
+    ss_ = std::move(r.ss_);
+    return *this;
+  }
+
 #else
   LogWrapper() = default;
   ~LogWrapper() = default;
+  LogWrapper(LogWrapper&& r) = default;
+  LogWrapper& operator=(LogWrapper&& r) = default;
 #endif
 
   template <typename T>

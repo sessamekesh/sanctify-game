@@ -135,3 +135,72 @@ wgpu::Buffer iggpu::create_empty_buffer(const wgpu::Device& device,
 
   return device.CreateBuffer(&desc);
 }
+
+Texture iggpu::create_empty_texture_2d(const wgpu::Device& device,
+                                       uint32_t width, uint32_t height,
+                                       uint32_t mip_levels,
+                                       wgpu::TextureFormat texture_format,
+                                       wgpu::TextureUsage texture_usage) {
+  wgpu::TextureDescriptor texture_desc{};
+  texture_desc.dimension = wgpu::TextureDimension::e2D;
+  texture_desc.format = texture_format;
+  texture_desc.mipLevelCount = mip_levels;
+  texture_desc.sampleCount = 1;
+  texture_desc.size.width = width;
+  texture_desc.size.height = height;
+  texture_desc.size.depthOrArrayLayers = 1;
+  texture_desc.usage = texture_usage;
+
+  Texture tex{};
+  tex.Format = texture_format;
+  tex.GpuTexture = device.CreateTexture(&texture_desc);
+  tex.Height = height;
+  tex.Width = width;
+  tex.MipLevels = mip_levels;
+
+  return tex;
+}
+
+wgpu::TextureViewDescriptor iggpu::view_desc_of(const iggpu::Texture& texture) {
+  wgpu::TextureViewDescriptor vd{};
+  vd.arrayLayerCount = 1;
+  vd.baseArrayLayer = 0;
+  vd.baseMipLevel = 0;
+  vd.mipLevelCount = texture.MipLevels;
+  vd.dimension = wgpu::TextureViewDimension::e2D;
+  vd.format = texture.Format;
+  return vd;
+}
+
+wgpu::VertexAttribute iggpu::vertex_attribute(uint32_t shader_location,
+                                              wgpu::VertexFormat format,
+                                              uint32_t offset) {
+  wgpu::VertexAttribute attr{};
+
+  attr.format = format;
+  attr.offset = offset;
+  attr.shaderLocation = shader_location;
+
+  return attr;
+}
+
+wgpu::VertexBufferLayout iggpu::vertex_buffer_layout(
+    const core::PodVector<wgpu::VertexAttribute>& attributes, size_t size,
+    wgpu::VertexStepMode vertex_step_mode) {
+  wgpu::VertexBufferLayout layout{};
+  layout.arrayStride = size;
+  layout.attributeCount = attributes.size();
+  layout.attributes = &attributes[0];
+  layout.stepMode = vertex_step_mode;
+  return layout;
+}
+
+wgpu::DepthStencilState iggpu::depth_stencil_state_standard() {
+  wgpu::DepthStencilState state;
+
+  state.format = wgpu::TextureFormat::Depth24PlusStencil8;
+  state.depthWriteEnabled = true;
+  state.depthCompare = wgpu::CompareFunction::Less;
+
+  return state;
+}

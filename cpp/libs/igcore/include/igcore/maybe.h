@@ -14,12 +14,17 @@
 
 namespace indigo::core {
 
+struct empty_maybe {};
+
 template <typename T>
 class Maybe {
  public:
   Maybe() : dummy_(0x00), is_initialized_(false) {}
 
   static Maybe<T> empty() { return Maybe<T>(); }
+
+  Maybe(empty_maybe&) : Maybe() {}
+  Maybe(empty_maybe&&) : Maybe() {}
 
   Maybe(Maybe<T>&& o) : dummy_(0x00), is_initialized_(false) {
     static_assert(std::is_move_constructible<T>::value,

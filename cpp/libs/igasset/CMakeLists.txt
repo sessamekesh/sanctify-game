@@ -35,4 +35,5 @@ target_link_libraries(igasset PUBLIC igasset_proto igcore igasync draco_lib igpl
 
 if (EMSCRIPTEN)
   set_wasm_target_properties(TARGET_NAME igasset AS_LIB 1)
+  set_wasm_target_properties(TARGET_NAME igasset_proto AS_LIB 1)
 endif ()

@@ -1,14 +1,21 @@
 #include <app_startup_scene/app_startup_scene.h>
 #include <app_startup_scene/startup_shader_src.h>
+#include <game_scene/game_scene_factory.h>
+#include <igcore/log.h>
 #include <iggpu/util.h>
 
 using namespace indigo;
 using namespace sanctify;
 
+namespace {
+const char* kLogLabel = "AppStartupScene";
+}
+
 AppStartupScene::AppStartupScene(
     std::shared_ptr<AppBase> base,
     std::shared_ptr<ISceneConsumer> scene_consumer,
-    std::shared_ptr<TaskList> main_thread_task_list)
+    std::shared_ptr<TaskList> main_thread_task_list,
+    std::shared_ptr<TaskList> async_task_list)
     : base_(base),
       scene_consumer_(scene_consumer),
       main_thread_task_list_(main_thread_task_list),
@@ -17,7 +24,28 @@ AppStartupScene::AppStartupScene(
       ubo_(base->Device) {
   setup_render_state(*base);
 
-  // TODO (sessamekesh): Start up loading game resources
+  GameSceneFactory factory(base);
+  factory.set_task_lists(main_thread_task_list, async_task_list)
+      .build()
+      ->on_success(
+          [scene_consumer](const GamePromiseRsl& rsl) {
+            if (rsl.is_right()) {
+              auto log = Logger::err(kLogLabel);
+
+              log << "Error(s) creating game scene:\n";
+              for (int i = 0; i < rsl.get_right().size(); i++) {
+                log << "--" << to_string(rsl.get_right()[i]);
+              }
+
+              // TODO (sessamekesh): Show this message to the user too, if
+              // possible
+
+              return;
+            }
+
+            scene_consumer->set_scene(rsl.get_left());
+          },
+          main_thread_task_list);
 }
 
 void AppStartupScene::setup_render_state(const AppBase& base) {

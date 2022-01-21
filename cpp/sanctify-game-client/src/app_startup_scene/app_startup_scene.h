@@ -15,7 +15,8 @@ class AppStartupScene : public ISceneBase {
  public:
   AppStartupScene(std::shared_ptr<AppBase> base,
                   std::shared_ptr<ISceneConsumer> scene_consumer,
-                  std::shared_ptr<TaskList> main_thread_task_list);
+                  std::shared_ptr<TaskList> main_thread_task_list,
+                  std::shared_ptr<TaskList> async_task_list);
 
   void update(float dt) override;
   void render() override;

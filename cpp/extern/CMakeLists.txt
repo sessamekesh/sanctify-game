@@ -25,18 +25,22 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glm)
 
 # Protobuf (for building/using protocol buffer libraries)
-FetchContent_Declare(
-  protobuf
-  GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf"
-  GIT_TAG "b73f78d32cc6d1013986de76789481dcaec2d064"
-  SOURCE_SUBDIR cmake
-)
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(protobuf_WITH_ZLIB OFF CACHE BOOL "" FORCE)
 if (EMSCRIPTEN)
   set(protobuf_BUILD_PROTOC_BINARIES OFF CACHE BOOL "" FORCE)
 endif()
+FetchContent_Declare(
+  protobuf
+  GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf"
+  GIT_TAG "41e22cde8d8a44c35127a26c19e08b180e0b30a4"
+  SOURCE_SUBDIR cmake
+  CMAKE_ARGS
+    -protobuf_BUILD_TESTS:BOOL=OFF
+    -protobuf_BUILD_SHARED_LIBS:BOOL=OFF
+    -protobuf_WITH_ZLIB:BOOL=OFF
+)
 FetchContent_MakeAvailable(protobuf)
 
 # Draco (3D geometry compression library)
@@ -144,6 +148,24 @@ if (NOT EMSCRIPTEN)
     assimp
     GIT_REPOSITORY "https://github.com/assimp/assimp"
     GIT_TAG "3cca102531466f5e5f0af0d90858a23ad83ce662"
+    CMAKE_ARGS
+      -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT:BOOL=OFF
+      -DASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT:BOOL=OFF
+      -DASSIMP_BUILD_ASSIMP_TOOLS:BOOL=OFF
+      -DASSIMP_BUILD_TESTS:BOOL=OFF
+      -DASSIMP_BUILD_FBX_IMPORTER:BOOL=ON
+      -DASSIMP_BUILD_OBJ_IMPORTER:BOOL=ON
+      -DASSIMP_BUILD_OBJ_EXPORTER:BOOL=ON
+      -DBUILD_SHARED_LIBS:BOOL=OFF
   )
   FetchContent_MakeAvailable(assimp)
+endif ()
+
+if (EMSCRIPTEN)
+  set_wasm_target_properties(TARGET_NAME libprotobuf AS_LIB 1)
+  set_wasm_target_properties(TARGET_NAME Recast AS_LIB 1)
+  set_wasm_target_properties(TARGET_NAME Detour AS_LIB 1)
+  set_wasm_target_properties(TARGET_NAME DetourCrowd AS_LIB 1)
+  set_wasm_target_properties(TARGET_NAME draco_static AS_LIB 1)
+  set_wasm_target_properties(TARGET_NAME stb AS_LIB 1)
 endif ()
