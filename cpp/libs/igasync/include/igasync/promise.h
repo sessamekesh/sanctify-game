@@ -16,8 +16,70 @@ namespace indigo::core {
 /**
  * Streamlined Promise implementation for Indigo code
  *
- * Optimized for the common (success) case - promises are typed to the
- * success case, with the failure case being an "any" type.
+ * Loosely modeled off of the JavaScript Promise API. VERY loosely.
+ *
+ * A Promise is basically an Optional / Maybe type that has two additional
+ *  properties and a bunch of built-in behavior that make it very useful for
+ *  writing asynchronous code with or without concurrency, with little blocking.
+ *
+ * (1) A promise value will be set EXACTLY ONCE
+ * (2) A promise SHOULD always have a value set eventually (this is the
+ *     responsibility of the API user)
+ * (3) Once set, the promise WILL ALWAYS have the same value (with the
+ *     exception of move semantics - see IMPORTANT NOTE below)
+ *
+ * Reading code that wants to use the value inside a promise can provide a
+ *  callback that eventually be scheduled. If the value is already present,
+ *  the callback is scheduled immediately against the given task list. If the
+ *  value is not present, it will be scheduled at some point in the future when
+ *  the value for the promise is set.
+ *
+ * IMPORTANT NOTE: This implementation usually keeps ownership of the data it
+ *  stores, but provides a "move" semantic. This semantic may be used exactly
+ *  once, and should be the last callback registered against the promise.
+ *  Attempting to set further listeners or set multiple move listeners will
+ *  result in a warning message and will very likely cause ugly bugs.
+ *
+ * ------------------------------- Usage -------------------------------
+ *
+ * Promises must always be wrapped in a shared_ptr, create a promise with the
+ *  static "Create" command:
+ *
+ * ```
+ * auto my_promise = Promise<int>::create();
+ * ```
+ *
+ * Register callbacks with the "on_success" method. A const auto reference to
+ *  the held data will be provided as the only parameter. Pass in a task list
+ *  that the callback should be executed against.
+ *
+ * ```
+ * my_promise->on_success(
+ *     [](const int& number) { Logger::log() << "Your number is " << number"; },
+ *     main_task_list);
+ * ```
+ *
+ * You can also chain promises by providing a transformation. I haven't figured
+ *  out the template arguments very much yet, so you might need to be pretty
+ *  liberal with those (my bad)
+ *
+ * ```
+ * std::shared_ptr<Promise<std::string>> string_promise =
+ *    my_promise->then<std::string>(
+ *        [](const int& number) { return std::to_string(number); },
+ *        main_task_list);
+ * ```
+ *
+ * Now my_promise has two callbacks attached to it, and the second callback will
+ *  populate string_promise with the std::string returned from the callback.
+ *
+ * Finally, to set the value on the promise, use the "resolve" method.
+ *
+ * ```
+ * my_promise->resolve(42);
+ * ```
+ *
+ * All of these functions are thread-safe.
  */
 
 template <class ValT>
@@ -62,9 +124,6 @@ class Promise : public std::enable_shared_from_this<Promise<ValT>> {
   Promise<ValT>& on_success(std::function<void(const ValT&)> fn,
                             std::shared_ptr<TaskList> task_list,
                             std::string op_label = "") {
-    // Less than optimal, but required to prevent race conditions - lock the
-    // queue for the duration of this method (even though many branches do not
-    // use it)
     std::lock_guard l(then_queue_mutex_);
     if (!accepts_thens_) {
       core::Logger::log(kLogLabel)
@@ -183,9 +242,6 @@ class Promise : public std::enable_shared_from_this<Promise<ValT>> {
   Promise<ValT>& consume(std::function<void(ValT&&)> cb,
                          std::shared_ptr<TaskList> task_list,
                          std::string op_label = "") {
-    // Less than optimal, but required to prevent race conditions - lock the
-    // then queue for the duration of this method (even though many branches do
-    // not use it)
     std::lock_guard l(then_queue_mutex_);
     if (!accepts_thens_) {
       core::Logger::log(kLogLabel)
@@ -273,87 +329,6 @@ class Promise : public std::enable_shared_from_this<Promise<ValT>> {
   bool is_finished_ = false;
 
   inline const static std::string kLogLabel = "Promise";
-};
-
-// TODO (sessamekesh): Move this to promise_combiner and remove the old
-//  implementation (or at least just move it to an old implementation)
-class PromiseCombiners {
- public:
-  template <class T1, class T2>
-  static std::shared_ptr<core::Promise<std::tuple<T1, T2>>> peek_combine(
-      std::shared_ptr<core::TaskList> combine_task_list,
-      std::shared_ptr<core::Promise<T1>> p1,
-      std::shared_ptr<core::Promise<T2>> p2) {
-    auto p = core::Promise<std::tuple<T1, T2>>::create();
-
-    p1->on_success(
-        [p2, p, combine_task_list](const T1& rsl1) {
-          p2->on_success(
-              [rsl1, p](const T2& rsl2) {
-                p->resolve({rsl1, rsl2});
-              },
-              combine_task_list);
-        },
-        combine_task_list);
-
-    return p;
-  }
-
-  template <class T1, class T2, class T3>
-  static std::shared_ptr<core::Promise<std::tuple<T1, T2, T3>>> peek_combine(
-      std::shared_ptr<core::TaskList> combine_task_list,
-      std::shared_ptr<core::Promise<T1>> p1,
-      std::shared_ptr<core::Promise<T2>> p2,
-      std::shared_ptr<core::Promise<T3>> p3) {
-    auto p = core::Promise<std::tuple<T1, T2, T3>>::create();
-
-    p1->on_success(
-        [p3, p2, p, combine_task_list](const T1& rsl1) {
-          p2->on_success(
-              [p3, rsl1, p, combine_task_list](const T2& rsl2) {
-                p3->on_success(
-                    [rsl2, rsl1, p, combine_task_list](const T3& rsl3) {
-                      p->resolve({rsl1, rsl2, rsl3});
-                    },
-                    combine_task_list);
-              },
-              combine_task_list);
-        },
-        combine_task_list);
-
-    return p;
-  }
-
-  template <class T1, class T2, class T3, class T4>
-  static std::shared_ptr<core::Promise<std::tuple<T1, T2, T3, T4>>>
-  peek_combine(std::shared_ptr<core::TaskList> combine_task_list,
-               std::shared_ptr<core::Promise<T1>> p1,
-               std::shared_ptr<core::Promise<T2>> p2,
-               std::shared_ptr<core::Promise<T3>> p3,
-               std::shared_ptr<core::Promise<T4>> p4) {
-    auto p = core::Promise<std::tuple<T1, T2, T3, T4>>::create();
-
-    p1->on_success(
-        [p4, p3, p2, p, combine_task_list](const T1& rsl1) {
-          p2->on_success(
-              [p4, p3, rsl1, p, combine_task_list](const T2& rsl2) {
-                p3->on_success(
-                    [p4, rsl2, rsl1, p, combine_task_list](const T3& rsl3) {
-                      p4->on_success(
-                          [rsl1, rsl2, rsl3, p,
-                           combine_task_list](const T4& rsl4) {
-                            p->resolve({rsl1, rsl2, rsl3, rsl4});
-                          },
-                          combine_task_list);
-                    },
-                    combine_task_list);
-              },
-              combine_task_list);
-        },
-        combine_task_list);
-
-    return p;
-  }
 };
 
 }  // namespace indigo::core

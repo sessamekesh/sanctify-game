@@ -13,6 +13,7 @@ enum class GameSceneConstructionError {
   MissingAsyncTaskList,
 
   TerrainShitBuildFailed,
+  PlayerShitBuildFailed,
 };
 
 using GamePromiseRsl =

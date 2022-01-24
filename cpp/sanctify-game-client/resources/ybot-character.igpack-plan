@@ -1,0 +1,17 @@
+plan {
+  asset_pack_file_path: "resources/ybot-character.igpack"
+  actions {
+    assimp_to_static_draco_geo {
+      mesh_igasset_name: "ybotBase"
+      input_file_path: "characters/y-bot/Jog Forward.fbx"
+      assimp_mesh_names: "Alpha_Surface"
+    }
+  }
+  actions {
+    assimp_to_static_draco_geo {
+      mesh_igasset_name: "ybotJoints"
+      input_file_path: "characters/y-bot/Jog Forward.fbx"
+      assimp_mesh_names: "Alpha_Joints"
+    }
+  }
+}

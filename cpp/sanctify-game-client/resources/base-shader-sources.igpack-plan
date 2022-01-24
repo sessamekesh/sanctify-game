@@ -1,0 +1,19 @@
+plan {
+  asset_pack_file_path: "resources/base-shader-sources.igpack"
+  actions {
+    copy_wgsl_source {
+      igasset_name: "solidAnimatedVertWgsl"
+      input_file_path: "engine/solid_animated.vert.wgsl"
+      shader_type: VERTEX
+      entry_point: "main"
+    }
+  }
+  actions {
+    copy_wgsl_source {
+      igasset_name: "solidAnimatedFragWgsl"
+      input_file_path: "engine/solid_animated.frag.wgsl"
+      shader_type: FRAGMENT
+      entry_point: "main"
+    }
+  }
+}

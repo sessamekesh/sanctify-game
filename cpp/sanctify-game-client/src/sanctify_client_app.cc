@@ -6,6 +6,8 @@
 #include <emscripten/html5.h>
 #endif
 
+using namespace indigo;
+using namespace core;
 using namespace sanctify;
 
 namespace {
@@ -14,7 +16,9 @@ const char* kLogLabel = "SanctifyClientApp";
 
 std::shared_ptr<SanctifyClientApp> SanctifyClientApp::Create(uint32_t width,
                                                              uint32_t height) {
-  auto app_base_rsl = AppBase::Create(width, height);
+  Either<std::shared_ptr<AppBase>, AppBaseCreateError> app_base_rsl =
+      AppBase::Create(width, height);
+
   if (app_base_rsl.is_right()) {
     Logger::err(kLogLabel) << "Failed to create AppBase - error "
                            << app_base_create_error_text(

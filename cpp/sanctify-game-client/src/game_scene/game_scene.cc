@@ -39,12 +39,13 @@ wgpu::RenderPassEncoder create_geo_pass(
 
 GameScene::GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
                      std::shared_ptr<IArenaCameraInput> camera_input_system,
-                     TerrainShit terrain_shit, float camera_movement_speed,
-                     float fovy)
+                     TerrainShit terrain_shit, PlayerShit player_shit,
+                     float camera_movement_speed, float fovy)
     : base_(base),
       arena_camera_(arena_camera),
       arena_camera_input_(camera_input_system),
       terrain_shit_(std::move(terrain_shit)),
+      player_shit_(std::move(player_shit)),
       camera_movement_speed_(camera_movement_speed),
       fovy_(fovy) {
   arena_camera_input_->attach();
@@ -76,11 +77,23 @@ void GameScene::render() {
       arena_camera_.position();
   terrain_shit_.FrameInputs.CameraFragmentParamsUbo.sync(device);
 
-  auto& camera_params = terrain_shit_.FrameInputs.CameraParamsUbo.get_mutable();
-  camera_params.MatView = arena_camera_.mat_view();
-  camera_params.MatProj = glm::perspective(
-      fovy_, (float)base_->Width / base_->Height, 0.1f, 4000.f);
-  terrain_shit_.FrameInputs.CameraParamsUbo.sync(device);
+  // TODO (sessamekesh): Consolidate
+  {
+    auto& camera_params =
+        terrain_shit_.FrameInputs.CameraParamsUbo.get_mutable();
+    camera_params.MatView = arena_camera_.mat_view();
+    camera_params.MatProj = glm::perspective(
+        fovy_, (float)base_->Width / base_->Height, 0.1f, 4000.f);
+    terrain_shit_.FrameInputs.CameraParamsUbo.sync(device);
+  }
+  {
+    auto& camera_params =
+        player_shit_.FrameInputs.CameraParamsUbo.get_mutable();
+    camera_params.MatView = arena_camera_.mat_view();
+    camera_params.MatProj = glm::perspective(
+        fovy_, (float)base_->Width / base_->Height, 0.1f, 4000.f);
+    player_shit_.FrameInputs.CameraParamsUbo.sync(device);
+  }
 
   //
   // Encode commands
@@ -102,6 +115,17 @@ void GameScene::render() {
       .set_geometry(terrain_shit_.BaseGeo)
       .draw()
       .set_geometry(terrain_shit_.DecorationGeo)
+      .draw();
+
+  solid_animated::RenderUtil(static_geo_pass, player_shit_.Pipeline)
+      .set_frame_inputs(player_shit_.FrameInputs)
+      .set_scene_inputs(player_shit_.SceneInputs)
+      .set_instances(player_shit_.InstanceBuffers)
+      .set_geometry(player_shit_.BaseGeo)
+      .set_material_inputs(player_shit_.BaseMaterial)
+      .draw()
+      .set_geometry(player_shit_.JointsGeo)
+      .set_material_inputs(player_shit_.JointsMaterial)
       .draw();
 
   static_geo_pass.EndPass();

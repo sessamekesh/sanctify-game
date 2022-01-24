@@ -4,6 +4,7 @@
 #include <iggpu/texture.h>
 #include <io/arena_camera_controller/arena_camera_input.h>
 #include <render/camera/arena_camera.h>
+#include <render/solid_animated/solid_animated_pipeline.h>
 #include <render/terrain/terrain_geo.h>
 #include <render/terrain/terrain_pipeline.h>
 #include <scene_base.h>
@@ -24,10 +25,29 @@ class GameScene : public ISceneBase {
     terrain_pipeline::TerrainMatWorldInstanceBuffer IdentityBuffer;
   };
 
+  // TODO (sessamekesh): Consolidate identical bind groups (frame/scene
+  //  inputs can certainly be shared - allow constructors of these UBOs
+  //  to take in existing buffers)
+  struct PlayerShit {
+    solid_animated::SolidAnimatedPipelineBuilder PipelineBuilder;
+    solid_animated::SolidAnimatedPipeline Pipeline;
+    solid_animated::FramePipelineInputs FrameInputs;
+    solid_animated::ScenePipelineInputs SceneInputs;
+
+    solid_animated::MaterialPipelineInputs BaseMaterial;
+    solid_animated::MaterialPipelineInputs JointsMaterial;
+
+    solid_animated::SolidAnimatedGeo BaseGeo;
+    solid_animated::SolidAnimatedGeo JointsGeo;
+
+    solid_animated::MatWorldInstanceBuffer InstanceBuffers;
+  };
+
  public:
   GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
             std::shared_ptr<IArenaCameraInput> camera_input_system,
-            TerrainShit terrain_shit, float camera_movement_speed, float fovy);
+            TerrainShit terrain_shit, PlayerShit player_shit,
+            float camera_movement_speed, float fovy);
   ~GameScene();
 
   // ISceneBase
@@ -50,7 +70,11 @@ class GameScene : public ISceneBase {
   float fovy_;
   ArenaCamera arena_camera_;
 
+  // Random shit that should be replaced with better, more fleshed out systems
+  // You'll need a scene graph and renderable handle system, especially when
+  // dealing with Lua, and might as well put in some simple AABB/frustum culling
   TerrainShit terrain_shit_;
+  PlayerShit player_shit_;
 };
 
 }  // namespace sanctify

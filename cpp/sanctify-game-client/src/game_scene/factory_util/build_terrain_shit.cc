@@ -30,8 +30,10 @@ sanctify::load_terrain_shit(
           -> Maybe<GameScene::TerrainShit> {
         const char* kTerrainShitLabel = "GameSceneFactory::load_terrain_shit";
 
-        IgpackLoader::ExtractWgslShaderT vs_wgsl_src_rsl = rsl.move(vs_src_key);
-        IgpackLoader::ExtractWgslShaderT fs_wgsl_src_rsl = rsl.move(fs_src_key);
+        const IgpackLoader::ExtractWgslShaderT& vs_wgsl_src_rsl =
+            rsl.get(vs_src_key);
+        const IgpackLoader::ExtractWgslShaderT& fs_wgsl_src_rsl =
+            rsl.get(fs_src_key);
         IgpackLoader::ExtractDracoBufferT base_geo_rsl = rsl.move(base_geo_key);
         IgpackLoader::ExtractDracoBufferT decoration_geo_rsl =
             rsl.move(decoration_geo_key);
@@ -68,8 +70,8 @@ sanctify::load_terrain_shit(
         if (has_error) {
           return empty_maybe();
         }
-        asset::pb::WgslSource vs_src = vs_wgsl_src_rsl.left_move();
-        asset::pb::WgslSource fs_src = fs_wgsl_src_rsl.left_move();
+        const asset::pb::WgslSource& vs_src = vs_wgsl_src_rsl.get_left();
+        const asset::pb::WgslSource& fs_src = fs_wgsl_src_rsl.get_left();
         std::shared_ptr<asset::DracoDecoder> base_draco =
             base_geo_rsl.left_move();
         std::shared_ptr<asset::DracoDecoder> decoration_draco =
@@ -153,7 +155,7 @@ sanctify::load_terrain_shit(
         terrain_pipeline::TerrainGeo decoration_geo(device, decoration_verts,
                                                     decoration_indices);
         core::PodVector<terrain_pipeline::TerrainMatWorldInstanceData>
-            identity_instance(0);
+            identity_instance(1);
         // TODO (sessamekesh): this rotation will be a common case for Assimp
         // files, you should handle this in pre-processing (igpack-gen)
         glm::mat4 rotate_i_guess = glm::rotate(
