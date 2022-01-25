@@ -1,3 +1,11 @@
+# Submodules
+
+Some external dependencies are kept in Git submodules, and those dependencies keep other submodules.
+
+You can either...
+- (1) Update submodules yourself with `git submodule update --init --recursive` after cloning/changing submodules
+- (2) Run CMake with argument "-DIG_CHECK_SUBMODULES_ON_BUILD=ON"
+
 # C++ Sources Root
 
 - `/cmake`: CMake scripts with functions, macros, and external dependency wrangling.

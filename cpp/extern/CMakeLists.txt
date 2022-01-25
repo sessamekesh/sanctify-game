@@ -1,5 +1,19 @@
 include(FetchContent)
 
+#
+# Make sure submodules are up to date...
+#
+find_package(Git QUIET)
+if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git" AND IG_CHECK_SUBMODULES_ON_BUILD)
+  message(STATUS "Submodule update...")
+  execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+                  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+                  RESULT_VARIABLE GIT_SUBMOD_RESULT)
+  if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+      message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+  endif()
+endif()
+
 if (IG_BUILD_TESTS)
   FetchContent_Declare(
     googletest
@@ -144,21 +158,25 @@ endif ()
 
 # Assimp (used in tooling builds)
 if (NOT EMSCRIPTEN)
+  set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
+  set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
+  set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
+  set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  set(ASSIMP_BUILD_FBX_IMPORTER ON CACHE BOOL "" FORCE)
+  set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
   FetchContent_Declare(
     assimp
     GIT_REPOSITORY "https://github.com/assimp/assimp"
     GIT_TAG "3cca102531466f5e5f0af0d90858a23ad83ce662"
-    CMAKE_ARGS
-      -DASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT:BOOL=OFF
-      -DASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT:BOOL=OFF
-      -DASSIMP_BUILD_ASSIMP_TOOLS:BOOL=OFF
-      -DASSIMP_BUILD_TESTS:BOOL=OFF
-      -DASSIMP_BUILD_FBX_IMPORTER:BOOL=ON
-      -DASSIMP_BUILD_OBJ_IMPORTER:BOOL=ON
-      -DASSIMP_BUILD_OBJ_EXPORTER:BOOL=ON
-      -DBUILD_SHARED_LIBS:BOOL=OFF
   )
   FetchContent_MakeAvailable(assimp)
+endif ()
+
+# WebRTC / WebSocket support (not used in Web builds - those use browser APIs)
+if (NOT EMSCRIPTEN)
+  set(NO_MEDIA OFF CACHE BOOL "" FORCE)
+  add_subdirectory(libdatachannel)
 endif ()
 
 if (EMSCRIPTEN)

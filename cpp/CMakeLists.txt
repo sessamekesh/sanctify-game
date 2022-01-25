@@ -17,6 +17,7 @@ set(IG_TOOL_WRANGLE_PATH "" CACHE FILEPATH "Where to import/export the tool wran
 set(IG_ENABLE_THREADS "ON" CACHE BOOL "Enable multithreaded build")
 set(IG_ENABLE_GRAPHICS_DEBUGGING "OFF" CACHE BOOL "Enable graphics debugging options (e.g. export HLSL debug symbols)")
 set(IG_ENABLE_LOGGING "ON" CACHE BOOL "Include logging statements in the build")
+set(IG_CHECK_SUBMODULES_ON_BUILD "OFF" CACHE BOOL "Check external submodules on build - off by default, but use with fresh builds")
 
 #
 # Global project settings
