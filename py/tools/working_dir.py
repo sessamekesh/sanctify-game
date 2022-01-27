@@ -14,7 +14,7 @@ def cwd_cpp_binary_dir(buildname):
   os.chdir(path)
 
 def copy_js_and_wasm(buildpath, threaded):
-  src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'cpp', 'out', buildpath, 'sanctify-game-client'))
+  src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'cpp', 'out', buildpath, 'sanctify-game', 'client'))
   dest_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'ts', 'packages', 'sanctify-web-client', 'public', ('wasm_mt' if threaded else 'wasm_st')))
   shutil.copyfile(os.path.join(src_path, 'sanctify-game-client.js'), os.path.join(dest_path, 'sanctify-game-client.js'))
   shutil.copyfile(os.path.join(src_path, 'sanctify-game-client.wasm'), os.path.join(dest_path, 'sanctify-game-client.wasm'))

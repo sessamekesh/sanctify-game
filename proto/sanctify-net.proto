@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package indigo.net.pb;
+
+/*************************************************\
+ *   Sanctify game networking protocol buffers   *
+ *                                               *
+ * Below is an enumeration of possible messages  *
+ *  that are sent between the client and server  *
+ *  in a Sanctify game match                     *
+\*************************************************/
+
+/**
+ * Common message header - used to keep track of messages
+ */
+message GameMessageHeader {
+  // Two uints packed together - the (sender) message ID of this message and
+  //  the last seen (receiver) message ID, in the left and right 16 bits respectively
+  uint32 message_id_and_last_seen = 1;
+
+  // Bitfield of the which of the last 32 client messages (prior to the last seen message) have
+  //  been seen.
+  uint32 ack_field = 2;
+}
+
+/**
+ * Initial connection message - use to authenticate the connecting client as a certain user.
+ */
+message InitialConnectionRequest {
+  // Token that both authenticates the player and serves and identifies the game
+  //  which they have been given permission to join. Check against an external service
+  //  usually.
+  string player_token = 1;
+}
+
+message InitialConnectionResponse {
+  enum ResponseType {
+    UNKNOWN = 0;
+    ACCEPTED = 1;
+    INVALID_TOKEN = 2;
+    TIMEOUT = 3;
+    BAD_FORMAT = 4;
+  }
+
+  ResponseType response_type = 1;
+
+  // TODO (sessamekesh): enumerate which resources the client should preload
+}
+
+/*********************************************************
+ * Union of all messages that a server can send to a client
+ *********************************************************/
+message GameServerMessage {
+  GameMessageHeader header = 1;
+
+  oneof msg_body {
+    InitialConnectionResponse initial_connection_response = 2;
+  }
+}
+
+/***********************************************************
+ * Union of all messages that a client can send to a server
+ **********************************************************/
+message GameClientMessage {
+  GameMessageHeader header = 1;
+
+  oneof msg_body {
+    InitialConnectionRequest initial_connection_request = 2;
+  }
+}

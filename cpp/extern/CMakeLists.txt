@@ -177,6 +177,13 @@ endif ()
 if (NOT EMSCRIPTEN)
   set(NO_MEDIA OFF CACHE BOOL "" FORCE)
   add_subdirectory(libdatachannel)
+
+  FetchContent_Declare(
+    websocketpp
+    GIT_REPOSITORY "https://github.com/zaphoyd/websocketpp"
+    GIT_TAG "1b11fd301531e6df35a6107c1e8665b1e77a2d8e"
+  )
+  FetchContent_MakeAvailable(websocketpp)
 endif ()
 
 if (EMSCRIPTEN)

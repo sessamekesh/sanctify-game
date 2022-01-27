@@ -3,16 +3,39 @@ if (EMSCRIPTEN)
   return()
 endif ()
 
-set(src_list "main.cc")
+find_package(Boost 1.67 REQUIRED COMPONENTS system thread)
 
-add_executable(sanctify-game-server ${src_list})
+set(header_list
+  "app/game_server.h"
+  "app/input_events.h"
+  "net/dummy_game_token_exchanger.h"
+  "net/igameserver.h"
+  "net/igametokenexchanger.h"
+  "net/net_server.h"
+  "net/types.h"
+  "util/event_scheduler.h")
+
+set(src_list
+  "app/game_server.cc"
+  "app/input_events.cc"
+  "net/dummy_game_token_exchanger.cc"
+  "net/net_server.cc"
+  "util/event_scheduler.cc"
+  "main.cc")
+
+add_executable(sanctify-game-server ${header_list} ${src_list})
 
 # LEGAL NOTE - use libdatachannel and not libdatachannel-static. This is because
 #  libdatachannel uses the LGPLv2 license and requires that a user be able to
 #  freely link in their own build of the library in its place.
 # Strictly speaking we could probably get around this a different way, but I'd
 #  rather just avoid the headache entirely and link dynamically.
-target_link_libraries(sanctify-game-server PUBLIC LibDataChannel::LibDataChannel)
+target_link_libraries(sanctify-game-server PUBLIC
+  LibDataChannel::LibDataChannel CLI11 Boost::boost
+  igcore igasync sanctify-game-common)
+
+target_include_directories(sanctify-game-server PRIVATE
+  . "${websocketpp_SOURCE_DIR}")
 
 if (MSVC)
   add_custom_command(TARGET sanctify-game-server POST_BUILD

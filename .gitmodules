@@ -1,3 +1,6 @@
 [submodule "cpp/extern/libdatachannel"]
 	path = cpp/extern/libdatachannel
 	url = https://github.com/paullouisageneau/libdatachannel
+[submodule "cpp/extern/websocketpp"]
+	path = cpp/extern/websocketpp
+	url = https://github.com/zaphoyd/websocketpp

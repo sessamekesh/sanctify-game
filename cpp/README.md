@@ -1,3 +1,15 @@
+# Dependencies
+
+_General Dependencies_
+* A C++ compiler
+* CMake
+
+_Server builds_
+* Boost
+
+_WebAssembly builds_
+* Emscripten 3.0.1+
+
 # Submodules
 
 Some external dependencies are kept in Git submodules, and those dependencies keep other submodules.
