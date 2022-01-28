@@ -1,25 +1,38 @@
 #include <app/game_server.h>
+#include <igcore/log.h>
 
 using namespace indigo;
 using namespace core;
 using namespace sanctify;
 
-std::shared_ptr<GameServer> GameServer::Create(
-    GameId game_id, std::shared_ptr<NetServer> net_server) {
-  return std::shared_ptr<GameServer>(new GameServer(game_id, net_server));
+namespace {
+const char* kLogLabel = "GameServer";
+
+bool default_player_message_handler(PlayerId player_id,
+                                    indigo::net::pb::GameServerMessage msg) {
+  Logger::err(kLogLabel)
+      << "No player message handler defined - message for player "
+      << player_id.Id << " is dropped!";
+
+  return false;
+}
+}  // namespace
+
+GameServer::GameServer()
+    : player_message_cb_(::default_player_message_handler) {}
+
+GameServer::~GameServer() {}
+
+void GameServer::receive_message_for_player(
+    PlayerId player_id, indigo::net::pb::GameClientMessage client_msg) {}
+
+void GameServer::set_player_message_receiver(PlayerMessageCallback cb) {
+  player_message_cb_ = cb;
 }
 
-GameServer::GameServer(GameId game_id, std::shared_ptr<NetServer> net_server)
-    : game_id_(game_id), net_server_(net_server) {}
-
-GameId GameServer::get_game_id() const { return game_id_; }
-
-std::shared_ptr<Promise<bool>> GameServer::add_player_to_game(
-    PlayerId player_id) {
-  auto rsl_promise = Promise<bool>::create();
-
-  std::lock_guard l(pending_events_lock_);
-  pending_events_.push_back(GameServerEvent{
-      AddPlayerToGameEvent{player_id},
-      [rsl_promise](bool is_success) { rsl_promise->resolve(is_success); }});
+std::shared_ptr<indigo::core::Promise<indigo::core::EmptyPromiseRsl>>
+GameServer::shutdown() {
+  // Begin shutdown process, and resolve the promise when the game server has
+  // completed its shutdown
+  return Promise<EmptyPromiseRsl>::immediate(EmptyPromiseRsl{});
 }

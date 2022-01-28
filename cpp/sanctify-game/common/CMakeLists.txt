@@ -5,10 +5,10 @@ add_proto_lib(
 )
 
 set (header_list
-  "include/sanctify-game-common/dummy.h")
+  "include/sanctify-game-common/net/reliable.h")
 
 set (src_list
-  "src/dummy.cc")
+  "src/net/reliable.cc")
 
 add_library(sanctify-game-common STATIC ${header_list} ${src_list})
 

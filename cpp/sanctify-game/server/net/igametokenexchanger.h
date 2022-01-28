@@ -3,7 +3,7 @@
 
 #include <igasync/promise.h>
 #include <igcore/either.h>
-#include <net/types.h>
+#include <util/types.h>
 
 namespace sanctify {
 

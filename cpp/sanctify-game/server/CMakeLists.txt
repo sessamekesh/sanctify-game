@@ -7,19 +7,15 @@ find_package(Boost 1.67 REQUIRED COMPONENTS system thread)
 
 set(header_list
   "app/game_server.h"
-  "app/input_events.h"
   "net/dummy_game_token_exchanger.h"
-  "net/igameserver.h"
   "net/igametokenexchanger.h"
-  "net/net_server.h"
-  "net/types.h"
-  "util/event_scheduler.h")
+  "util/cli.h"
+  "util/event_scheduler.h"
+  "util/types.h")
 
 set(src_list
   "app/game_server.cc"
-  "app/input_events.cc"
   "net/dummy_game_token_exchanger.cc"
-  "net/net_server.cc"
   "util/event_scheduler.cc"
   "main.cc")
 

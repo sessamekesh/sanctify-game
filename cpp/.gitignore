@@ -5,3 +5,4 @@ CMakeSettings.json
 
 # Visual Studio Code generated files
 build
+.vscode

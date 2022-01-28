@@ -331,6 +331,8 @@ class Promise : public std::enable_shared_from_this<Promise<ValT>> {
   inline const static std::string kLogLabel = "Promise";
 };
 
+struct EmptyPromiseRsl {};
+
 }  // namespace indigo::core
 
 #endif

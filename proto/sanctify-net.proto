@@ -11,19 +11,6 @@ package indigo.net.pb;
 \*************************************************/
 
 /**
- * Common message header - used to keep track of messages
- */
-message GameMessageHeader {
-  // Two uints packed together - the (sender) message ID of this message and
-  //  the last seen (receiver) message ID, in the left and right 16 bits respectively
-  uint32 message_id_and_last_seen = 1;
-
-  // Bitfield of the which of the last 32 client messages (prior to the last seen message) have
-  //  been seen.
-  uint32 ack_field = 2;
-}
-
-/**
  * Initial connection message - use to authenticate the connecting client as a certain user.
  */
 message InitialConnectionRequest {
@@ -51,10 +38,8 @@ message InitialConnectionResponse {
  * Union of all messages that a server can send to a client
  *********************************************************/
 message GameServerMessage {
-  GameMessageHeader header = 1;
-
   oneof msg_body {
-    InitialConnectionResponse initial_connection_response = 2;
+    InitialConnectionResponse initial_connection_response = 1;
   }
 }
 
@@ -62,9 +47,7 @@ message GameServerMessage {
  * Union of all messages that a client can send to a server
  **********************************************************/
 message GameClientMessage {
-  GameMessageHeader header = 1;
-
   oneof msg_body {
-    InitialConnectionRequest initial_connection_request = 2;
+    InitialConnectionRequest initial_connection_request = 1;
   }
 }
