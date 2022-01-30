@@ -84,6 +84,9 @@ namespace indigo::core {
 
 template <class ValT>
 class Promise : public std::enable_shared_from_this<Promise<ValT>> {
+ public:
+  using RslType = ValT;
+
  private:
   struct ThenOp {
     std::function<void(const ValT&)> Fn;

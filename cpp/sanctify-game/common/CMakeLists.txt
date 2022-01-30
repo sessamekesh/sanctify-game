@@ -5,9 +5,11 @@ add_proto_lib(
 )
 
 set (header_list
+  "include/sanctify-game-common/net/net_config.h"
   "include/sanctify-game-common/net/reliable.h")
 
 set (src_list
+  "src/net/net_config.cc"
   "src/net/reliable.cc")
 
 add_library(sanctify-game-common STATIC ${header_list} ${src_list})

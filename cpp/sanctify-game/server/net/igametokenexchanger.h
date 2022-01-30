@@ -31,13 +31,7 @@ class IGameTokenExchanger {
       const std::string& game_token) = 0;
 };
 
-std::string to_string(const GameTokenExchangerError& err) {
-  switch (err) {
-    case GameTokenExchangerError::InvalidGameToken:
-      return "InvalidGameToken";
-  }
-  return "<<GameTokenExchangerError -- Unknown>>";
-}
+std::string to_string(const GameTokenExchangerError& err);
 
 }  // namespace sanctify
 

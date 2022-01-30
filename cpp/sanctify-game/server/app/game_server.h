@@ -18,17 +18,18 @@ namespace sanctify {
 class GameServer : public std::enable_shared_from_this<GameServer> {
  public:
   using PlayerMessageCallback =
-      std::function<bool(PlayerId, indigo::net::pb::GameServerMessage)>;
+      std::function<bool(PlayerId, sanctify::pb::GameServerMessage)>;
 
  public:
   GameServer();
   ~GameServer();
 
   // Outside interface
-  void receive_message_for_player(
-      PlayerId player_id, indigo::net::pb::GameClientMessage client_msg);
+  void receive_message_for_player(PlayerId player_id,
+                                  sanctify::pb::GameClientMessage client_msg);
   void set_player_message_receiver(PlayerMessageCallback cb);
-  std::shared_ptr<indigo::core::Promise<indigo::core::EmptyPromiseRsl>> shutdown();
+  std::shared_ptr<indigo::core::Promise<indigo::core::EmptyPromiseRsl>>
+  shutdown();
 
  private:
   PlayerMessageCallback player_message_cb_;

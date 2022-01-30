@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package indigo.net.pb;
+package sanctify.pb;
 
 /*************************************************\
  *   Sanctify game networking protocol buffers   *
@@ -38,8 +38,11 @@ message InitialConnectionResponse {
  * Union of all messages that a server can send to a client
  *********************************************************/
 message GameServerMessage {
+  // Magic number that verifies that this is a valid GameServerMessage
+  uint32 magic_number = 1;
+
   oneof msg_body {
-    InitialConnectionResponse initial_connection_response = 1;
+    InitialConnectionResponse initial_connection_response = 2;
   }
 }
 
@@ -47,7 +50,10 @@ message GameServerMessage {
  * Union of all messages that a client can send to a server
  **********************************************************/
 message GameClientMessage {
+  // Magic number that verifies that this is a valid GameClientMessage
+  uint32 magic_header = 1;
+
   oneof msg_body {
-    InitialConnectionRequest initial_connection_request = 1;
+    InitialConnectionRequest initial_connection_request = 2;
   }
 }

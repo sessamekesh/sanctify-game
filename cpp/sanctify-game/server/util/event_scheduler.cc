@@ -12,7 +12,7 @@ namespace {
 const char* kLogLabel = "EventScheduler";
 }
 
-EventScheduler::EventScheduler() : is_running_(true) {
+EventScheduler::EventScheduler() : is_running_(true), next_id_(0ul) {
   // Naked this pass - destructor must join thread before closing
   event_loop_thread_ = std::thread([this]() {
     while (is_running_) {
@@ -24,16 +24,16 @@ EventScheduler::EventScheduler() : is_running_(true) {
         ScheduledTask next_task;
         {
           std::lock_guard<std::mutex> l(scheduled_tasks_lock_);
-          if (scheduled_tasks_.empty()) {
+
+          auto next_task_it = scheduled_tasks_.begin();
+          if (next_task_it == scheduled_tasks_.end()) {
             break;
           }
-
-          next_task = scheduled_tasks_.top();
-          if (next_task.TimePoint > now) {
+          if (next_task_it->TimePoint > now) {
             break;
           }
-
-          scheduled_tasks_.pop();
+          next_task = *next_task_it;
+          scheduled_tasks_.erase(next_task_it);
         }
 
         next_task.TaskList->add_task(Task::of(std::move(next_task.Callback)));
@@ -44,9 +44,11 @@ EventScheduler::EventScheduler() : is_running_(true) {
           now + 25ms;
       {
         std::lock_guard<std::mutex> l(scheduled_tasks_lock_);
-        if (!scheduled_tasks_.empty() &&
-            scheduled_tasks_.top().TimePoint < wait_until_point) {
-          wait_until_point = scheduled_tasks_.top().TimePoint;
+        auto next_task_it = scheduled_tasks_.begin();
+        if (next_task_it != scheduled_tasks_.end()) {
+          if (next_task_it->TimePoint < wait_until_point) {
+            wait_until_point = next_task_it->TimePoint;
+          }
         }
       }
 
@@ -64,16 +66,28 @@ EventScheduler::EventScheduler() : is_running_(true) {
   });
 }
 
+void EventScheduler::cancel_task(uint32_t id) {
+  std::lock_guard<std::mutex> l(scheduled_tasks_lock_);
+  for (auto it = scheduled_tasks_.begin(); it != scheduled_tasks_.end(); it++) {
+    if (it->TaskId == id) {
+      it = scheduled_tasks_.erase(it);
+    }
+  }
+}
+
 EventScheduler::~EventScheduler() {
   is_running_ = false;
   condvar_.notify_one();
   event_loop_thread_.join();
 }
 
-void EventScheduler::schedule_task(
+uint32_t EventScheduler::schedule_task(
     std::chrono::high_resolution_clock::time_point time_point,
     std::shared_ptr<indigo::core::TaskList> task_list,
     std::function<void()> callback) {
   std::lock_guard<std::mutex> l(scheduled_tasks_lock_);
-  scheduled_tasks_.push(ScheduledTask{time_point, task_list, callback});
+  uint32_t task_id = next_id_++;
+  scheduled_tasks_.emplace(
+      ScheduledTask{task_id, time_point, task_list, callback});
+  return task_id;
 }

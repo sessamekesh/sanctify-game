@@ -4,7 +4,7 @@
 #include <igasync/task_list.h>
 
 #include <chrono>
-#include <queue>
+#include <set>
 #include <thread>
 
 namespace sanctify {
@@ -20,19 +20,34 @@ class EventScheduler {
   EventScheduler();
   ~EventScheduler();
 
-  void schedule_task(std::chrono::high_resolution_clock::time_point time_point,
-                     std::shared_ptr<indigo::core::TaskList> task_list,
-                     std::function<void()> callback);
+  uint32_t schedule_task(
+      std::chrono::high_resolution_clock::time_point time_point,
+      std::shared_ptr<indigo::core::TaskList> task_list,
+      std::function<void()> callback);
 
- private:
+  void cancel_task(uint32_t id);
+
+ public:
   struct ScheduledTask {
+    uint32_t TaskId;
     std::chrono::high_resolution_clock::time_point TimePoint;
     std::shared_ptr<indigo::core::TaskList> TaskList;
     std::function<void()> Callback;
 
-    bool operator()(const ScheduledTask& l, const ScheduledTask& r) {
+    // wonky ass shit
+    bool operator()(const ScheduledTask& l, const ScheduledTask& r) const {
       return l.TimePoint < r.TimePoint;
     }
+
+    ScheduledTask() = default;
+    ScheduledTask(uint32_t task_id,
+                  std::chrono::high_resolution_clock::time_point tp,
+                  std::shared_ptr<indigo::core::TaskList> tl,
+                  std::function<void()> cb)
+        : TaskId(task_id), TimePoint(tp), TaskList(tl), Callback(cb) {}
+
+    ScheduledTask(const ScheduledTask&) = default;
+    ScheduledTask& operator=(const ScheduledTask&) = default;
   };
 
  private:
@@ -46,8 +61,8 @@ class EventScheduler {
   std::condition_variable condvar_;
 
   std::mutex scheduled_tasks_lock_;
-  std::priority_queue<ScheduledTask, std::vector<ScheduledTask>, ScheduledTask>
-      scheduled_tasks_;
+  uint32_t next_id_;
+  std::set<ScheduledTask, ScheduledTask> scheduled_tasks_;  // wonky ass shit
 };
 
 }  // namespace sanctify
