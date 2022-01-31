@@ -1,0 +1,9 @@
+syntax = "proto3";
+package sanctify.pb;
+
+option go_package = "github.com/sessamekesh/sanctify-game/go/sanctify-api-service/model";
+
+message GameServer {
+  string hostname = 1;
+  int32 ws_port = 2;
+}
