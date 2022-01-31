@@ -4,3 +4,9 @@
 [submodule "cpp/extern/websocketpp"]
 	path = cpp/extern/websocketpp
 	url = https://github.com/zaphoyd/websocketpp
+[submodule "cpp/extern/dawn"]
+	path = cpp/extern/dawn
+	url = https://dawn.googlesource.com/dawn
+[submodule "cpp/extern/depot_tools"]
+	path = cpp/extern/depot_tools
+	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git

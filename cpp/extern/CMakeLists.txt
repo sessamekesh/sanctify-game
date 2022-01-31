@@ -87,51 +87,33 @@ endif ()
 
 # Dawn (only on native builds)
 IF (NOT EMSCRIPTEN)
-  FetchContent_Declare(
-    depot_tools
-    GIT_REPOSITORY "https://chromium.googlesource.com/chromium/tools/depot_tools.git"
-    GIT_TAG "9552069c06705e149b156bcc70b84c1636f22f5e"
-  )
-  FetchContent_Declare(
-    dawn
-    GIT_REPOSITORY "https://dawn.googlesource.com/dawn"
-    GIT_TAG "e009ad7edd6882ca0f749bf1d8d52b844ffb56ae"
-  )
-  FetchContent_MakeAvailable(depot_tools)
+  if (NOT EXISTS "${PROJECT_SOURCE_DIR}/extern/dawn/.gclient")
+    message(STATUS "Configuring DAWN")
 
-  message(STATUS "Depot tools directory: ${depot_tools_SOURCE_DIR}")
-  if (NOT dawn_POPULATED)
-    FetchContent_Populate(dawn)
-
-    if (NOT EXISTS "${dawn_SOURCE_DIR}/.gclient")
-      execute_process(
-        COMMAND ${CMAKE_COMMAND} -E copy
-          "${dawn_SOURCE_DIR}/scripts/standalone.gclient"
-          "${dawn_SOURCE_DIR}/.gclient"
-          RESULT_VARIABLE copy_rsl)
-      if (NOT ${copy_rsl} EQUAL 0)
-        message(FATAL "Error copying gclient config for DAWN!")
-      endif ()
+    execute_process(
+      COMMAND ${CMAKE_COMMAND} -E copy
+          "${PROJECT_SOURCE_DIR}/extern/dawn/scripts/standalone.gclient"
+          "${PROJECT_SOURCE_DIR}/extern/dawn/.gclient"
+      RESULT_VARIABLE gclient_copy_rsl)
+    if (NOT ${gclient_copy_rsl} EQUAL 0)
+      message(FATAL "Error copying gclient config for Dawn library")
     endif ()
+  endif ()
 
-    set(ENV{DEPOT_TOOLS_WIN_TOOLCHAIN} 0)
+  if (IG_CHECK_SUBMODULES_ON_BUILD OR NOT EXISTS "${PROJECT_SOURCE_DIR}/extern/dawn/third_party/tint")
+    message(STATUS "Running depot_tools sync for Dawn deps")
     if (WIN32)
-      execute_process(
-        COMMAND cmd /C "${depot_tools_SOURCE_DIR}/gclient.bat" "sync"
-        WORKING_DIRECTORY "${dawn_SOURCE_DIR}"
-        RESULT_VARIABLE gclient_sync_rsl)
+	  execute_process(
+		  COMMAND cmd /C "${PROJECT_SOURCE_DIR}/extern/depot_tools/gclient.bat" "sync"
+		  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/extern/dawn")
     elseif (UNIX)
       execute_process(
-        COMMAND bash -c "${depot_tools_SOURCE_DIR}/gclient.py" "sync"
-        WORKING_DIRECTORY "${dawn_SOURCE_DIR}"
-        RESULT_VARIABLE gclient_sync_rsl)
+		  COMMAND bash -c "${PROJECT_SOURCE_DIR}/extern/depot_tools/gclient.py" "sync"
+		  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/extern/dawn")
     endif ()
-    if (NOT ${gclient_sync_rsl} EQUAL 0)
-      message(FATAL "Error syncing Dawn dependencies")
-    endif ()
-
-    add_subdirectory(${dawn_SOURCE_DIR} ${dawn_BINARY_DIR})
   endif ()
+
+  add_subdirectory(dawn)
 endif ()
 
 # Recast Navigation (used for navigation)
