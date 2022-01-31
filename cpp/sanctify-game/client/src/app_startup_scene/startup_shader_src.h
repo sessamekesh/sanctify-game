@@ -6,8 +6,8 @@
 namespace sanctify {
 
 constexpr char* kStartupShaderVsSrc =
-    R"([[stage(vertex)]] fn main([[builtin(vertex_index)]] VI : u32)
--> [[builtin(position)]] vec4<f32> {
+    R"(@stage(vertex) fn main(@builtin(vertex_index) VI : u32)
+-> @builtin(position) vec4<f32> {
   var pos = array<vec2<f32>, 4>(
     vec2<f32>(1., 1.),
     vec2<f32>(1., -1.),
@@ -27,7 +27,7 @@ constexpr char* kStartupShaderFsSrc = R"(struct FrameParams {
   Time: f32;
 };
 
-[[group(0), binding(0)]] var<uniform> frameParams: FrameParams;
+@group(0) @binding(0) var<uniform> frameParams: FrameParams;
 
 // https://www.iquilezles.org/www/articles/smin/smin.htm
 fn smin(a: f32, b: f32, k: f32) -> f32 {
@@ -52,10 +52,10 @@ fn ballPos(time: f32, freq: vec2<f32>, phase: vec2<f32>, radius: f32,
 }
 
 struct FragIn {
-  [[builtin(position)]] FragCoord: vec4<f32>;
+  @builtin(position) FragCoord: vec4<f32>;
 };
 
-[[stage(fragment)]] fn main(in: FragIn) -> [[location(0)]] vec4<f32> {
+@stage(fragment) fn main(in: FragIn) -> @location(0) vec4<f32> {
   let center = frameParams.Dimensions / 2.;
   let t = frameParams.Time;
   let fragCoord = in.FragCoord.xy;
