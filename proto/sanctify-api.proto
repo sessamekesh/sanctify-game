@@ -6,4 +6,14 @@ option go_package = "github.com/sessamekesh/sanctify-game/go/sanctify-api-servic
 message GameServer {
   string hostname = 1;
   int32 ws_port = 2;
+
+  string game_token = 3;
+}
+
+message GetGameServerResponse {
+  GameServer game_server = 1;
+}
+
+message GetGameServerError {
+  string error_message = 1;
 }

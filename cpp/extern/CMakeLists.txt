@@ -160,6 +160,9 @@ if (NOT EMSCRIPTEN)
   set(NO_MEDIA OFF CACHE BOOL "" FORCE)
   add_subdirectory(libdatachannel)
 
+  add_library(http-request INTERFACE)
+  target_include_directories(http-request INTERFACE "HTTPRequest/include")
+
   FetchContent_Declare(
     websocketpp
     GIT_REPOSITORY "https://github.com/zaphoyd/websocketpp"

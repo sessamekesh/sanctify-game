@@ -13,3 +13,6 @@
 [submodule "cpp/extern/entt"]
 	path = cpp/extern/entt
 	url = https://github.com/skypjack/entt
+[submodule "cpp/extern/HTTPRequest"]
+	path = cpp/extern/HTTPRequest
+	url = https://github.com/elnormous/HTTPRequest

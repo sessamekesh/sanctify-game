@@ -394,22 +394,39 @@ void WsServer::OnMessageReceivedVisitor::operator()(
             ->on_success(
                 [that, hdl,
                  playerId = token_response.playerId](const bool& is_valid) {
-                  std::unique_lock<std::shared_mutex> l(
-                      that->connection_state_lock_);
-                  auto conn_it = that->connections_.find(hdl);
-                  if (conn_it != that->connections_.end()) {
-                    if (std::holds_alternative<UnconfirmedConnection>(
-                            conn_it->second)) {
-                      that->connections_.erase(conn_it);
-                      that->connections_.emplace(std::make_pair(
-                          hdl, HealthyConnection(playerId, hrclock::now())));
+                  RawBuffer maybe_dat(nullptr, 0, false);
+                  {
+                    std::unique_lock<std::shared_mutex> l(
+                        that->connection_state_lock_);
+                    auto conn_it = that->connections_.find(hdl);
+                    if (conn_it != that->connections_.end()) {
+                      if (std::holds_alternative<UnconfirmedConnection>(
+                              conn_it->second)) {
+                        that->connections_.erase(conn_it);
+                        that->connections_.emplace(std::make_pair(
+                            hdl, HealthyConnection(playerId, hrclock::now())));
 
-                      std::unique_lock<std::shared_mutex> l2(
-                          that->connected_players_lock_);
-                      that->connected_players_.emplace(playerId, hdl);
+                        std::unique_lock<std::shared_mutex> l2(
+                            that->connected_players_lock_);
+                        that->connected_players_.emplace(playerId, hdl);
 
-                      that->on_connection_state_change_cb_(
-                          playerId, WsConnectionState::Open);
+                        that->on_connection_state_change_cb_(
+                            playerId, WsConnectionState::Open);
+
+                        pb::GameServerMessage response;
+                        response.set_magic_number(
+                            sanctify::kSanctifyMagicHeader);
+                        pb::InitialConnectionResponse* init_resp =
+                            response.mutable_initial_connection_response();
+                        init_resp->set_response_type(
+                            pb::InitialConnectionResponse_ResponseType::
+                                InitialConnectionResponse_ResponseType_ACCEPTED);
+
+                        std::string msg = response.SerializeAsString();
+
+                        that->server_.send(hdl, msg,
+                                           websocketpp::frame::opcode::binary);
+                      }
                     }
                   }
                 },

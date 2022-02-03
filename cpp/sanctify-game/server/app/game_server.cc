@@ -26,7 +26,7 @@ bool default_player_message_handler(PlayerId player_id,
   return false;
 }
 
-const float kMaxTimeBetweenUpdates = 0.05f;
+const float kMaxTimeBetweenUpdates = 60.f;
 
 }  // namespace
 

@@ -40,14 +40,17 @@ wgpu::RenderPassEncoder create_geo_pass(
 GameScene::GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
                      std::shared_ptr<IArenaCameraInput> camera_input_system,
                      TerrainShit terrain_shit, PlayerShit player_shit,
+                     std::shared_ptr<NetClient> net_client,
                      float camera_movement_speed, float fovy)
     : base_(base),
       arena_camera_(arena_camera),
       arena_camera_input_(camera_input_system),
+      net_client_(net_client),
       terrain_shit_(std::move(terrain_shit)),
       player_shit_(std::move(player_shit)),
       camera_movement_speed_(camera_movement_speed),
-      fovy_(fovy) {
+      fovy_(fovy),
+      client_clock_(0.f) {
   arena_camera_input_->attach();
 
   setup_depth_texture(base->Width, base->Height);
@@ -56,6 +59,8 @@ GameScene::GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
 GameScene::~GameScene() { arena_camera_input_->detach(); }
 
 void GameScene::update(float dt) {
+  client_clock_ += dt;
+
   ArenaCameraInputState input_state = arena_camera_input_->get_input_state();
 
   if (input_state.ScreenRightMovement != 0.f ||
@@ -68,6 +73,7 @@ void GameScene::update(float dt) {
   }
 
   // TODO (sessamekesh): Also handle camera events (click and drag) here
+  standard_target_travel_system_.update(world_, client_clock_);
 }
 
 void GameScene::render() {

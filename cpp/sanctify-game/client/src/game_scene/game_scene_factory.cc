@@ -1,4 +1,5 @@
 #include <game_scene/factory_util/build_character_geo.h>
+#include <game_scene/factory_util/build_net_client.h>
 #include <game_scene/factory_util/build_terrain_shit.h>
 #include <game_scene/game_scene_factory.h>
 #include <igasset/igpack_loader.h>
@@ -27,6 +28,8 @@ std::string sanctify::to_string(const GameSceneConstructionError& err) {
       return "TerrainShitBuildFailed";
     case GameSceneConstructionError::PlayerShitBuildFailed:
       return "PlayerShitBuildFailed";
+    case GameSceneConstructionError::NetClientBuildFailed:
+      return "NetClientBuildFailed";
   }
 
   return "UnknownError-" + std::to_string(static_cast<int>(err));
@@ -93,6 +96,10 @@ std::shared_ptr<GamePromise> GameSceneFactory::build() const {
       ybot_surface_geo_promise, ybot_joints_geo_promise, main_thread_task_list_,
       async_task_list_);
 
+  // TODO (sessamekesh): Remove this hardcoded URL base
+  auto net_client_promise =
+      ::build_net_client("http://localhost:8080", async_task_list_);
+
   //
   // Create combiner and wrangle together parameter inputs (use util files for
   //  most of these to prevent cluttering this file
@@ -100,9 +107,10 @@ std::shared_ptr<GamePromise> GameSceneFactory::build() const {
   auto combiner = PromiseCombiner::Create();
   auto terrain_shit_key = combiner->add(terrain_shit_promise, async_task_list_);
   auto player_shit_key = combiner->add(player_shit_promise, async_task_list_);
+  auto net_client_key = combiner->add(net_client_promise, async_task_list_);
 
   return combiner->combine()->then<GamePromiseRsl>(
-      [base, terrain_shit_key, player_shit_key](
+      [base, terrain_shit_key, player_shit_key, net_client_key](
           const PromiseCombiner::PromiseCombinerResult& rsl) -> GamePromiseRsl {
         //
         // Extract intermediate results
@@ -111,6 +119,8 @@ std::shared_ptr<GamePromise> GameSceneFactory::build() const {
             rsl.move(terrain_shit_key);
         Maybe<GameScene::PlayerShit> player_shit_rsl =
             rsl.move(player_shit_key);
+        Maybe<std::shared_ptr<NetClient>> net_client_rsl =
+            rsl.move(net_client_key);
 
         core::PodVector<GameSceneConstructionError> result_extract_errors;
         if (terrain_shit_rsl.is_empty()) {
@@ -120,6 +130,10 @@ std::shared_ptr<GamePromise> GameSceneFactory::build() const {
         if (player_shit_rsl.is_empty()) {
           result_extract_errors.push_back(
               GameSceneConstructionError::PlayerShitBuildFailed);
+        }
+        if (net_client_rsl.is_empty()) {
+          result_extract_errors.push_back(
+              GameSceneConstructionError::NetClientBuildFailed);
         }
         if (result_extract_errors.size() > 0) {
           return right(std::move(result_extract_errors));
@@ -135,9 +149,10 @@ std::shared_ptr<GamePromise> GameSceneFactory::build() const {
         std::shared_ptr<IArenaCameraInput> arena_camera_input =
             ArenaCameraMouseInputListener::Create(base->Window);
 
-        return left(std::shared_ptr<GameScene>(new GameScene(
-            base, arena_camera, arena_camera_input, terrain_shit_rsl.move(),
-            player_shit_rsl.move(), 0.8f, glm::radians(40.f))));
+        return left(std::shared_ptr<GameScene>(
+            new GameScene(base, arena_camera, arena_camera_input,
+                          terrain_shit_rsl.move(), player_shit_rsl.move(),
+                          net_client_rsl.get(), 0.8f, glm::radians(40.f))));
       },
       async_task_list_);
 }

@@ -3,12 +3,16 @@
 
 #include <iggpu/texture.h>
 #include <io/arena_camera_controller/arena_camera_input.h>
+#include <netclient/net_client.h>
 #include <render/camera/arena_camera.h>
 #include <render/solid_animated/solid_animated_pipeline.h>
 #include <render/terrain/terrain_geo.h>
 #include <render/terrain/terrain_pipeline.h>
+#include <sanctify-game-common/gameplay/standard_target_travel_system.h>
 #include <scene_base.h>
 #include <webgpu/webgpu_cpp.h>
+
+#include <entt/entt.hpp>
 
 namespace sanctify {
 
@@ -47,7 +51,8 @@ class GameScene : public ISceneBase {
   GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
             std::shared_ptr<IArenaCameraInput> camera_input_system,
             TerrainShit terrain_shit, PlayerShit player_shit,
-            float camera_movement_speed, float fovy);
+            std::shared_ptr<NetClient> net_client, float camera_movement_speed,
+            float fovy);
   ~GameScene();
 
   // ISceneBase
@@ -75,6 +80,14 @@ class GameScene : public ISceneBase {
   // dealing with Lua, and might as well put in some simple AABB/frustum culling
   TerrainShit terrain_shit_;
   PlayerShit player_shit_;
+
+  std::shared_ptr<NetClient> net_client_;
+
+  // Game state...
+  entt::registry world_;
+  entt::entity self_entity_;
+  system::StandardTargetTravelSystem standard_target_travel_system_;
+  float client_clock_;
 };
 
 }  // namespace sanctify

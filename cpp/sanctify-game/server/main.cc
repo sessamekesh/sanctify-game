@@ -51,9 +51,11 @@ int main(int argc, const char** argv) {
     return -1;
   }
 
+  // TODO (sessamekesh): inject this
+  uint32_t ws_port = 9001u;
   std::shared_ptr<NetServer> net_server =
       NetServer::Create(async_task_list, game_token_exchanger, event_scheduler,
-                        35000u, 9001u, allow_json_messages);
+                        35000u, ws_port, allow_json_messages);
 
   std::shared_ptr<GameServer> game_server = std::make_shared<GameServer>();
 

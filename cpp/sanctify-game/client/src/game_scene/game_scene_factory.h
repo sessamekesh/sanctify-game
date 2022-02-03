@@ -6,6 +6,9 @@
 #include <igasync/task_list.h>
 #include <igcore/either.h>
 
+// TODO (sessamekesh): Game scene factory should reach out to the API for the
+//  information about a game server to connect with
+
 namespace sanctify {
 
 enum class GameSceneConstructionError {
@@ -14,6 +17,7 @@ enum class GameSceneConstructionError {
 
   TerrainShitBuildFailed,
   PlayerShitBuildFailed,
+  NetClientBuildFailed,
 };
 
 using GamePromiseRsl =

@@ -9,9 +9,14 @@ import (
 
 func GetGameserverAddress(c *gin.Context) {
 	gameserver := &model.GameServer{
-		Hostname: "localhost",
-		WsPort:   9001,
+		Hostname:  "localhost",
+		WsPort:    9001,
+		GameToken: "test-token",
 	}
 
-	c.JSON(http.StatusOK, gameserver)
+	resp := &model.GetGameServerResponse{
+		GameServer: gameserver,
+	}
+
+	c.JSON(http.StatusOK, resp)
 }
