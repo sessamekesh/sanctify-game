@@ -171,8 +171,6 @@ class WsServer : public std::enable_shared_from_this<WsServer> {
            std::shared_ptr<IGameTokenExchanger> token_exchanger,
            uint32_t unconfirmed_connection_timeout_ms);
 
-  void upgrade_connection(websocketpp::connection_hdl hdl, PlayerId player);
-
   ConnectPlayerPromiseFn player_connection_verify_function_;
   ReceiveMessageFromPlayerFn on_message_cb_;
   OnConnectionStateChangeFn on_connection_state_change_cb_;

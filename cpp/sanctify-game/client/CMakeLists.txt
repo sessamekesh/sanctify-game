@@ -88,7 +88,7 @@ else ()
 endif ()
 
 add_executable(sanctify-game-client ${header_list} ${src_list} ${platform_src_list})
-target_link_libraries(sanctify-game-client PUBLIC igasync igplatform igcore iggpu)
+target_link_libraries(sanctify-game-client PUBLIC igasync igplatform igcore iggpu sanctify-game-common)
 target_include_directories(sanctify-game-client PRIVATE platform_src src)
 
 # IGPack dependencies

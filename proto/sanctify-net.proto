@@ -34,6 +34,51 @@ message InitialConnectionResponse {
   // TODO (sessamekesh): enumerate which resources the client should preload
 }
 
+//
+// Gameplay messages (client events)
+//
+
+// Message that gets sent when the player presses a location on the map to travel to
+message TravelToLocationRequest {
+  float x = 1;
+  float y = 2;
+}
+
+message MapPosition {
+  float x = 1;
+  float y = 2;
+}
+
+//
+// Gameplay State Updates (server events)
+//
+message PlayerLocomotionState {
+  TravelToLocationRequest target_location = 1;
+  float speed = 2;
+}
+
+message PlayerSingleState {
+  oneof msg_body {
+    MapPosition current_position = 1;
+    PlayerLocomotionState locomotion_state = 2;
+  }
+}
+
+message PlayerStateUpdate {
+  int32 player_id = 1;
+  repeated PlayerSingleState player_states = 2;
+}
+
+message GameServerSingleMessage {
+  oneof msg_body {
+    PlayerStateUpdate player_state_update = 1;
+  }
+}
+
+message GameServerActionsList {
+  repeated GameServerSingleMessage messages = 1;
+}
+
 /*********************************************************
  * Union of all messages that a server can send to a client
  *********************************************************/
@@ -43,17 +88,29 @@ message GameServerMessage {
 
   oneof msg_body {
     InitialConnectionResponse initial_connection_response = 2;
+    GameServerActionsList actions_list = 3;
   }
 }
 
 /***********************************************************
  * Union of all messages that a client can send to a server
  **********************************************************/
+message GameClientSingleMessage {
+  oneof msg_body {
+    TravelToLocationRequest travel_to_location_request = 1;
+  }
+}
+
+message GameClientActionsList {
+  repeated GameClientSingleMessage actions = 1;
+}
+
 message GameClientMessage {
   // Magic number that verifies that this is a valid GameClientMessage
   uint32 magic_header = 1;
 
   oneof msg_body {
     InitialConnectionRequest initial_connection_request = 2;
+    GameClientActionsList game_client_actions_list = 3;
   }
 }

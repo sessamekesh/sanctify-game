@@ -5,17 +5,21 @@ add_proto_lib(
 )
 
 set (header_list
+  "include/sanctify-game-common/gameplay/locomotion_components.h"
+  "include/sanctify-game-common/gameplay/standard_target_travel_system.h"
   "include/sanctify-game-common/net/net_config.h"
   "include/sanctify-game-common/net/reliable.h")
 
 set (src_list
+  "src/gameplay/locomotion_components.cc"
+  "src/gameplay/standard_target_travel_system.cc"
   "src/net/net_config.cc"
   "src/net/reliable.cc")
 
 add_library(sanctify-game-common STATIC ${header_list} ${src_list})
 
 target_include_directories(sanctify-game-common PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(sanctify-game-common PUBLIC igcore glm sanctify_net_proto)
+target_link_libraries(sanctify-game-common PUBLIC igcore glm sanctify_net_proto EnTT::EnTT)
 
 if (EMSCRIPTEN)
   set_wasm_target_properties(TARGET_NAME sanctify_net_proto AS_LIB 1)

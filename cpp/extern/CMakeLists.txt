@@ -168,6 +168,12 @@ if (NOT EMSCRIPTEN)
   FetchContent_MakeAvailable(websocketpp)
 endif ()
 
+# EnTT (Entity Component System library that powers core game logic)
+if (MSVC)
+  set(ENTT_INCLUDE_NATVIS OFF CACHE BOOL "" FORCE)
+endif ()
+add_subdirectory(entt)
+
 if (EMSCRIPTEN)
   set_wasm_target_properties(TARGET_NAME libprotobuf AS_LIB 1)
   set_wasm_target_properties(TARGET_NAME Recast AS_LIB 1)

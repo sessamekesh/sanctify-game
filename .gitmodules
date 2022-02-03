@@ -10,3 +10,6 @@
 [submodule "cpp/extern/depot_tools"]
 	path = cpp/extern/depot_tools
 	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git
+[submodule "cpp/extern/entt"]
+	path = cpp/extern/entt
+	url = https://github.com/skypjack/entt

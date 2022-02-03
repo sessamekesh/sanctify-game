@@ -116,6 +116,10 @@ WsServer::configure_and_start_server() {
         _this->async_task_list_,
         [rsl_promise]() { rsl_promise->resolve(empty_maybe()); });
 
+    Logger::log(kLogLabel)
+        << "Successfully configured WebSocket server - starting loop on thread "
+        << std::this_thread::get_id();
+
     // Start the server!
     _this->server_.run();
   });
@@ -337,13 +341,20 @@ void WsServer::OnMessageReceivedVisitor::operator()(
 
   if (!client_msg.ParseFromString(msg->get_payload())) {
     if (server->allow_json_messages_) {
-      google::protobuf::util::JsonParseOptions options;
-      options.ignore_unknown_fields = false;
-      if (!google::protobuf::util::JsonStringToMessage(msg->get_payload(),
-                                                       &client_msg)
-               .ok()) {
+      auto rsl = google::protobuf::util::JsonStringToMessage(msg->get_payload(),
+                                                             &client_msg);
+      if (!rsl.ok()) {
+        Logger::log(kLogLabel)
+            << "Received player message matched neither BINARY or JSON format "
+               "parsing failed as well - "
+            << rsl.message();
         return;
       }
+    } else {
+      Logger::log(kLogLabel)
+          << "Received WS message from new player did not fit "
+             "the GameClientMessage structure";
+      return;
     }
   }
 
@@ -392,6 +403,13 @@ void WsServer::OnMessageReceivedVisitor::operator()(
                       that->connections_.erase(conn_it);
                       that->connections_.emplace(std::make_pair(
                           hdl, HealthyConnection(playerId, hrclock::now())));
+
+                      std::unique_lock<std::shared_mutex> l2(
+                          that->connected_players_lock_);
+                      that->connected_players_.emplace(playerId, hdl);
+
+                      that->on_connection_state_change_cb_(
+                          playerId, WsConnectionState::Open);
                     }
                   }
                 },

@@ -38,6 +38,20 @@ NetServer::configure_and_start() {
       [that](const PlayerId& player, RawBuffer data) -> bool {
         return that->on_message_cb_(player, std::move(data));
       });
+  ws_server_->set_on_connection_state_change(
+      [that](const PlayerId& player_id, WsServer::WsConnectionState state) {
+        if (state == WsServer::WsConnectionState::Closed) {
+          that->on_player_state_change_(player_id,
+                                        PlayerConnectionState::Disconnected);
+          return;
+        }
+
+        if (state == WsServer::WsConnectionState::Open) {
+          that->on_player_state_change_(player_id,
+                                        PlayerConnectionState::ConnectedBasic);
+          return;
+        }
+      });
 
   return ws_server_->configure_and_start_server()
       ->then<indigo::core::Either<std::shared_ptr<NetServer>,
@@ -63,6 +77,7 @@ NetServer::configure_and_start() {
               return right(std::move(errors));
             }
 
+            Logger::log(kLogLabel) << "NetServer started!";
             return left(that);
           },
           async_task_list_);

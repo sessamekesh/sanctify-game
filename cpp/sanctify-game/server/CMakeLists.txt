@@ -7,17 +7,22 @@ find_package(Boost 1.67 REQUIRED COMPONENTS system thread)
 
 set(header_list
   "app/game_server.h"
+  "app/net_events.h"
+  "app/net_components.h"
   "net/build_game_token_exchanger.h"
   "net/dummy_game_token_exchanger.h"
   "net/igametokenexchanger.h"
   "net/net_server.h"
   "net/ws_server.h"
   "util/cli.h"
+  "util/concurrentqueue.h"
   "util/event_scheduler.h"
-  "util/types.h")
+  "util/types.h"
+  "util/visit.h")
 
 set(src_list
   "app/game_server.cc"
+  "app/net_events.cc"
   "net/build_game_token_exchanger.cc"
   "net/dummy_game_token_exchanger.cc"
   "net/igametokenexchanger.cc"
