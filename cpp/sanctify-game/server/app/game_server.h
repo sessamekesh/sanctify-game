@@ -23,7 +23,7 @@ namespace sanctify {
 class GameServer : public std::enable_shared_from_this<GameServer> {
  public:
   using PlayerMessageCallback =
-      std::function<bool(PlayerId, sanctify::pb::GameServerMessage)>;
+      std::function<void(PlayerId, sanctify::pb::GameServerMessage)>;
 
  public:
   // Initialization

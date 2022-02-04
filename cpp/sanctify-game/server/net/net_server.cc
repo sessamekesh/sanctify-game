@@ -23,8 +23,6 @@ std::shared_ptr<NetServer> NetServer::Create(
       allow_json_messages, websocket_port, async_task_list, event_scheduler,
       game_token_exchanger, unconfirmed_connection_timeout_ms);
 
-  ws_server->set_on_message_callback(nullptr);
-
   return std::shared_ptr<NetServer>(new NetServer(ws_server, async_task_list));
 }
 
@@ -35,11 +33,13 @@ NetServer::configure_and_start() {
   ws_server_->set_player_connection_verify_fn(
       player_connection_verify_function_);
   ws_server_->set_on_message_callback(
-      [that](const PlayerId& player, RawBuffer data) -> bool {
-        return that->on_message_cb_(player, std::move(data));
+      [that](const PlayerId& player, pb::GameClientMessage data) {
+        that->on_message_cb_(player, std::move(data));
       });
   ws_server_->set_on_connection_state_change(
       [that](const PlayerId& player_id, WsServer::WsConnectionState state) {
+        // TODO(sessamekesh): Improve this logic when WebRTC support is present
+        // as well
         if (state == WsServer::WsConnectionState::Closed) {
           that->on_player_state_change_(player_id,
                                         PlayerConnectionState::Disconnected);
@@ -84,13 +84,18 @@ NetServer::configure_and_start() {
 }
 
 void NetServer::send_message(const PlayerId& player_id,
-                             const indigo::core::RawBuffer& data) {
-  ws_server_->send_message(player_id, data);
+                             pb::GameServerMessage msg) {
+  auto that = shared_from_this();
+  async_task_list_->add_task(
+      Task::of([this, that, msg = std::move(msg), player_id]() {
+        std::string raw = msg.SerializeAsString();
+        ws_server_->send_message(player_id, raw);
+      }));
 }
 
 void NetServer::kick_player(const PlayerId& player_id) {
   // TODO (sessamekesh): Add this player to the "forbidden/kicked" list.
-  ws_server_->disconnect_websocket(player_id);
+  ws_server_->kick_player(player_id);
 }
 
 void NetServer::set_player_connection_verify_fn(
@@ -116,7 +121,7 @@ void NetServer::set_health_check_parameters(float health_ping_time_s,
   //  underlying connection
 }
 
-void NetServer::shutdown() { ws_server_->shutdown_server(); }
+void NetServer::shutdown() { ws_server_->shutdown(); }
 
 std::string sanctify::to_string(const NetServer::ServerCreateError& err) {
   switch (err) {

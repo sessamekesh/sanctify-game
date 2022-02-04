@@ -64,32 +64,8 @@ int main(int argc, const char** argv) {
   //
   net_server->set_on_message_callback(
       [game_server, allow_json_messages](const PlayerId& player,
-                                         indigo::core::RawBuffer data) -> bool {
-        size_t prefix_size = std::min<size_t>(data.size(), 24);
-        std::string prefix(prefix_size, '\0');
-        memcpy(&prefix[0], data.get(), prefix_size);
-        Logger::log("game_msg")
-            << "Player: " << player.Id << ", message: " << prefix;
-
-        pb::GameClientMessage msg;
-        if (msg.ParseFromArray(data.get(), data.size())) {
-          game_server->receive_message_for_player(player, std::move(msg));
-          return true;
-        }
-
-        if (allow_json_messages) {
-          std::string json_string;
-          json_string.resize(data.size(), '.');
-          memcpy(&json_string[0], data.get(), data.size());
-          auto status =
-              google::protobuf::util::JsonStringToMessage(json_string, &msg);
-          if (status.ok()) {
-            game_server->receive_message_for_player(player, std::move(msg));
-            return true;
-          }
-        }
-
-        return false;
+                                         pb::GameClientMessage data) {
+        game_server->receive_message_for_player(player, std::move(data));
       });
   net_server->set_player_connection_verify_fn(
       [game_server](
@@ -100,15 +76,7 @@ int main(int argc, const char** argv) {
   game_server->set_player_message_receiver(
       [net_server, async_task_list](PlayerId player_id,
                                     pb::GameServerMessage message) {
-        async_task_list->add_task(
-            Task::of([net_server, player_id, message = std::move(message)]() {
-              size_t msg_size = message.ByteSize();
-              RawBuffer raw(msg_size);
-              if (message.SerializeToArray(raw.get(), msg_size)) {
-                net_server->send_message(player_id, raw);
-              }
-            }));
-        return true;
+        net_server->send_message(player_id, std::move(message));
       });
   net_server->set_on_state_change_callback(
       [game_server](const PlayerId& player_id,

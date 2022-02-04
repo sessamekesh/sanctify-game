@@ -4,6 +4,7 @@ configure_file(
 
 set (HEADER_LIST
   "include/igcore/any.h"
+  "include/igcore/bimap.h"
   "include/igcore/dirtyable.h"
   "include/igcore/either.h"
   "include/igcore/fps_meter.h"
@@ -52,6 +53,7 @@ endif ()
 
 if (IG_BUILD_TESTS)
   set(TEST_SRC_LIST
+    "test/bimap_test.cc"
     "test/either_test.cc"
     "test/maybe_test.cc")
   

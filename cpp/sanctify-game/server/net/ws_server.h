@@ -2,9 +2,12 @@
 #define SANCTIFY_GAME_SERVER_NET_WS_SERVER_H
 
 #include <igasync/promise.h>
+#include <igcore/bimap.h>
 #include <igcore/either.h>
+#include <igcore/maybe.h>
 #include <igcore/pod_vector.h>
 #include <net/igametokenexchanger.h>
+#include <sanctify-game-common/proto/sanctify-net.pb.h>
 #include <util/event_scheduler.h>
 
 #include <map>
@@ -40,7 +43,7 @@ class WsServer : public std::enable_shared_from_this<WsServer> {
       std::function<std::shared_ptr<indigo::core::Promise<bool>>(
           const GameId&, const PlayerId&)>;
   using ReceiveMessageFromPlayerFn =
-      std::function<bool(const PlayerId&, indigo::core::RawBuffer)>;
+      std::function<void(const PlayerId&, pb::GameClientMessage)>;
   using OnConnectionStateChangeFn =
       std::function<void(const PlayerId&, WsConnectionState)>;
 
@@ -51,80 +54,6 @@ class WsServer : public std::enable_shared_from_this<WsServer> {
   // Helpful shorthands...
   using WSServer = websocketpp::server<websocketpp::config::asio>;
   using WSMsgPtr = WSServer::message_ptr;
-
- private:
-  // Possible internal connection states (informs how messages are processed...)
-  struct UnconfirmedConnection {
-    UnconfirmedConnection(const UnconfirmedConnection&) = default;
-    UnconfirmedConnection& operator=(const UnconfirmedConnection&) = default;
-    UnconfirmedConnection(UnconfirmedConnection&&) = default;
-    UnconfirmedConnection& operator=(UnconfirmedConnection&&) = default;
-
-    std::chrono::high_resolution_clock::time_point ConnectionMadeTime;
-    indigo::core::Maybe<std::chrono::high_resolution_clock::time_point>
-        TokenReceivedTime;
-  };
-
-  // TODO (sessamekesh): move this to a class since it has locking primitives
-  // (should do that for other connection types too)
-  struct HealthyConnection {
-    HealthyConnection(PlayerId player_id,
-                      std::chrono::high_resolution_clock::time_point now)
-        : playerId(player_id),
-          ConnectionEstablishedTime(now),
-          LastMessageSentTime(now) {}
-
-    std::chrono::high_resolution_clock::time_point ConnectionEstablishedTime;
-
-    std::shared_mutex last_message_sent_time_lock_;
-    std::chrono::high_resolution_clock::time_point LastMessageSentTime;
-
-    PlayerId playerId;
-
-    HealthyConnection(HealthyConnection&&) = default;
-    HealthyConnection& operator=(HealthyConnection&&) = default;
-
-    HealthyConnection(const HealthyConnection& o);
-    HealthyConnection& operator=(const HealthyConnection&);
-  };
-
-  struct OnMessageReceivedVisitor {
-    websocketpp::connection_hdl hdl;
-    WsServer* server;
-    WSMsgPtr msg;
-
-    void operator()(UnconfirmedConnection& conn);
-    void operator()(HealthyConnection& conn);
-  };
-
-  struct OnConnectionDeadlineReachedVisitor {
-    enum class Action { NoOp, Disconnect };
-
-    websocketpp::connection_hdl hdl;
-
-    Action operator()(const UnconfirmedConnection& conn);
-    Action operator()(const HealthyConnection& conn);
-  };
-
-  struct SendGameMessageVisitor {
-    websocketpp::connection_hdl hdl;
-    WSServer* server;
-    const indigo::core::RawBuffer* const data;
-    websocketpp::frame::opcode::value op_code;
-
-    void operator()(UnconfirmedConnection& conn);
-    void operator()(HealthyConnection& conn);
-  };
-
-  struct DisconnectWsVisitor {
-    WsServer* server;
-
-    void operator()(UnconfirmedConnection& conn);
-    void operator()(HealthyConnection& conn);
-  };
-
-  using ConnectionState =
-      std::variant<UnconfirmedConnection, HealthyConnection>;
 
  public:
   static std::shared_ptr<WsServer> Create(
@@ -138,10 +67,9 @@ class WsServer : public std::enable_shared_from_this<WsServer> {
   //
   // Public API
   //
-  void send_message(const PlayerId& player_id,
-                    const indigo::core::RawBuffer& data);
-  void disconnect_websocket(const PlayerId& player_id);
-  void shutdown_server();
+  void send_message(const PlayerId& player_id, std::string data);
+  void kick_player(const PlayerId& player_id);
+  void shutdown();
 
   //
   // Receivers
@@ -175,6 +103,9 @@ class WsServer : public std::enable_shared_from_this<WsServer> {
   ReceiveMessageFromPlayerFn on_message_cb_;
   OnConnectionStateChangeFn on_connection_state_change_cb_;
 
+  indigo::core::Maybe<pb::GameClientMessage> parse_msg(
+      const std::string& payload) const;
+
   WSServer server_;
   std::thread server_listener_thread_;
   bool allow_json_messages_;
@@ -184,15 +115,39 @@ class WsServer : public std::enable_shared_from_this<WsServer> {
   std::shared_ptr<EventScheduler> event_scheduler_;
   std::shared_ptr<IGameTokenExchanger> token_exchanger_;
 
+  //
   // Internals
-  std::shared_mutex connection_state_lock_;
-  std::map<websocketpp::connection_hdl, ConnectionState,
-           std::owner_less<websocketpp::connection_hdl>>
-      connections_;
-  std::chrono::high_resolution_clock::duration unconfirmed_connection_timeout_;
+  //
 
-  std::shared_mutex connected_players_lock_;
-  std::map<PlayerId, websocketpp::connection_hdl> connected_players_;
+  // New connections: These are connections that have been opened, and are
+  // waiting for the client to send a connection request. They will be deleted
+  // if an invalid message is received from the client, or if they take too long
+  // to send a connection request.
+  // Key: connection. Value: cancel token for EventScheduler that kicks them
+  std::shared_mutex mut_new_connections_;
+  std::map<websocketpp::connection_hdl, uint32_t,
+           std::owner_less<websocketpp::connection_hdl>>
+      new_connections_;
+
+  // Pending confirmation connections: These are connections that have sent
+  // a connection request, but the response from the Game API has not finished
+  // yet. They have a longer timeout.
+  // Key: connection. Value: cancel token for EventScheduler that kicks them
+  std::shared_mutex mut_pending_confirmation_connections_;
+  std::map<websocketpp::connection_hdl, uint32_t,
+           std::owner_less<websocketpp::connection_hdl>>
+      pending_confirmation_connections_;
+
+  // Confirmed connections - these have gone through the full connection flow
+  // and are associated with a specific player.
+  std::shared_mutex mut_player_connections_;
+  indigo::core::Bimap<PlayerId, websocketpp::connection_hdl,
+                      std::less<PlayerId>,
+                      std::owner_less<websocketpp::connection_hdl>>
+      player_connections_;
+
+  // Logistics
+  std::chrono::high_resolution_clock::duration unconfirmed_connection_timeout_;
 };
 
 std::string to_string(WsServer::WsServerCreateError);

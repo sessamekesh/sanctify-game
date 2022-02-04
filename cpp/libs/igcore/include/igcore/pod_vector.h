@@ -7,9 +7,9 @@
 
 #include <cassert>
 #include <cstdint>
+#include <cstring>
 #include <memory>
 #include <vector>
-#include <cstring>
 
 namespace indigo::core {
 
@@ -28,7 +28,7 @@ namespace indigo::core {
  * - Instances of T must be trivially created, copied, moved, and destroyed
  */
 
-template<typename T>
+template <typename T>
 class PodVector : public IVec<T> {
  public:
   // Notice: Allocations are done using raw byte type instead of T*, this is
@@ -129,7 +129,7 @@ class PodVector : public IVec<T> {
    * predicate function, transformed using the given transformation function.
    * New vector is populated via copy - type T must be copyable.
    */
-  template<typename ReturnType, typename FilterFn, typename MapFn>
+  template <typename ReturnType, typename FilterFn, typename MapFn>
   PodVector<ReturnType> map_filter(FilterFn predicate, MapFn transform) const {
     PodVector<ReturnType> r;
     for (size_t i = 0; i < this->size_; i++) {
@@ -146,7 +146,7 @@ class PodVector : public IVec<T> {
    * predicate function. New vector is populated via copy - type T must be
    * copyable.
    */
-  template<typename FilterFn>
+  template <typename FilterFn>
   PodVector<T> filter(FilterFn predicate) const {
     PodVector<T> r;
     for (size_t i = 0; i < this->size_; i++) {
@@ -163,7 +163,7 @@ class PodVector : public IVec<T> {
    * to the list of elements in this vector, after a transformation function is
    * applied to it.
    */
-  template<typename ReturnType, typename MapFn>
+  template <typename ReturnType, typename MapFn>
   PodVector<ReturnType> map(MapFn transform) const {
     PodVector<ReturnType> r;
     for (size_t i = 0; i < this->size_; i++) {
@@ -205,7 +205,7 @@ class PodVector : public IVec<T> {
       return;
     }
 
-    uint32_t old_size = this->capacity_;
+    uint32_t old_size = (uint32_t)this->capacity_;
     while (size >= this->capacity_) {
       if (this->capacity_ < 256) {
         this->capacity_ *= 2;
@@ -219,7 +219,8 @@ class PodVector : public IVec<T> {
     uint8_t *old = this->data_;
     this->data_ = new uint8_t[this->capacity_ * sizeof(T)];
     if (old) {
-      memcpy(reinterpret_cast<void *>(this->data_), reinterpret_cast<void *>(old), old_size * sizeof(T));
+      memcpy(reinterpret_cast<void *>(this->data_),
+             reinterpret_cast<void *>(old), old_size * sizeof(T));
 #ifdef IG_ZERO_NEW_ALLOCATIONS
       memset(this->data_ + old_size * sizeof(T), 0x00,
              (this->capacity_ - old_size) * sizeof(T));

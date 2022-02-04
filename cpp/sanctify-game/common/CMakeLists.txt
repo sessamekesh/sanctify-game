@@ -6,12 +6,14 @@ add_proto_lib(
 
 set (header_list
   "include/sanctify-game-common/gameplay/locomotion_components.h"
+  "include/sanctify-game-common/gameplay/net_sync_components.h"
   "include/sanctify-game-common/gameplay/standard_target_travel_system.h"
   "include/sanctify-game-common/net/net_config.h"
   "include/sanctify-game-common/net/reliable.h")
 
 set (src_list
   "src/gameplay/locomotion_components.cc"
+  "src/gameplay/net_sync_components.cc"
   "src/gameplay/standard_target_travel_system.cc"
   "src/net/net_config.cc"
   "src/net/reliable.cc")

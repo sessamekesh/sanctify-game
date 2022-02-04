@@ -21,12 +21,33 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
     InvalidConfigurationError,
   };
 
+  /** What is the connection state for a given player ID? */
   enum class PlayerConnectionState {
-    /** Player is disconnecte */
+    // This player is not, and has not ever been, registered against the system.
+    Unknown,
+
+    // Connected via WebSocket - messages can be sent/received, but the
+    // connection may suffer from latency issues
     ConnectedBasic,
+
+    // Connected via WebRTC - messages will have nice latency characteristics,
+    // but will scale poorly with large sizes due to fragmentation/reassembly
+    // and increased risk of packet loss affecting a fragment
     ConnectedPreferred,
+
+    // No connection is active - the player has been previously registered, but
+    // has disconnected for some reason. They may attempt a re-connect in the
+    // future.
     Disconnected,
+
+    // The connection is unhealthy - messages have not been received in a long
+    // while, and it is suspected that the connection will be dropped. Reduce
+    // the frequency of sending messages - the player will want current data
+    // when they reconnect, but stuffing the queue is just wasing resources.
     Unhealthy,
+
+    // This player has been actively booted, and will never be allowed on this
+    // game server again. This is reserved for future use.
     Forbidden,
   };
 
@@ -36,7 +57,7 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
       std::function<std::shared_ptr<indigo::core::Promise<bool>>(
           const GameId&, const PlayerId&)>;
   using ReceiveMessageFromPlayerFn =
-      std::function<bool(const PlayerId&, indigo::core::RawBuffer)>;
+      std::function<void(const PlayerId&, pb::GameClientMessage)>;
   using OnPlayerConnectionStateChangeFn =
       std::function<void(const PlayerId&, PlayerConnectionState)>;
 
@@ -57,8 +78,7 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
   //
   // Public API
   //
-  void send_message(const PlayerId& player_id,
-                    const indigo::core::RawBuffer& data);
+  void send_message(const PlayerId& player_id, pb::GameServerMessage data);
   void kick_player(const PlayerId& player_id);
   void shutdown();
 
@@ -77,15 +97,25 @@ class NetServer : public std::enable_shared_from_this<NetServer> {
                                    float time_to_health_restore_s);
 
  private:
+  struct PlayerState {
+    PlayerConnectionState connectionState;
+  };
+
   NetServer(std::shared_ptr<WsServer> ws_server,
             std::shared_ptr<indigo::core::TaskList> async_task_list);
 
+  // Callbacks
   ConnectPlayerPromiseFn player_connection_verify_function_;
   ReceiveMessageFromPlayerFn on_message_cb_;
   OnPlayerConnectionStateChangeFn on_player_state_change_;
 
-  // TODO (sessamekesh) RTC server
+  // Connection state
+  std::shared_mutex player_state_m_;
+  std::map<PlayerId, PlayerState> player_state_;
+
+  // Scheduling + servers
   std::shared_ptr<indigo::core::TaskList> async_task_list_;
+  std::shared_ptr<EventScheduler> event_scheduler_;
   std::shared_ptr<WsServer> ws_server_;
 };
 
