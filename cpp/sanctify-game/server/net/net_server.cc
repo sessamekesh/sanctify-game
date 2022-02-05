@@ -88,8 +88,7 @@ void NetServer::send_message(const PlayerId& player_id,
   auto that = shared_from_this();
   async_task_list_->add_task(
       Task::of([this, that, msg = std::move(msg), player_id]() {
-        std::string raw = msg.SerializeAsString();
-        ws_server_->send_message(player_id, raw);
+        ws_server_->send_message(player_id, std::move(msg));
       }));
 }
 

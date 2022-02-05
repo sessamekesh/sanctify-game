@@ -17,6 +17,7 @@ set(header_list
   "util/cli.h"
   "util/concurrentqueue.h"
   "util/event_scheduler.h"
+  "util/server_clock.h"
   "util/types.h"
   "util/visit.h")
 
@@ -29,6 +30,7 @@ set(src_list
   "net/net_server.cc"
   "net/ws_server.cc"
   "util/event_scheduler.cc"
+  "util/server_clock.cc"
   "main.cc")
 
 add_executable(sanctify-game-server ${header_list} ${src_list})

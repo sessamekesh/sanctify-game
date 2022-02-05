@@ -3,6 +3,7 @@
 
 #include <app/net_events.h>
 #include <igasync/promise.h>
+#include <net/net_server.h>
 #include <sanctify-game-common/gameplay/standard_target_travel_system.h>
 #include <sanctify-game-common/proto/sanctify-net.pb.h>
 #include <util/concurrentqueue.h>
@@ -25,6 +26,12 @@ class GameServer : public std::enable_shared_from_this<GameServer> {
   using PlayerMessageCallback =
       std::function<void(PlayerId, sanctify::pb::GameServerMessage)>;
 
+  struct ConnectedPlayerState {
+    PlayerId playerId;
+    entt::entity playerEntity;
+    NetServer::PlayerConnectionState netState;
+  };
+
  public:
   // Initialization
   GameServer();
@@ -38,6 +45,9 @@ class GameServer : public std::enable_shared_from_this<GameServer> {
   void receive_message_for_player(PlayerId player_id,
                                   sanctify::pb::GameClientMessage client_msg);
   void set_player_message_receiver(PlayerMessageCallback cb);
+  void set_player_connection_state(
+      const PlayerId& player_id,
+      NetServer::PlayerConnectionState connection_state);
 
   std::shared_ptr<indigo::core::Promise<bool>> try_connect_player(
       const PlayerId& player_id);
@@ -72,7 +82,10 @@ class GameServer : public std::enable_shared_from_this<GameServer> {
 
   entt::registry world_;
   system::StandardTargetTravelSystem standard_target_travel_system_;
-  std::unordered_map<PlayerId, entt::entity, PlayerIdHashFn> player_entities_;
+
+  std::shared_mutex mut_connected_players_;
+  std::unordered_map<PlayerId, ConnectedPlayerState, PlayerIdHashFn>
+      connected_players_;
 
   moodycamel::ConcurrentQueue<std::pair<PlayerId, pb::GameClientMessage>>
       message_queue_;

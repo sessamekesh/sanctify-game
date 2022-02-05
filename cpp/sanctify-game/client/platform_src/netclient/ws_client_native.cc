@@ -56,7 +56,9 @@ void WsClientNative::send_raw_msg(std::string raw_msg) {
   rtc::binary bin_msg;
   bin_msg.resize(raw_msg.size());
   memcpy(&bin_msg[0], &raw_msg[0], raw_msg.size());
-  ws_.send(std::move(bin_msg));
+  if (ws_.isOpen()) {
+    ws_.send(std::move(bin_msg));
+  }
 }
 
 void WsClientNative::destroy_connection() {

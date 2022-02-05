@@ -26,7 +26,28 @@ bool default_player_message_handler(PlayerId player_id,
   return false;
 }
 
-const float kMaxTimeBetweenUpdates = 60.f;
+bool is_receptive_net_state(NetServer::PlayerConnectionState state) {
+  switch (state) {
+    case NetServer::PlayerConnectionState::ConnectedBasic:
+    case NetServer::PlayerConnectionState::ConnectedPreferred:
+      return true;
+
+    default:
+      return false;
+  }
+}
+
+bool is_reconnectable_state(NetServer::PlayerConnectionState state) {
+  switch (state) {
+    case NetServer::PlayerConnectionState::Disconnected:
+    case NetServer::PlayerConnectionState::Unhealthy:
+      return true;
+    default:
+      return false;
+  }
+}
+
+const float kMaxTimeBetweenUpdates = 0.1f;
 
 }  // namespace
 
@@ -50,11 +71,15 @@ std::shared_ptr<GameServer::GameInitializePromise> GameServer::start_game() {
     while (is_running_) {
       auto this_frame = hrclock::now();
 
-      std::chrono::duration<float> fsec = this_frame - last_frame;
-      float dt = fsec.count();
+      using FpSeconds =
+          std::chrono::duration<float, std::chrono::seconds::period>;
+      float dt = FpSeconds(this_frame - last_frame).count();
+
+      last_frame = this_frame;
 
       // Gather inputs
       process_net_events();
+      apply_player_inputs();
       update(dt);
       send_player_updates();
 
@@ -123,18 +148,22 @@ void GameServer::apply_player_inputs() {
 
 void GameServer::apply_single_player_input(
     const PlayerId& player, const pb::GameClientMessage& message) {
-  auto it = player_entities_.find(player);
-  if (it == player_entities_.end()) {
-    Logger::log(kLogLabel) << "Skipping message for unregistered player "
-                           << player.Id;
-    return;
+  entt::entity player_entity{};
+
+  {
+    std::shared_lock<std::shared_mutex> l(mut_connected_players_);
+    auto it = connected_players_.find(player);
+    if (it == connected_players_.end()) {
+      Logger::log(kLogLabel)
+          << "Skipping message for unregistered player " << player.Id;
+      return;
+    }
+    player_entity = it->second.playerEntity;
   }
 
   if (!message.has_game_client_actions_list()) {
     return;
   }
-
-  entt::entity player_entity = it->second;
 
   for (int i = 0; i < message.game_client_actions_list().actions_size(); i++) {
     const pb::GameClientSingleMessage& action =
@@ -172,16 +201,22 @@ void GameServer::send_player_updates() {
   PlayerId players_to_update[64] = {};
   size_t num_players_to_update = 0;
 
-  for (auto it = player_entities_.begin(); it != player_entities_.end(); it++) {
-    // TODO (sessamekesh): Gather the entities that need updating
-    entt::entity player_entity = it->second;
-    component::ClientSyncMetadata& client_meta =
-        world_.get<component::ClientSyncMetadata>(player_entity);
+  {
+    std::shared_lock<std::shared_mutex> l(mut_connected_players_);
+    for (auto it = connected_players_.begin(); it != connected_players_.end();
+         it++) {
+      if (!::is_receptive_net_state(it->second.netState)) {
+        continue;
+      }
+      entt::entity player_entity = it->second.playerEntity;
+      component::ClientSyncMetadata& client_meta =
+          world_.get<component::ClientSyncMetadata>(player_entity);
 
-    if (sim_clock_ >
-        client_meta.LastUpdateSentTime + ::kMaxTimeBetweenUpdates) {
-      players_to_update[num_players_to_update++] = client_meta.playerId;
-      client_meta.LastUpdateSentTime = sim_clock_;
+      if (sim_clock_ >
+          client_meta.LastUpdateSentTime + ::kMaxTimeBetweenUpdates) {
+        players_to_update[num_players_to_update++] = client_meta.playerId;
+        client_meta.LastUpdateSentTime = sim_clock_;
+      }
     }
   }
 
@@ -230,7 +265,6 @@ void GameServer::send_player_updates() {
   // TODO (sessamekesh): Queue up actions per user that need to be sent, send
   // them in chunks to avoid sending large packets
   pb::GameServerMessage message;
-  message.set_magic_number(sanctify::kSanctifyMagicHeader);
   *message.mutable_actions_list() = server_actions;
 
   for (int i = 0; i < num_players_to_update; i++) {
@@ -269,11 +303,19 @@ void GameServer::handle_connect_player_event(ConnectPlayerEvent& evt) {
   Logger::log(kLogLabel) << "Handling player connection for player: "
                          << evt.playerId.Id;
 
-  auto existing_player = player_entities_.find(evt.playerId);
-  if (existing_player != player_entities_.end()) {
-    Logger::log(kLogLabel) << "Player " << evt.playerId.Id
-                           << " was already connected!";
-    // TODO (sessamekesh): reconnect existing player
+  std::unique_lock<std::shared_mutex> l(mut_connected_players_);
+  auto existing_player = connected_players_.find(evt.playerId);
+  if (existing_player != connected_players_.end()) {
+    if (::is_reconnectable_state(existing_player->second.netState)) {
+      Logger::log(kLogLabel)
+          << "Player " << evt.playerId.Id
+          << " reconnecting (was previously in unhealthy/disconnected state)";
+      evt.connectionPromise->resolve(true);
+    } else {
+      Logger::log(kLogLabel)
+          << "Player " << evt.playerId.Id
+          << " is already connected and in a non-connectable state";
+    }
     return;
   }
 
@@ -284,7 +326,10 @@ void GameServer::handle_connect_player_event(ConnectPlayerEvent& evt) {
                                          glm::vec2(0.f, 0.f));
   world_.emplace<component::StandardNavigationParams>(new_player_entity, 1.f);
 
-  player_entities_.insert({evt.playerId, new_player_entity});
+  connected_players_.insert(
+      {evt.playerId,
+       ConnectedPlayerState{evt.playerId, new_player_entity,
+                            NetServer::PlayerConnectionState::ConnectedBasic}});
   evt.connectionPromise->resolve(true);
 }
 
@@ -292,11 +337,24 @@ void GameServer::handle_player_disconnection(DisconnectPlayerEvent& evt) {
   Logger::log(kLogLabel) << "Handling player disconnection - "
                          << evt.playerId.Id;
 
-  auto existing_player = player_entities_.find(evt.playerId);
-  if (existing_player == player_entities_.end()) {
+  std::unique_lock<std::shared_mutex> l(mut_connected_players_);
+  auto existing_player = connected_players_.find(evt.playerId);
+  if (existing_player == connected_players_.end()) {
     return;
   }
 
-  world_.destroy(existing_player->second);
-  player_entities_.erase(existing_player);
+  world_.destroy(existing_player->second.playerEntity);
+  connected_players_.erase(existing_player);
+}
+
+void GameServer::set_player_connection_state(
+    const PlayerId& player_id,
+    NetServer::PlayerConnectionState connection_state) {
+  std::unique_lock<std::shared_mutex> l(mut_connected_players_);
+  auto it = connected_players_.find(player_id);
+  if (it != connected_players_.end()) {
+    it->second.netState = connection_state;
+
+    // TODO (sessamekesh): handle state transitions here
+  }
 }

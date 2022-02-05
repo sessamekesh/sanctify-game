@@ -1,4 +1,5 @@
 #include <netclient/net_client.h>
+#include <sanctify-game-common/net/net_config.h>
 
 using namespace sanctify;
 using namespace indigo;
@@ -63,5 +64,29 @@ void NetClient::set_state(NetClient::ConnectionState state) {
       on_connection_state_changed_cb_(state);
     }
     state_ = state;
+  }
+}
+
+NetClient::ConnectionState NetClient::get_connection_state() const {
+  return state_;
+}
+
+void NetClient::send_message(pb::GameClientMessage msg) {
+  msg.set_magic_header(sanctify::kSanctifyMagicHeader);
+  ws_client_->send_message(msg);
+}
+
+std::string sanctify::to_string(NetClient::ConnectionState state) {
+  switch (state) {
+    case NetClient::ConnectionState::Basic:
+      return "Basic";
+    case NetClient::ConnectionState::Disconnected:
+      return "Disconnected";
+    case NetClient::ConnectionState::Full:
+      return "Full";
+    case NetClient::ConnectionState::Malformed:
+      return "Malformed";
+    case NetClient::ConnectionState::Unhealthy:
+      return "Unhealthy";
   }
 }

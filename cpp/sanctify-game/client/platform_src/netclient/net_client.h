@@ -46,6 +46,10 @@ class NetClient : public std::enable_shared_from_this<NetClient> {
   void set_on_server_message_listener(
       std::function<void(pb::GameServerMessage)> cb);
 
+  void send_message(pb::GameClientMessage msg);
+
+  ConnectionState get_connection_state() const;
+
  private:
   void set_state(ConnectionState state);
 
@@ -56,6 +60,8 @@ class NetClient : public std::enable_shared_from_this<NetClient> {
   std::function<void(ConnectionState)> on_connection_state_changed_cb_;
   std::function<void(pb::GameServerMessage)> on_server_msg_cb_;
 };
+
+std::string to_string(NetClient::ConnectionState state);
 
 }  // namespace sanctify
 

@@ -67,7 +67,9 @@ class WsServer : public std::enable_shared_from_this<WsServer> {
   //
   // Public API
   //
-  void send_message(const PlayerId& player_id, std::string data);
+  void send_message(const PlayerId& player_id, pb::GameServerMessage data);
+  void send_message(websocketpp::connection_hdl hdl, pb::GameServerMessage data,
+                    indigo::core::Maybe<PlayerId> player_id);
   void kick_player(const PlayerId& player_id);
   void shutdown();
 

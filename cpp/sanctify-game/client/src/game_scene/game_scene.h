@@ -1,6 +1,9 @@
 #ifndef SANCTIFY_GAME_CLIENT_SRC_GAME_SCENE_GAME_SCENE_H
 #define SANCTIFY_GAME_CLIENT_SRC_GAME_SCENE_GAME_SCENE_H
 
+#include <game_scene/systems/netcode_system.h>
+#include <game_scene/systems/player_render_system.h>
+#include <igcore/vector.h>
 #include <iggpu/texture.h>
 #include <io/arena_camera_controller/arena_camera_input.h>
 #include <netclient/net_client.h>
@@ -16,7 +19,8 @@
 
 namespace sanctify {
 
-class GameScene : public ISceneBase {
+class GameScene : public ISceneBase,
+                  public std::enable_shared_from_this<GameScene> {
  public:
   struct TerrainShit {
     terrain_pipeline::TerrainPipelineBuilder PipelineBuilder;
@@ -48,11 +52,12 @@ class GameScene : public ISceneBase {
   };
 
  public:
-  GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
-            std::shared_ptr<IArenaCameraInput> camera_input_system,
-            TerrainShit terrain_shit, PlayerShit player_shit,
-            std::shared_ptr<NetClient> net_client, float camera_movement_speed,
-            float fovy);
+  static std::shared_ptr<GameScene> Create(
+      std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
+      std::shared_ptr<IArenaCameraInput> camera_input_system,
+      TerrainShit terrain_shit, PlayerShit player_shit,
+      std::shared_ptr<NetClient> net_client, float camera_movement_speed,
+      float fovy);
   ~GameScene();
 
   // ISceneBase
@@ -62,7 +67,19 @@ class GameScene : public ISceneBase {
   void on_viewport_resize(uint32_t width, uint32_t height) override;
 
  private:
+  GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
+            std::shared_ptr<IArenaCameraInput> camera_input_system,
+            TerrainShit terrain_shit, PlayerShit player_shit,
+            std::shared_ptr<NetClient> net_client, float camera_movement_speed,
+            float fovy);
+  void post_ctor_setup();
+
   void setup_depth_texture(uint32_t width, uint32_t height);
+
+  void handle_server_events();
+
+  void queue_client_nav_action(glm::vec2 nav_pos);
+  void dispatch_client_messages();
 
  private:
   std::shared_ptr<AppBase> base_;
@@ -88,6 +105,23 @@ class GameScene : public ISceneBase {
   entt::entity self_entity_;
   system::StandardTargetTravelSystem standard_target_travel_system_;
   float client_clock_;
+
+  // Net state...
+  float server_clock_;
+  system::NetcodeSystem netcode_system_;
+  system::PlayerRenderSystem player_render_system_;
+
+  std::mutex mut_connection_state_;
+  NetClient::ConnectionState connection_state_;
+  std::mutex mut_net_message_queue_;
+  indigo::core::Vector<pb::GameServerMessage> net_message_queue_;
+  std::mutex mut_pending_client_message_queue_;
+  indigo::core::Vector<pb::GameClientSingleMessage>
+      pending_client_message_queue_;
+
+  // TEMPORARY DEBUG state
+  glm::vec2 next_target_;
+  float time_to_next_advance_;
 };
 
 }  // namespace sanctify

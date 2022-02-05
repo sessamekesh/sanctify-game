@@ -40,6 +40,10 @@ SolidAnimatedGeo::SolidAnimatedGeo(
 void MatWorldInstanceBuffer::update_index_data(
     const wgpu::Device& device,
     const PodVector<MatWorldInstanceData>& instance_data) {
+  if (instance_data.size() == 0) {
+    NumInstances = 0;
+  }
+
   if (instance_data.size() > Capacity) {
     uint32_t new_capacity = ::get_instance_capacity(instance_data.size());
     InstanceBuffer = iggpu::buffer_from_data(

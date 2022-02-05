@@ -93,11 +93,11 @@ class PodVector : public IVec<T> {
   }
 
   T &operator[](size_t i) override {
-    assert(i < this->size_);
+    assert(i == 0 || i < this->size_);
     return typed_data_[i];
   }
   const T &operator[](size_t i) const override {
-    assert(i < this->size_);
+    assert(i == 0 || i < this->size_);
     return typed_data_[i];
   }
 

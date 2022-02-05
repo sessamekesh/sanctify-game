@@ -65,7 +65,7 @@ message PlayerSingleState {
 }
 
 message PlayerStateUpdate {
-  int32 player_id = 1;
+  uint32 player_id = 1;
   repeated PlayerSingleState player_states = 2;
 }
 
@@ -85,11 +85,14 @@ message GameServerActionsList {
 message GameServerMessage {
   // Magic number that verifies that this is a valid GameServerMessage
   uint32 magic_number = 1;
+  float clock_time = 4;
 
   oneof msg_body {
     InitialConnectionResponse initial_connection_response = 2;
     GameServerActionsList actions_list = 3;
   }
+
+  // Next ID: 5
 }
 
 /***********************************************************

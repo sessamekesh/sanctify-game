@@ -72,6 +72,10 @@ void EventScheduler::cancel_task(uint32_t id) {
     if (it->TaskId == id) {
       it = scheduled_tasks_.erase(it);
     }
+
+    if (it == scheduled_tasks_.end()) {
+      return;
+    }
   }
 }
 

@@ -11,7 +11,7 @@ void StandardTargetTravelSystem::update(entt::registry& registry, float dt) {
 
   // For now, this is just a basic thing - advance directly towards the target
   for (auto [entity, map_location, nav_params, dest] : view.each()) {
-    glm::vec2 diff = map_location.XZ - dest.Target;
+    glm::vec2 diff = dest.Target - map_location.XZ;
     float len = diff.length();
     glm::vec2 dir = diff / len;
 

@@ -84,6 +84,7 @@ int main(int argc, const char** argv) {
         if (state == NetServer::PlayerConnectionState::Disconnected) {
           game_server->notify_player_dropped_connection(player_id);
         }
+        game_server->set_player_connection_state(player_id, state);
       });
 
   //

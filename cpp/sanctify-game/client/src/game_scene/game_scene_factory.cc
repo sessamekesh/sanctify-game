@@ -149,10 +149,10 @@ std::shared_ptr<GamePromise> GameSceneFactory::build() const {
         std::shared_ptr<IArenaCameraInput> arena_camera_input =
             ArenaCameraMouseInputListener::Create(base->Window);
 
-        return left(std::shared_ptr<GameScene>(
-            new GameScene(base, arena_camera, arena_camera_input,
-                          terrain_shit_rsl.move(), player_shit_rsl.move(),
-                          net_client_rsl.get(), 0.8f, glm::radians(40.f))));
+        return left(
+            GameScene::Create(base, arena_camera, arena_camera_input,
+                              terrain_shit_rsl.move(), player_shit_rsl.move(),
+                              net_client_rsl.get(), 0.8f, glm::radians(40.f)));
       },
       async_task_list_);
 }

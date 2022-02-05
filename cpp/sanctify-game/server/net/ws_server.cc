@@ -3,6 +3,7 @@
 #include <net/ws_server.h>
 #include <sanctify-game-common/net/net_config.h>
 #include <sanctify-game-common/proto/sanctify-net.pb.h>
+#include <util/server_clock.h>
 
 #include <chrono>
 
@@ -68,6 +69,7 @@ WsServer::configure_and_start_server() {
 
   server_.set_access_channels(websocketpp::log::alevel::all);
   server_.clear_access_channels(websocketpp::log::alevel::frame_payload);
+  server_.clear_access_channels(websocketpp::log::alevel::frame_header);
 
   auto _this = shared_from_this();
   server_.set_open_handler(
@@ -155,7 +157,8 @@ void WsServer::on_open(websocketpp::connection_hdl hdl) {
   }
 }
 
-void WsServer::send_message(const PlayerId& player_id, std::string data) {
+void WsServer::send_message(const PlayerId& player_id,
+                            pb::GameServerMessage data) {
   std::shared_lock<std::shared_mutex> l(mut_player_connections_);
 
   auto conn_it = player_connections_.find_l(player_id);
@@ -165,13 +168,30 @@ void WsServer::send_message(const PlayerId& player_id, std::string data) {
     return;
   }
 
+  send_message(*conn_it, std::move(data), player_id);
+}
+
+void WsServer::send_message(websocketpp::connection_hdl hdl,
+                            pb::GameServerMessage data,
+                            indigo::core::Maybe<PlayerId> player_id) {
+  // Set remaining headers
+  data.set_magic_number(sanctify::kSanctifyMagicHeader);
+  data.set_clock_time(ServerClock::time());
+  std::string raw_data = data.SerializeAsString();
+
   std::error_code ec;
   ec.clear();
-  server_.send(*conn_it, data, websocketpp::frame::opcode::binary, ec);
+  server_.send(hdl, raw_data, websocketpp::frame::opcode::binary, ec);
   if (ec) {
-    Logger::err(kLogLabel) << "Failed to send WS message to player "
-                           << player_id.Id << ": websocketpp error "
-                           << ec.message();
+    if (player_id.has_value()) {
+      Logger::err(kLogLabel)
+          << "Failed to send WS message to player " << player_id.get().Id
+          << ": websocketpp error " << ec.message();
+    } else {
+      Logger::err(kLogLabel)
+          << "Failed to send WS message to unknown player: websocketpp error "
+          << ec.message();
+    }
     return;
   }
 }
@@ -389,11 +409,8 @@ void WsServer::on_message(websocketpp::connection_hdl hdl, WSMsgPtr msg) {
                             pb::InitialConnectionResponse_ResponseType::
                                 InitialConnectionResponse_ResponseType_ACCEPTED);
 
-                        std::string raw_msg_bytes =
-                            confirmation_msg.SerializeAsString();
-
-                        that->server_.send(hdl, raw_msg_bytes,
-                                           websocketpp::frame::opcode::binary);
+                        that->send_message(hdl, std::move(confirmation_msg),
+                                           empty_maybe{});
 
                         if (that->on_connection_state_change_cb_) {
                           that->on_connection_state_change_cb_(

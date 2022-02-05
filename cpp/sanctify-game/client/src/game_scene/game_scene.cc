@@ -37,6 +37,21 @@ wgpu::RenderPassEncoder create_geo_pass(
 }
 }  // namespace
 
+std::shared_ptr<GameScene> GameScene::Create(
+    std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
+    std::shared_ptr<IArenaCameraInput> camera_input_system,
+    TerrainShit terrain_shit, PlayerShit player_shit,
+    std::shared_ptr<NetClient> net_client, float camera_movement_speed,
+    float fovy) {
+  auto game_scene = std::shared_ptr<GameScene>(new GameScene(
+      base, arena_camera, camera_input_system, std::move(terrain_shit),
+      std::move(player_shit), net_client, camera_movement_speed, fovy));
+
+  game_scene->post_ctor_setup();
+
+  return game_scene;
+}
+
 GameScene::GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
                      std::shared_ptr<IArenaCameraInput> camera_input_system,
                      TerrainShit terrain_shit, PlayerShit player_shit,
@@ -50,17 +65,65 @@ GameScene::GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
       player_shit_(std::move(player_shit)),
       camera_movement_speed_(camera_movement_speed),
       fovy_(fovy),
-      client_clock_(0.f) {
+      client_clock_(0.f),
+      server_clock_(-1.f),
+      connection_state_(net_client->get_connection_state()),
+      next_target_({0.f, 0.f}),
+      time_to_next_advance_(3.f) {}
+
+void GameScene::post_ctor_setup() {
   arena_camera_input_->attach();
 
-  setup_depth_texture(base->Width, base->Height);
+  setup_depth_texture(base_->Width, base_->Height);
+
+  auto that = weak_from_this();
+  net_client_->set_connection_state_changed_listener(
+      [that](NetClient::ConnectionState state) {
+        std::shared_ptr<GameScene> game_scene = that.lock();
+        if (!game_scene) {
+          return;
+        }
+
+        std::lock_guard<std::mutex> l(game_scene->mut_connection_state_);
+
+        if (game_scene->connection_state_ != state) {
+          Logger::log(kLogLabel)
+              << "Player connection state changed to " << to_string(state);
+        }
+
+        game_scene->connection_state_ = state;
+
+        // TODO (sessamekesh): Queue up a net event instead (e.g., for
+        // disconnected)
+      });
+  net_client_->set_on_server_message_listener(
+      [that](pb::GameServerMessage msg) {
+        std::shared_ptr<GameScene> game_scene = that.lock();
+        if (!game_scene) {
+          return;
+        }
+
+        std::lock_guard<std::mutex> l(game_scene->mut_net_message_queue_);
+        game_scene->net_message_queue_.push_back(std::move(msg));
+      });
 }
 
 GameScene::~GameScene() { arena_camera_input_->detach(); }
 
 void GameScene::update(float dt) {
+  if (server_clock_ >= 0.f) {
+    server_clock_ += dt;
+  }
   client_clock_ += dt;
 
+  //
+  // Server state changes
+  //
+  handle_server_events();
+
+  //
+  // User input
+  //
   ArenaCameraInputState input_state = arena_camera_input_->get_input_state();
 
   if (input_state.ScreenRightMovement != 0.f ||
@@ -72,8 +135,29 @@ void GameScene::update(float dt) {
     arena_camera_.set_look_at(arena_camera_.look_at() + camera_movement);
   }
 
+  // TODO (sessamekesh): Handle player clicks here!
+
+  // TODO (sessamekesh): not this hack!
+  time_to_next_advance_ -= dt;
+  if (time_to_next_advance_ < 0.f) {
+    time_to_next_advance_ = 2.f;
+    next_target_.y += 4.f;
+    Logger::log(kLogLabel) << "Sending message to server: advance to target: "
+                           << next_target_.x << ", " << next_target_.y;
+    queue_client_nav_action(next_target_);
+  }
+
   // TODO (sessamekesh): Also handle camera events (click and drag) here
+
+  //
+  // Game logic execution
+  //
   standard_target_travel_system_.update(world_, client_clock_);
+
+  //
+  // Dispatch any queued up client messages
+  //
+  dispatch_client_messages();
 }
 
 void GameScene::render() {
@@ -123,6 +207,9 @@ void GameScene::render() {
       .set_geometry(terrain_shit_.DecorationGeo)
       .draw();
 
+  auto player_instance_data = player_render_system_.get_instance_data(world_);
+  player_shit_.InstanceBuffers.update_index_data(device, player_instance_data);
+
   solid_animated::RenderUtil(static_geo_pass, player_shit_.Pipeline)
       .set_frame_inputs(player_shit_.FrameInputs)
       .set_scene_inputs(player_shit_.SceneInputs)
@@ -159,4 +246,82 @@ void GameScene::setup_depth_texture(uint32_t width, uint32_t height) {
   wgpu::TextureViewDescriptor depth_view_desc =
       iggpu::view_desc_of(depth_texture_);
   depth_view_ = depth_texture_.GpuTexture.CreateView(&depth_view_desc);
+}
+
+void GameScene::handle_server_events() {
+  Vector<pb::GameServerMessage> messages;
+  {
+    std::lock_guard l(mut_net_message_queue_);
+    // Should never be the case, but worth a go anyways.
+    if (net_message_queue_.size() == 0u) {
+      return;
+    }
+
+    // TODO (sessamekesh): this allocation could be avoided by double-buffering
+    // network message queues - switch out the receiver and which is being
+    // processed at this point.
+    messages = std::move(net_message_queue_);
+    ::new (&net_message_queue_) Vector<pb::GameServerMessage>(4);
+  }
+
+  for (int i = 0; i < messages.size(); i++) {
+    const pb::GameServerMessage& msg = messages[i];
+
+    if (server_clock_ < 0.f) {
+      server_clock_ = msg.clock_time();
+    } else {
+      server_clock_ = glm::min(server_clock_, msg.clock_time());
+    }
+
+    if (msg.has_initial_connection_response()) {
+      continue;
+    } else if (msg.has_actions_list()) {
+      for (int j = 0; j < msg.actions_list().messages_size(); j++) {
+        const pb::GameServerSingleMessage& single_msg =
+            msg.actions_list().messages(j);
+
+        if (single_msg.has_player_state_update()) {
+          netcode_system_.update_locomotion_data(
+              world_, single_msg.player_state_update(), msg.clock_time(),
+              server_clock_);
+        }
+      }
+    }
+  }
+}
+
+void GameScene::queue_client_nav_action(glm::vec2 nav_pos) {
+  pb::GameClientSingleMessage single_message{};
+
+  pb::TravelToLocationRequest* travel_request =
+      single_message.mutable_travel_to_location_request();
+
+  travel_request->set_x(nav_pos.x);
+  travel_request->set_y(nav_pos.y);
+
+  std::lock_guard<std::mutex> l(mut_pending_client_message_queue_);
+  pending_client_message_queue_.push_back(std::move(single_message));
+}
+
+void GameScene::dispatch_client_messages() {
+  std::lock_guard<std::mutex> l(mut_pending_client_message_queue_);
+
+  if (pending_client_message_queue_.size() == 0) {
+    // Unlikely but possible
+    return;
+  }
+
+  // TODO (sessamekesh): handle message chunking here (only send up to ~8kb of
+  // data or whatever)
+  pb::GameClientMessage msg{};
+  pb::GameClientActionsList* actions_list =
+      msg.mutable_game_client_actions_list();
+  for (int i = 0; i < pending_client_message_queue_.size(); i++) {
+    pb::GameClientSingleMessage* action = actions_list->add_actions();
+    *action = std::move(pending_client_message_queue_[i]);
+  }
+
+  ::new (&pending_client_message_queue_) Vector<pb::GameClientSingleMessage>(4);
+
+  net_client_->send_message(msg);
 }
