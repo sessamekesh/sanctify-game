@@ -21,7 +21,7 @@ PlayerRenderSystem::get_instance_data(entt::registry& world) {
 
   auto player_pos_view = world.view<const component::MapLocation>();
 
-  for (auto& [entity, map_location] : player_pos_view.each()) {
+  for (auto [entity, map_location] : player_pos_view.each()) {
     glm::mat4 move_to_location = glm::translate(
         glm::mat4(1.f), glm::vec3(map_location.XZ.x, 0.f, map_location.XZ.y));
 

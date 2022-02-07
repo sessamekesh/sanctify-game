@@ -1,4 +1,4 @@
-if (EMSCRIPTEN)
+if (EMSCRIPTEN OR NOT IG_BUILD_SERVER)
   message(STATUS "Sanctify game server will not be generated for EMSCRIPTEN build")
   return()
 endif ()

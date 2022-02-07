@@ -111,6 +111,7 @@ else ()
   set(platform_header_list
     "platform_src/netclient/ws_client_web.h")
   set(platform_src_list
+    "platform_src/netclient/game_api_web.cc"
     "platform_src/netclient/net_client_web.cc"
     "platform_src/netclient/ws_client_web.cc"
     "platform_src/app_base_web.cc"

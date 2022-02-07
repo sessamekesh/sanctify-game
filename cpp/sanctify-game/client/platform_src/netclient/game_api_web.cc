@@ -3,6 +3,7 @@
 
 #include <map>
 #include <mutex>
+#include <string>
 
 using namespace sanctify;
 using namespace indigo;
@@ -10,14 +11,14 @@ using namespace core;
 
 namespace {
 
+struct Request {
+  std::shared_ptr<Promise<HttpResponse>> responsePromise;
+};
+
 std::mutex mut_gNextReqId;
 uint32_t gNextReqId = 1u;
 
 std::map<uint32_t, Request> pending_requests_;
-
-struct Request {
-  std::shared_ptr<Promise<HttpResponse>> responsePromise;
-};
 
 void em_fetch_success(emscripten_fetch_t* fetch) {
   if (!fetch->userData) {
@@ -34,9 +35,9 @@ void em_fetch_success(emscripten_fetch_t* fetch) {
 
   auto rsl = it->second.responsePromise;
 
-  std::string data(fetch->numBytes);
+  std::string data(fetch->numBytes, '\0');
   memcpy(&data[0], fetch->data, fetch->numBytes);
-  rsl->response(HttpResponse{fetch->status, std::move(data)});
+  rsl->resolve(HttpResponse{fetch->status, std::move(data)});
 
   pending_requests_.erase(it);
 }
@@ -56,9 +57,9 @@ void em_fetch_error(emscripten_fetch_t* fetch) {
 
   auto rsl = it->second.responsePromise;
 
-  std::string data(fetch->numBytes);
+  std::string data(fetch->numBytes, '\0');
   memcpy(&data[0], fetch->data, fetch->numBytes);
-  rsl->response(HttpResponse{fetch->status, std::move(data)});
+  rsl->resolve(HttpResponse{fetch->status, std::move(data)});
 
   pending_requests_.erase(it);
 }

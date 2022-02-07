@@ -27,6 +27,10 @@
 #include <igcore/log.h>
 #include <sanctify-game-common/net/reliable.h>
 
+#include <cfloat>
+#include <cmath>
+
+using namespace std;
 using namespace indigo;
 using namespace core;
 using namespace sanctify;
@@ -385,6 +389,7 @@ bool ReliableEndpoint::send_packet(uint8_t* data, int num_bytes) {
     delete[] fragment_packet_data;
   }
   Counters[(uint8_t)ReliableEndpointCounter::NumPacketsSent]++;
+  return true;
 }
 
 bool ReliableEndpoint::receive_packet(uint8_t* packet_data, int packet_bytes) {
@@ -572,6 +577,7 @@ bool ReliableEndpoint::receive_packet(uint8_t* packet_data, int packet_bytes) {
 
     Counters[(uint8_t)ReliableEndpointCounter::NumFragmentsReceived]++;
   }
+  return true;
 }
 
 void ReliableEndpoint::generate_ack_bits(

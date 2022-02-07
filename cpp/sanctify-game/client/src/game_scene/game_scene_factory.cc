@@ -97,8 +97,12 @@ std::shared_ptr<GamePromise> GameSceneFactory::build() const {
       async_task_list_);
 
   // TODO (sessamekesh): Remove this hardcoded URL base
-  auto net_client_promise =
-      ::build_net_client("http://localhost:8080", async_task_list_);
+#ifdef __EMSCRIPTEN__
+  std::string game_api_url = "http://localhost:3000";
+#else
+  std::string game_api_url = "http://localhost:8080";
+#endif
+  auto net_client_promise = ::build_net_client(game_api_url, async_task_list_);
 
   //
   // Create combiner and wrangle together parameter inputs (use util files for

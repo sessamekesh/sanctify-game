@@ -1,5 +1,5 @@
 #include <igcore/log.h>
-#include <netclient/ws_client_native.h>
+#include <netclient/ws_client_web.h>
 
 #include <map>
 #include <mutex>
@@ -28,7 +28,9 @@ std::shared_ptr<WsClientWeb> get_web_client(int ctx_val) {
 
 int set_web_client(std::weak_ptr<WsClientWeb> ptr) {
   std::lock_guard<std::mutex> l(::mut_gCtxVal);
-  ::gWebClients[gCtxVal++] = ptr;
+  auto client_id = ::gCtxVal++;
+  ::gWebClients[client_id] = ptr;
+  return client_id;
 }
 
 void disconnect_web_client(int ctx_val) {
@@ -36,7 +38,7 @@ void disconnect_web_client(int ctx_val) {
   ::gWebClients.erase(ctx_val);
 }
 
-EM_BOOL _on_open(int evt_type, const EmscriptenWebsocketOpenEvent* ws_event,
+EM_BOOL _on_open(int evt_type, const EmscriptenWebSocketOpenEvent* ws_event,
                  void* user_data) {
   int ctx_val = (int)user_data;
   auto web_client = ::get_web_client(ctx_val);
@@ -44,6 +46,8 @@ EM_BOOL _on_open(int evt_type, const EmscriptenWebsocketOpenEvent* ws_event,
   if (web_client != nullptr) {
     web_client->on_open(ws_event->socket);
   }
+
+  return true;
 }
 
 EM_BOOL _on_error(int evt_type, const EmscriptenWebSocketErrorEvent* ws_event,
@@ -54,6 +58,8 @@ EM_BOOL _on_error(int evt_type, const EmscriptenWebSocketErrorEvent* ws_event,
   if (web_client != nullptr) {
     web_client->on_error(ws_event->socket);
   }
+
+  return true;
 }
 
 EM_BOOL _on_close(int evt_type, const EmscriptenWebSocketCloseEvent* ws_event,
@@ -64,6 +70,8 @@ EM_BOOL _on_close(int evt_type, const EmscriptenWebSocketCloseEvent* ws_event,
   if (web_client != nullptr) {
     web_client->on_close(ws_event->socket);
   }
+
+  return true;
 }
 
 EM_BOOL _on_message(int evt_type,
@@ -78,6 +86,8 @@ EM_BOOL _on_message(int evt_type,
 
     web_client->on_message(ws_event->socket, payload);
   }
+
+  return true;
 }
 
 }  // namespace
@@ -102,7 +112,7 @@ std::shared_ptr<Promise<bool>> WsClientWeb::inner_connect(std::string url) {
   auto that = shared_from_this();
   auto rsl_promise = Promise<bool>::create();
 
-  EmscriptenWebSocketCreateAttributes wsdesc{url.c_str(), "binary", true};
+  EmscriptenWebSocketCreateAttributes wsdesc{url.c_str(), nullptr, true};
   ws_ = emscripten_websocket_new(&wsdesc);
 
   auto weak_that = weak_from_this();
@@ -127,6 +137,9 @@ void WsClientWeb::on_open(EMSCRIPTEN_WEBSOCKET_T socket) {
     return;
   }
 
+  Logger::log(kLogLabel) << "WebSocket connection opened!";
+  is_connected_ = true;
+
   on_connect();
 }
 
@@ -140,13 +153,13 @@ void WsClientWeb::on_close(EMSCRIPTEN_WEBSOCKET_T socket) {
 
 void WsClientWeb::on_error(EMSCRIPTEN_WEBSOCKET_T socket) {
   if (socket != ws_) {
-    on_error("-- err --");
+    WsClient::on_error("-- err --");
   }
 }
 
 void WsClientWeb::on_message(EMSCRIPTEN_WEBSOCKET_T socket, std::string data) {
   if (socket != ws_) {
-    on_error("-- err --");
+    WsClient::on_error("-- err --");
   }
 
   recv_raw_msg(std::move(data));

@@ -18,6 +18,7 @@ set(IG_ENABLE_THREADS "ON" CACHE BOOL "Enable multithreaded build")
 set(IG_ENABLE_GRAPHICS_DEBUGGING "OFF" CACHE BOOL "Enable graphics debugging options (e.g. export HLSL debug symbols)")
 set(IG_ENABLE_LOGGING "ON" CACHE BOOL "Include logging statements in the build")
 set(IG_CHECK_SUBMODULES_ON_BUILD "OFF" CACHE BOOL "Check external submodules on build - off by default, but use with fresh builds")
+set(IG_BUILD_SERVER "ON" CACHE BOOL "Include the server build (worth disabling if you don't want to worry about a Boost dependency)")
 
 #
 # Global project settings

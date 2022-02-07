@@ -19,6 +19,7 @@ def program_exists(program_name):
 def cxx_build_cmake_args(tool_build_root=None, threads=True, graphics_debugging=False, logging=True, debug_build=True):
   args = []
   args.append('-DIG_BUILD_TESTS=OFF')
+  args.append('-DIG_BUILD_SERVER=OFF')
   args.append('-DIG_ENABLE_THREADS=' + ('ON' if threads else 'OFF'))
   args.append('-DIG_ENABLE_GRAPHICS_DEBUGGING=' + ('ON' if graphics_debugging else 'OFF'))
   args.append('-DIG_ENABLE_LOGGING=' + ('ON' if logging else 'OFF'))

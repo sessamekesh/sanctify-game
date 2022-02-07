@@ -25,7 +25,7 @@ function (set_wasm_target_properties)
     ${AWT_TARGET_NAME}
       PUBLIC "SHELL:--bind -s WASM=1 -s MODULARIZE=1 -s ENVIRONMENT=web,worker -s WASM_BIGINT=1"
       PUBLIC "SHELL:-s USE_GLFW=3 -s FETCH=1 -s INITIAL_MEMORY=268435456 -s EXIT_RUNTIME=0"
-      PUBLIC "SHELL:-s MALLOC=emmalloc -s FILESYSTEM=0 -s USE_WEBGPU=1")
+      PUBLIC "SHELL:-s MALLOC=emmalloc -s FILESYSTEM=0 -s USE_WEBGPU=1 -lwebsocket.js")
 
   if (NOT ${AWT_EXPORT_NAME} STREQUAL "")
     target_link_options(
