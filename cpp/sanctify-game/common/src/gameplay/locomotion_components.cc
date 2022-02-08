@@ -3,14 +3,17 @@
 using namespace sanctify;
 using namespace component;
 
-void TravelToLocation::serialize(const TravelToLocation& v,
-                                 pb::TravelToLocationRequest* o) {
-  o->set_x(v.Target.x);
-  o->set_y(v.Target.y);
+bool MapLocation::operator==(const MapLocation& o) const { return XZ == o.XZ; }
+
+bool NavWaypointList::operator==(const NavWaypointList& o) const {
+  if (Targets.size() != o.Targets.size()) {
+    return false;
+  }
+
+  return memcmp(&Targets[0], &o.Targets[0], Targets.raw_size()) == 0;
 }
 
-void TravelToLocation::deserialize(const pb::TravelToLocationRequest& v,
-                                   TravelToLocation* o) {
-  o->Target.x = v.x();
-  o->Target.y = v.y();
+bool StandardNavigationParams::operator==(
+    const StandardNavigationParams& o) const {
+  return MovementSpeed == o.MovementSpeed;
 }

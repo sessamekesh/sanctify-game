@@ -1,7 +1,6 @@
 #ifndef SANCTIFY_GAME_CLIENT_SRC_GAME_SCENE_GAME_SCENE_H
 #define SANCTIFY_GAME_CLIENT_SRC_GAME_SCENE_GAME_SCENE_H
 
-#include <game_scene/systems/netcode_system.h>
 #include <game_scene/systems/player_render_system.h>
 #include <igcore/vector.h>
 #include <iggpu/texture.h>
@@ -11,7 +10,6 @@
 #include <render/solid_animated/solid_animated_pipeline.h>
 #include <render/terrain/terrain_geo.h>
 #include <render/terrain/terrain_pipeline.h>
-#include <sanctify-game-common/gameplay/standard_target_travel_system.h>
 #include <scene_base.h>
 #include <webgpu/webgpu_cpp.h>
 
@@ -78,7 +76,6 @@ class GameScene : public ISceneBase,
 
   void handle_server_events();
 
-  void queue_client_nav_action(glm::vec2 nav_pos);
   void dispatch_client_messages();
 
  private:
@@ -102,13 +99,10 @@ class GameScene : public ISceneBase,
 
   // Game state...
   entt::registry world_;
-  entt::entity self_entity_;
-  system::StandardTargetTravelSystem standard_target_travel_system_;
   float client_clock_;
 
   // Net state...
   float server_clock_;
-  system::NetcodeSystem netcode_system_;
   system::PlayerRenderSystem player_render_system_;
 
   std::mutex mut_connection_state_;
@@ -118,10 +112,6 @@ class GameScene : public ISceneBase,
   std::mutex mut_pending_client_message_queue_;
   indigo::core::Vector<pb::GameClientSingleMessage>
       pending_client_message_queue_;
-
-  // TEMPORARY DEBUG state
-  glm::vec2 next_target_;
-  float time_to_next_advance_;
 };
 
 }  // namespace sanctify

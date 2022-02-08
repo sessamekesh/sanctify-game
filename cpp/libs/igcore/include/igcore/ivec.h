@@ -163,6 +163,7 @@ class IVec {
    * operator< defined.
    */
   void in_place_sort() {
+    if (size() == 0) return;
     T& f = operator[](0);
     ivec_qsort(&f, 0, size() - 1);
   }

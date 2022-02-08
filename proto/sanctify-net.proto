@@ -35,43 +35,85 @@ message InitialConnectionResponse {
 }
 
 //
-// Gameplay messages (client events)
+// Shared messages (primitives)
 //
-
-// Message that gets sent when the player presses a location on the map to travel to
-message TravelToLocationRequest {
+message Vec2 {
   float x = 1;
   float y = 2;
 }
 
-message MapPosition {
-  float x = 1;
-  float y = 2;
+//
+// Component types
+//
+message MapLocation {
+  Vec2 location = 1;
+}
+
+message NavWaypointList {
+  repeated Vec2 nav_waypoints = 1;
+}
+
+message StandardNavigationParams {
+  float movement_speed = 1;
+}
+
+//
+// Gameplay messages (client events)
+//
+message PlayerMovement {
+  Vec2 destination = 1;
 }
 
 //
 // Gameplay State Updates (server events)
 //
-message PlayerLocomotionState {
-  TravelToLocationRequest target_location = 1;
-  float speed = 2;
+message ComponentData {
+  // Optional component data - all enumerated here! Each field is optional
+  MapLocation map_location = 1;
+  NavWaypointList nav_waypoints = 2;
+  StandardNavigationParams standard_navigation_params = 3;
 }
 
-message PlayerSingleState {
-  oneof msg_body {
-    MapPosition current_position = 1;
-    PlayerLocomotionState locomotion_state = 2;
+message GameEntity {
+  uint32 net_sync_id = 1;
+  ComponentData component_data = 2;
+}
+
+message GameSnapshotFull {
+  float game_time = 1;
+  repeated GameEntity game_entities = 2;
+}
+
+message GameEntityUpdateMask {
+  enum ComponentType {
+    // This should never be observed - it may indicate an error state in the future
+    INVALID = 0;
+
+    MAP_LOCATION = 1;
+    NAV_WAYPOINTS = 2;
+    STANDARD_NAVIGATION_PARAMS = 3;
   }
+
+  uint32 net_sync_id = 1;
+  ComponentData upsert_components = 2;
+  repeated ComponentType remove_components = 3;
 }
 
-message PlayerStateUpdate {
-  uint32 player_id = 1;
-  repeated PlayerSingleState player_states = 2;
+message GameSnapshotDiff {
+  float game_time = 1;
+  repeated GameEntityUpdateMask upsert_entities = 2;
+  repeated uint32 remove_entities = 3;
 }
 
 message GameServerSingleMessage {
   oneof msg_body {
-    PlayerStateUpdate player_state_update = 1;
+    GameSnapshotFull game_snapshot_full = 1;
+    GameSnapshotDiff game_snapshot_diff = 2;
+
+    // When player movement is received from the client, send the updated
+    //  player movement location (the actual target, taking terrain/collision
+    //  into account) back to the client.
+    PlayerMovement player_movement = 3;
   }
 }
 
@@ -100,7 +142,9 @@ message GameServerMessage {
  **********************************************************/
 message GameClientSingleMessage {
   oneof msg_body {
-    TravelToLocationRequest travel_to_location_request = 1;
+    // Raw input - where to go next? Direct from mouse click, do not
+    //  factor in terrain/collision (let the server do that)
+    PlayerMovement travel_to_location_request = 1;
   }
 }
 

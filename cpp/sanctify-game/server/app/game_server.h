@@ -4,7 +4,6 @@
 #include <app/net_events.h>
 #include <igasync/promise.h>
 #include <net/net_server.h>
-#include <sanctify-game-common/gameplay/standard_target_travel_system.h>
 #include <sanctify-game-common/proto/sanctify-net.pb.h>
 #include <util/concurrentqueue.h>
 #include <util/types.h>
@@ -71,8 +70,6 @@ class GameServer : public std::enable_shared_from_this<GameServer> {
   void send_player_updates();
 
   // Inidivual handlers for net client inputs...
-  void handle_travel_to_location_request(
-      entt::entity player_entity, const pb::TravelToLocationRequest& request);
 
  private:
   PlayerMessageCallback player_message_cb_;
@@ -81,7 +78,6 @@ class GameServer : public std::enable_shared_from_this<GameServer> {
   float sim_clock_;
 
   entt::registry world_;
-  system::StandardTargetTravelSystem standard_target_travel_system_;
 
   std::shared_mutex mut_connected_players_;
   std::unordered_map<PlayerId, ConnectedPlayerState, PlayerIdHashFn>

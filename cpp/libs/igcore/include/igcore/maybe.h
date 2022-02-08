@@ -82,6 +82,28 @@ class Maybe {
     }
   }
 
+  bool operator==(const Maybe<T>& o) const {
+    if (is_initialized_ != o.is_initialized_) {
+      return false;
+    }
+
+    if (is_initialized_) {
+      return value_ == o.value_;
+    }
+
+    return true;
+  }
+
+  bool operator==(const T& o) const {
+    if (!is_initialized_) {
+      return false;
+    }
+
+    return value_ == o;
+  }
+
+  bool operator==(const empty_maybe&) const { return !is_initialized_; }
+
   //////////////////////////////////////////////////////
   // Useful API
   //////////////////////////////////////////////////////

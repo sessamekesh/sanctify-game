@@ -170,10 +170,6 @@ void GameServer::apply_single_player_input(
         message.game_client_actions_list().actions(i);
 
     switch (action.msg_body_case()) {
-      case pb::GameClientSingleMessage::kTravelToLocationRequest:
-        handle_travel_to_location_request(player_entity,
-                                          action.travel_to_location_request());
-        break;
       default:
         Logger::log(kLogLabel)
             << "Unrecognized action type - " << (int)action.msg_body_case()
@@ -186,96 +182,16 @@ void GameServer::apply_single_player_input(
 //
 // Net client handlers
 //
-void GameServer::handle_travel_to_location_request(
-    entt::entity player_entity, const pb::TravelToLocationRequest& request) {
-  world_.emplace_or_replace<component::TravelToLocation>(
-      player_entity,
-      component::TravelToLocation{glm::vec2{request.x(), request.y()}});
-}
 
 void GameServer::send_player_updates() {
-  // TODO (sessamekesh): Check the player connections, generate diffs to send
-  // out, and queue up the updates to be sent to each player. These are partial
-  // (many times per second, or when player actions change), or full (every few
-  // seconds of simulation time, to catch/deter drift)
-  PlayerId players_to_update[64] = {};
-  size_t num_players_to_update = 0;
-
-  {
-    std::shared_lock<std::shared_mutex> l(mut_connected_players_);
-    for (auto it = connected_players_.begin(); it != connected_players_.end();
-         it++) {
-      if (!::is_receptive_net_state(it->second.netState)) {
-        continue;
-      }
-      entt::entity player_entity = it->second.playerEntity;
-      component::ClientSyncMetadata& client_meta =
-          world_.get<component::ClientSyncMetadata>(player_entity);
-
-      if (sim_clock_ >
-          client_meta.LastUpdateSentTime + ::kMaxTimeBetweenUpdates) {
-        players_to_update[num_players_to_update++] = client_meta.playerId;
-        client_meta.LastUpdateSentTime = sim_clock_;
-      }
-    }
-  }
-
-  // If no players need updating, skip the world serialization step
-  if (num_players_to_update == 0u) {
-    return;
-  }
-
-  // TODO (sessamekesh): Assemble all the components to send back
-  // - Set player position
-  // - Set player trajectory, speed, and time along trajectory for up to 400ms
-  pb::GameServerActionsList server_actions;
-  pb::GameServerSingleMessage* player_state_message =
-      server_actions.add_messages();
-
-  auto view = world_.view<const component::MapLocation,
-                          const component::StandardNavigationParams,
-                          const component::ClientSyncMetadata>();
-  for (auto [entity, map_location, nav_params, net_meta] : view.each()) {
-    pb::PlayerStateUpdate* player_state =
-        player_state_message->mutable_player_state_update();
-
-    // TODO (sessamekesh): Use a net sync ID instead of this!
-    // You'll want a bimap to pull that off though
-    player_state->set_player_id(net_meta.playerId.Id);
-
-    pb::PlayerSingleState* pos_state = player_state->add_player_states();
-    pb::MapPosition* pos = pos_state->mutable_current_position();
-    pos->set_x(map_location.XZ.x);
-    pos->set_y(map_location.XZ.y);
-
-    pb::PlayerSingleState* locomotion_state = player_state->add_player_states();
-    pb::PlayerLocomotionState* locomotion =
-        locomotion_state->mutable_locomotion_state();
-
-    locomotion->set_speed(nav_params.MovementSpeed);
-
-    auto* dest = world_.try_get<component::TravelToLocation>(entity);
-    if (dest != nullptr) {
-      pb::TravelToLocationRequest* location =
-          locomotion->mutable_target_location();
-      component::TravelToLocation::serialize(*dest, location);
-    }
-  }
-
-  // TODO (sessamekesh): Queue up actions per user that need to be sent, send
-  // them in chunks to avoid sending large packets
-  pb::GameServerMessage message;
-  *message.mutable_actions_list() = server_actions;
-
-  for (int i = 0; i < num_players_to_update; i++) {
-    player_message_cb_(players_to_update[i], message);
-  }
+  // TODO (sessamekesh): Send out player updates
+  // - Decide which players need updates
+  // - Generate state for each player
+  // - Diff against last known client known state
+  // - Send the diff!
 }
 
-void GameServer::update(float dt) {
-  sim_clock_ += dt;
-  standard_target_travel_system_.update(world_, dt);
-}
+void GameServer::update(float dt) { sim_clock_ += dt; }
 
 void GameServer::process_net_events() {
   // Go through all net events that have been set, and handle them (up to 64)
@@ -319,17 +235,8 @@ void GameServer::handle_connect_player_event(ConnectPlayerEvent& evt) {
     return;
   }
 
-  entt::entity new_player_entity = world_.create();
-  world_.emplace<component::ClientSyncMetadata>(new_player_entity, evt.playerId,
-                                                sim_clock_);
-  world_.emplace<component::MapLocation>(new_player_entity,
-                                         glm::vec2(0.f, 0.f));
-  world_.emplace<component::StandardNavigationParams>(new_player_entity, 1.f);
+  // TODO (sessamekesh): spawn the player entity
 
-  connected_players_.insert(
-      {evt.playerId,
-       ConnectedPlayerState{evt.playerId, new_player_entity,
-                            NetServer::PlayerConnectionState::ConnectedBasic}});
   evt.connectionPromise->resolve(true);
 }
 

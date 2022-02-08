@@ -67,9 +67,7 @@ GameScene::GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
       fovy_(fovy),
       client_clock_(0.f),
       server_clock_(-1.f),
-      connection_state_(net_client->get_connection_state()),
-      next_target_({0.f, 0.f}),
-      time_to_next_advance_(3.f) {}
+      connection_state_(net_client->get_connection_state()) {}
 
 void GameScene::post_ctor_setup() {
   arena_camera_input_->attach();
@@ -137,22 +135,11 @@ void GameScene::update(float dt) {
 
   // TODO (sessamekesh): Handle player clicks here!
 
-  // TODO (sessamekesh): not this hack!
-  time_to_next_advance_ -= dt;
-  if (time_to_next_advance_ < 0.f) {
-    time_to_next_advance_ = 2.f;
-    next_target_.y += 4.f;
-    Logger::log(kLogLabel) << "Sending message to server: advance to target: "
-                           << next_target_.x << ", " << next_target_.y;
-    queue_client_nav_action(next_target_);
-  }
-
   // TODO (sessamekesh): Also handle camera events (click and drag) here
 
   //
   // Game logic execution
   //
-  standard_target_travel_system_.update(world_, client_clock_);
 
   //
   // Dispatch any queued up client messages
@@ -279,28 +266,9 @@ void GameScene::handle_server_events() {
       for (int j = 0; j < msg.actions_list().messages_size(); j++) {
         const pb::GameServerSingleMessage& single_msg =
             msg.actions_list().messages(j);
-
-        if (single_msg.has_player_state_update()) {
-          netcode_system_.update_locomotion_data(
-              world_, single_msg.player_state_update(), msg.clock_time(),
-              server_clock_);
-        }
       }
     }
   }
-}
-
-void GameScene::queue_client_nav_action(glm::vec2 nav_pos) {
-  pb::GameClientSingleMessage single_message{};
-
-  pb::TravelToLocationRequest* travel_request =
-      single_message.mutable_travel_to_location_request();
-
-  travel_request->set_x(nav_pos.x);
-  travel_request->set_y(nav_pos.y);
-
-  std::lock_guard<std::mutex> l(mut_pending_client_message_queue_);
-  pending_client_message_queue_.push_back(std::move(single_message));
 }
 
 void GameScene::dispatch_client_messages() {
