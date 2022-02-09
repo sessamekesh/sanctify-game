@@ -78,6 +78,8 @@ TEST(GameSnapshotDiff, TestSerializeAndDeserialize) {
 
   // Basic elements (non component specific)
   diff.snapshot_time(100.f);
+  diff.base_snapshot_id(123);
+  diff.dest_snapshot_id(125);
   diff.delete_entity(1);
   diff.delete_entity(2);
 
@@ -99,9 +101,14 @@ TEST(GameSnapshotDiff, TestSerializeAndDeserialize) {
 
   // Basic assertions (non component specific)
   EXPECT_EQ(gen_diff.snapshot_time(), 100.f);
+  EXPECT_EQ(gen_diff.base_snapshot_id(), 123);
+  EXPECT_EQ(gen_diff.dest_snapshot_id(), 125);
+
   EXPECT_EQ(gen_diff.deleted_entities().size(), 2);
   EXPECT_EQ(gen_diff.deleted_entities()[0], 1);
   EXPECT_EQ(gen_diff.deleted_entities()[1], 2);
+  EXPECT_EQ(gen_diff.base_snapshot_id(), 123);
+  EXPECT_EQ(gen_diff.dest_snapshot_id(), 125);
 
   PodVector<GameSnapshotDiff::ComponentType> deleted_components =
       gen_diff.deleted_components(3);
@@ -160,6 +167,8 @@ TEST(GameSnapshot, ProducesCorrectDiff) {
   GameSnapshot base{}, dest{};
   base.snapshot_time(100.f);
   dest.snapshot_time(101.f);
+  base.snapshot_id(500);
+  dest.snapshot_id(501);
 
   // Entity 1 - has an updated StandardNavigationParams, that's it
   base.add(1, component::MapLocation{glm::vec2(1.f, 2.f)});
@@ -180,6 +189,10 @@ TEST(GameSnapshot, ProducesCorrectDiff) {
   base.add(4, component::StandardNavigationParams{5.f});
 
   GameSnapshotDiff diff = GameSnapshot::CreateDiff(base, dest);
+
+  EXPECT_EQ(diff.snapshot_time(), dest.snapshot_time());
+  EXPECT_EQ(diff.dest_snapshot_id(), dest.snapshot_id());
+  EXPECT_EQ(diff.base_snapshot_id(), base.snapshot_id());
 
   // Make sure only Entity 4 was deleted in the diff
   PodVector<uint32_t> deleted_entities = diff.deleted_entities();
@@ -224,6 +237,12 @@ TEST(GameSnapshot, AppliesDiffCorrectly) {
   GameSnapshot base{};
   GameSnapshotDiff diff{};
 
+  base.snapshot_id(10);
+  base.snapshot_time(95.f);
+  diff.base_snapshot_id(10);
+  diff.dest_snapshot_id(20);
+  diff.snapshot_time(100.f);
+
   // Entity 1 - location updates, but nothing else does
   base.add(1, component::MapLocation{glm::vec2(1.f, 2.f)});
   base.add(1, component::StandardNavigationParams{5.f});
@@ -242,6 +261,9 @@ TEST(GameSnapshot, AppliesDiffCorrectly) {
   diff.delete_entity(4);
 
   GameSnapshot dest = GameSnapshot::ApplyDiff(base, diff);
+
+  EXPECT_EQ(dest.snapshot_id(), 20);
+  EXPECT_EQ(dest.snapshot_time(), 100.f);
 
   // Entity 1 should have new location
   EXPECT_EQ(dest.map_location(1), component::MapLocation{glm::vec2(2.f, 4.f)});

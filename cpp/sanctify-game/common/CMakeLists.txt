@@ -5,15 +5,19 @@ add_proto_lib(
 )
 
 set (header_list
+  "include/sanctify-game-common/gameplay/locomotion.h"
   "include/sanctify-game-common/gameplay/locomotion_components.h"
   "include/sanctify-game-common/gameplay/net_sync_components.h"
+  "include/sanctify-game-common/net/entt_snapshot_translator.h"
   "include/sanctify-game-common/net/game_snapshot.h"
   "include/sanctify-game-common/net/net_config.h"
   "include/sanctify-game-common/net/reliable.h")
 
 set (src_list
+  "src/gameplay/locomotion.cc"
   "src/gameplay/locomotion_components.cc"
   "src/gameplay/net_sync_components.cc"
+  "src/net/entt_snapshot_translator.cc"
   "src/net/game_snapshot.cc"
   "src/net/net_config.cc"
   "src/net/reliable.cc")
@@ -30,7 +34,8 @@ endif ()
 
 if (IG_BUILD_TESTS)
   set(TEST_SRC_LIST
-    "test/game_snapshot_test.cc")
+    "test/gameplay/locomotion_test.cc"
+    "test/net/game_snapshot_test.cc")
   
   add_executable(sanctify-game-common_test ${TEST_SRC_LIST})
   target_link_libraries(sanctify-game-common_test gtest gtest_main sanctify-game-common)

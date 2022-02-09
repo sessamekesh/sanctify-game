@@ -87,6 +87,9 @@ The following places need to be updated if there is any new net sync components 
 7) game_snapshot_test.cc :: GameSnapshot TestSerializeAndDeserialize test
     * Under section "ADD COMPONENTS" and "VERIFY COMPONENTS"
     * Under section "VERIFY COMPONENT DELETIONS"
+8) snapshot_writer.cc :: write_fresh_game_state (write a component if it's found in the snapshot)
+9) snapshot_writer.cc :: read_game_state (read a component if it's found in the world)
+10) reconcile_net_state_system.h :: reconcile_client_state (removing components from a world state)
 
 Also make sure that the following are true:
 1) The new component type has the equality operator overloaded

@@ -32,7 +32,7 @@ class Bimap {
     friend class literator_t;
     friend class riterator_t;
 
-    iterator_t(Bimap* m, uint32_t idx) : m_(m), idx_(idx) {}
+    iterator_t(const Bimap* m, uint32_t idx) : m_(m), idx_(idx) {}
 
     entry_t& operator*() const { return m_->entries_[idx_]; }
     entry_t* operator->() const { return &m_->entries_[idx_]; }
@@ -49,16 +49,18 @@ class Bimap {
     }
 
     // private:
-    Bimap* m_;
+    const Bimap* m_;
     uint32_t idx_;
   };
 
   class literator_t {
    public:
-    literator_t(Bimap* m, uint32_t idx) : m_(m), idx_(idx) {}
+    literator_t(const Bimap* m, uint32_t idx) : m_(m), idx_(idx) {}
     literator_t(iterator_t it) : m_(it.m_), idx_(it.idx_) {}
 
     LT& operator*() const { return std::get<0>(m_->entries_[idx_]); }
+    const LT& operator*() { return std::get<0>(m_->entries_[idx_]); }
+
     LT* operator->() const { return &std::get<0>(m_->entries_[idx_]); }
     literator_t& operator++() {
       idx_++;
@@ -88,7 +90,7 @@ class Bimap {
     friend class iterator_t;
 
     // private:
-    Bimap* m_;
+    const Bimap* m_;
     uint32_t idx_;
   };
 
@@ -97,10 +99,11 @@ class Bimap {
     friend class literator_t;
     friend class iterator_t;
 
-    riterator_t(Bimap* m, uint32_t idx) : m_(m), idx_(idx) {}
+    riterator_t(const Bimap* m, uint32_t idx) : m_(m), idx_(idx) {}
     riterator_t(iterator_t it) : m_(it.m_), idx_(it.idx_) {}
 
     RT& operator*() const { return std::get<1>(m_->entries_[idx_]); }
+    const RT& operator*() { return std::get<1>(m_->entries_[idx_]); }
     RT* operator->() const { return &std::get<1>(m_->entries_[idx_]); }
     riterator_t& operator++() {
       idx_++;
@@ -127,13 +130,13 @@ class Bimap {
     }
 
     // private:
-    Bimap* m_;
+    const Bimap* m_;
     uint32_t idx_;
   };
 
   Bimap() {}
 
-  riterator_t find_l(const LT& key) {
+  riterator_t find_l(const LT& key) const {
     auto ltit = l_indices_.find(key);
     if (ltit == l_indices_.end()) {
       return end();
@@ -144,7 +147,7 @@ class Bimap {
     return riterator_t{this, idx};
   }
 
-  literator_t find_r(const RT& key) {
+  literator_t find_r(const RT& key) const {
     auto rtit = r_indices_.find(key);
     if (rtit == r_indices_.end()) {
       return end();
@@ -243,25 +246,25 @@ class Bimap {
     }
   }
 
-  iterator_t begin() { return iterator_t(this, 0); }
-  iterator_t end() { return iterator_t(this, (int)entries_.size()); }
+  iterator_t begin() const { return iterator_t(this, 0); }
+  iterator_t end() const { return iterator_t(this, (int)entries_.size()); }
 
   struct literable {
-    Bimap* m_;
+    const Bimap* m_;
 
-    literator_t begin() { return m_->begin(); }
-    literator_t end() { return m_->end(); }
+    literator_t begin() const { return m_->begin(); }
+    literator_t end() const { return m_->end(); }
   };
 
   struct riterable {
-    Bimap* m_;
+    const Bimap* m_;
 
-    riterator_t begin() { return m_->begin(); }
-    riterator_t end() { return m_->end(); }
+    riterator_t begin() const { return m_->begin(); }
+    riterator_t end() const { return m_->end(); }
   };
 
-  literable left_values() { return literable{this}; }
-  riterable right_values() { return riterable{this}; }
+  literable left_values() const { return literable{this}; }
+  riterable right_values() const { return riterable{this}; }
 
  private:
   size_t erase_at(uint32_t idx) {

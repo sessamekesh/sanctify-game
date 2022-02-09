@@ -2,8 +2,11 @@
 #define SANCTIFY_GAME_SERVER_APP_GAME_SERVER_H
 
 #include <app/net_events.h>
+#include <app/systems/locomotion.h>
+#include <app/systems/net_serialize.h>
 #include <igasync/promise.h>
 #include <net/net_server.h>
+#include <sanctify-game-common/gameplay/locomotion.h>
 #include <sanctify-game-common/proto/sanctify-net.pb.h>
 #include <util/concurrentqueue.h>
 #include <util/types.h>
@@ -70,6 +73,9 @@ class GameServer : public std::enable_shared_from_this<GameServer> {
   void send_player_updates();
 
   // Inidivual handlers for net client inputs...
+  void handle_travel_to_location(
+      entt::entity player_entity,
+      const pb::PlayerMovement& travel_to_location_request);
 
  private:
   PlayerMessageCallback player_message_cb_;
@@ -79,7 +85,7 @@ class GameServer : public std::enable_shared_from_this<GameServer> {
 
   entt::registry world_;
 
-  std::shared_mutex mut_connected_players_;
+  mutable std::shared_mutex mut_connected_players_;
   std::unordered_map<PlayerId, ConnectedPlayerState, PlayerIdHashFn>
       connected_players_;
 
@@ -87,6 +93,21 @@ class GameServer : public std::enable_shared_from_this<GameServer> {
       message_queue_;
 
   moodycamel::ConcurrentQueue<NetEvent> net_events_queue_;
+
+  indigo::core::Maybe<entt::entity> get_player_entity(
+      const PlayerId& player) const;
+
+  //
+  // Netcode!
+  //
+  uint32_t next_net_sync_id_;
+  system::NetSerializeSystem net_serialize_system_;
+
+  //
+  // Gameplay!
+  //
+  system::ServerLocomotionSystem server_locomotion_system_;
+  system::LocomotionSystem locomotion_system_;
 };
 
 }  // namespace sanctify

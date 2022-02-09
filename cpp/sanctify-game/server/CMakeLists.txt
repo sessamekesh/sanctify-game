@@ -6,6 +6,8 @@ endif ()
 find_package(Boost 1.67 REQUIRED COMPONENTS system thread)
 
 set(header_list
+  "app/systems/locomotion.h"
+  "app/systems/net_serialize.h"
   "app/game_server.h"
   "app/net_events.h"
   "app/net_components.h"
@@ -22,6 +24,8 @@ set(header_list
   "util/visit.h")
 
 set(src_list
+  "app/systems/locomotion.cc"
+  "app/systems/net_serialize.cc"
   "app/game_server.cc"
   "app/net_events.cc"
   "net/build_game_token_exchanger.cc"

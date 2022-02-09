@@ -2,6 +2,7 @@
 #include <app/net_components.h>
 #include <igcore/log.h>
 #include <sanctify-game-common/gameplay/locomotion_components.h>
+#include <sanctify-game-common/gameplay/net_sync_components.h>
 #include <sanctify-game-common/net/net_config.h>
 #include <util/visit.h>
 
@@ -47,6 +48,7 @@ bool is_reconnectable_state(NetServer::PlayerConnectionState state) {
   }
 }
 
+const float kMaxTimeBetweenFullSyncs = 10.f;
 const float kMaxTimeBetweenUpdates = 0.1f;
 
 }  // namespace
@@ -54,7 +56,9 @@ const float kMaxTimeBetweenUpdates = 0.1f;
 GameServer::GameServer()
     : player_message_cb_(::default_player_message_handler),
       is_running_(false),
-      sim_clock_(0.f) {}
+      sim_clock_(0.f),
+      next_net_sync_id_(1u),
+      net_serialize_system_(kMaxTimeBetweenUpdates, kMaxTimeBetweenFullSyncs) {}
 
 GameServer::~GameServer() {}
 
@@ -170,6 +174,14 @@ void GameServer::apply_single_player_input(
         message.game_client_actions_list().actions(i);
 
     switch (action.msg_body_case()) {
+      case pb::GameClientSingleMessage::MsgBodyCase::kTravelToLocationRequest:
+        handle_travel_to_location(player_entity,
+                                  action.travel_to_location_request());
+        break;
+      case pb::GameClientSingleMessage::MsgBodyCase::kSnapshotReceived:
+        net_serialize_system_.receive_client_snapshot_ack(
+            player, action.snapshot_received().snapshot_id());
+        break;
       default:
         Logger::log(kLogLabel)
             << "Unrecognized action type - " << (int)action.msg_body_case()
@@ -184,14 +196,62 @@ void GameServer::apply_single_player_input(
 //
 
 void GameServer::send_player_updates() {
-  // TODO (sessamekesh): Send out player updates
-  // - Decide which players need updates
-  // - Generate state for each player
-  // - Diff against last known client known state
-  // - Send the diff!
+  Vector<std::pair<PlayerId, entt::entity>> receptive_players(10);
+
+  {
+    std::shared_lock<std::shared_mutex> l(mut_connected_players_);
+    for (const auto& it : connected_players_) {
+      if (!::is_receptive_net_state(it.second.netState)) {
+        continue;
+      }
+
+      receptive_players.push_back({it.first, it.second.playerEntity});
+    }
+  }
+
+  float server_time = sim_clock_;
+
+  for (int i = 0; i < receptive_players.size(); i++) {
+    const auto& player_pair = receptive_players[i];
+    Maybe<GameSnapshot> full_snapshot =
+        net_serialize_system_.get_snapshot_to_send(
+            player_pair.first, world_, player_pair.second, sim_clock_);
+
+    // TODO (sessamekesh): Instead of sending an individual message, queue up
+    //  actions that are sent at the bottom of a frame!
+    if (full_snapshot.has_value()) {
+      pb::GameServerMessage msg{};
+      *msg.mutable_actions_list()
+           ->add_messages()
+           ->mutable_game_snapshot_full() = full_snapshot.get().serialize();
+      player_message_cb_(player_pair.first, msg);
+      continue;
+    }
+
+    Maybe<GameSnapshotDiff> diff = net_serialize_system_.get_diff_to_send(
+        player_pair.first, world_, player_pair.second, sim_clock_);
+    if (diff.has_value()) {
+      pb::GameServerMessage msg{};
+      *msg.mutable_actions_list()
+           ->add_messages()
+           ->mutable_game_snapshot_diff() = diff.get().serialize();
+      player_message_cb_(player_pair.first, msg);
+      continue;
+    }
+  }
 }
 
-void GameServer::update(float dt) { sim_clock_ += dt; }
+void GameServer::handle_travel_to_location(
+    entt::entity player_entity,
+    const pb::PlayerMovement& travel_to_location_request) {
+  server_locomotion_system_.handle_player_movement_event(
+      travel_to_location_request, player_entity, world_);
+}
+
+void GameServer::update(float dt) {
+  sim_clock_ += dt;
+  locomotion_system_.apply_standard_locomotion(world_, dt);
+}
 
 void GameServer::process_net_events() {
   // Go through all net events that have been set, and handle them (up to 64)
@@ -235,7 +295,26 @@ void GameServer::handle_connect_player_event(ConnectPlayerEvent& evt) {
     return;
   }
 
-  // TODO (sessamekesh): spawn the player entity
+  entt::entity player_entity = world_.create();
+  locomotion_system_.attach_basic_locomotion_components(
+      world_, player_entity,
+      /* map_position */ glm::vec2(0.f, 0.f),
+      /* movement_speed */ 8.f);
+  world_.emplace<component::NetSyncId>(player_entity, next_net_sync_id_++);
+
+  // TODO (sessamekesh): Remove this hack!!!
+  PodVector<glm::vec2> waypoints(4);
+  waypoints.push_back(glm::vec2{0.f, 80.f});
+  waypoints.push_back(glm::vec2{-2.f, -80.f});
+  waypoints.push_back(glm::vec2{15.f, 55.f});
+  waypoints.push_back(glm::vec2{-5.f, -250.f});
+  world_.emplace<component::NavWaypointList>(player_entity, waypoints);
+  // END HACK
+
+  ConnectedPlayerState player_state{
+      evt.playerId, player_entity,
+      NetServer::PlayerConnectionState::ConnectedBasic};
+  connected_players_.emplace(evt.playerId, std::move(player_state));
 
   evt.connectionPromise->resolve(true);
 }
@@ -264,4 +343,15 @@ void GameServer::set_player_connection_state(
 
     // TODO (sessamekesh): handle state transitions here
   }
+}
+
+Maybe<entt::entity> GameServer::get_player_entity(
+    const PlayerId& player) const {
+  std::shared_lock<std::shared_mutex> l(mut_connected_players_);
+  auto it = connected_players_.find(player);
+  if (it == connected_players_.end()) {
+    return empty_maybe{};
+  }
+
+  return it->second.playerEntity;
 }

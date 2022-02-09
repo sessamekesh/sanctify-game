@@ -64,6 +64,10 @@ message PlayerMovement {
   Vec2 destination = 1;
 }
 
+message SnapshotReceived {
+  uint32 snapshot_id = 1;
+}
+
 //
 // Gameplay State Updates (server events)
 //
@@ -81,7 +85,8 @@ message GameEntity {
 
 message GameSnapshotFull {
   float game_time = 1;
-  repeated GameEntity game_entities = 2;
+  uint32 snapshot_id = 2;
+  repeated GameEntity game_entities = 3;
 }
 
 message GameEntityUpdateMask {
@@ -101,8 +106,10 @@ message GameEntityUpdateMask {
 
 message GameSnapshotDiff {
   float game_time = 1;
-  repeated GameEntityUpdateMask upsert_entities = 2;
-  repeated uint32 remove_entities = 3;
+  uint32 base_snapshot_id = 2;
+  uint32 dest_snapshot_id = 3;
+  repeated GameEntityUpdateMask upsert_entities = 4;
+  repeated uint32 remove_entities = 5;
 }
 
 message GameServerSingleMessage {
@@ -145,6 +152,11 @@ message GameClientSingleMessage {
     // Raw input - where to go next? Direct from mouse click, do not
     //  factor in terrain/collision (let the server do that)
     PlayerMovement travel_to_location_request = 1;
+
+    // Alert the server that the client has received a snapshot, and
+    //  may now accept diffs that are based against any snapshot at
+    //  least as recent as this one.
+    SnapshotReceived snapshot_received = 2;
   }
 }
 

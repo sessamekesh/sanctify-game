@@ -107,14 +107,15 @@ class Either {
 
   // copy
   Either(const Left<LT>& left) : is_left_(true), left_(left.value) {
-    static_assert(std::is_move_constructible<LT>::value,
-                  "Cannot create a left constructor for a non-movable Left<T>");
+    static_assert(
+        std::is_copy_constructible<LT>::value,
+        "Cannot create a left constructor for a non-copyable Left<T>");
   }
 
   Either(const Right<RT>& right) : is_left_(false), right_(right.value) {
     static_assert(
-        std::is_move_constructible<RT>::value,
-        "Cannot create a right constructor for a non-movable Right<T>");
+        std::is_copy_constructible<RT>::value,
+        "Cannot create a right constructor for a non-copyable Right<T>");
   }
 
   // move

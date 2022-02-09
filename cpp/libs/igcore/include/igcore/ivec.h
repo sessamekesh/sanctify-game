@@ -209,7 +209,7 @@ class IVec {
   size_t capacity_;
 
  private:
-  void ivec_qsort(T* data, size_t low, size_t high) {
+  void ivec_qsort(T* data, int low, int high) {
     if (low < high) {
       auto pi = ivec_partition(data, low, high);
       ivec_qsort(data, low, pi - 1);
@@ -217,11 +217,11 @@ class IVec {
     }
   }
 
-  size_t ivec_partition(T* data, size_t low, size_t high) {
+  int ivec_partition(T* data, int low, int high) {
     auto& pivot = data[high];
-    size_t i = low - 1;
+    int i = low - 1;
 
-    for (size_t j = low; j < high; j++) {
+    for (int j = low; j < high; j++) {
       if (data[j] < pivot) {
         i++;
         swap(&data[i], &data[j]);

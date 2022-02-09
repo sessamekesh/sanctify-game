@@ -146,6 +146,9 @@ Maybe<component::StandardNavigationParams> extract_nav_params(
 Maybe<Either<component::MapLocation, GameSnapshotDiff::ComponentType>>
 generate_map_location_diff(uint32_t net_sync_id, const GameSnapshot& base,
                            const GameSnapshot& dest) {
+  using EitherType =
+      Either<component::MapLocation, GameSnapshotDiff::ComponentType>;
+
   Maybe<component::MapLocation> base_value = base.map_location(net_sync_id);
   Maybe<component::MapLocation> dest_value = dest.map_location(net_sync_id);
 
@@ -154,7 +157,7 @@ generate_map_location_diff(uint32_t net_sync_id, const GameSnapshot& base,
   }
 
   if (base_value.has_value() && dest_value.is_empty()) {
-    return right(GameSnapshotDiff::ComponentType::MapLocation);
+    return EitherType(right(GameSnapshotDiff::ComponentType::MapLocation));
   }
 
   // Dest value must be present, but we don't care if base value is present or
@@ -164,7 +167,7 @@ generate_map_location_diff(uint32_t net_sync_id, const GameSnapshot& base,
     return empty_maybe{};
   }
 
-  return left(dest_value.move());
+  return EitherType(left(dest_value.move()));
 }
 
 void diff_map_location(uint32_t net_sync_id, const GameSnapshot& base,
@@ -183,6 +186,9 @@ void diff_map_location(uint32_t net_sync_id, const GameSnapshot& base,
 Maybe<Either<component::NavWaypointList, GameSnapshotDiff::ComponentType>>
 generate_waypoint_diff(uint32_t net_sync_id, const GameSnapshot& base,
                        const GameSnapshot& dest) {
+  using EitherType =
+      Either<component::NavWaypointList, GameSnapshotDiff::ComponentType>;
+
   auto base_value = base.nav_waypoint_list(net_sync_id);
   auto dest_value = dest.nav_waypoint_list(net_sync_id);
 
@@ -191,14 +197,14 @@ generate_waypoint_diff(uint32_t net_sync_id, const GameSnapshot& base,
   }
 
   if (base_value.has_value() && dest_value.is_empty()) {
-    return right(GameSnapshotDiff::ComponentType::NavWaypointList);
+    return EitherType(right(GameSnapshotDiff::ComponentType::NavWaypointList));
   }
 
   if (base_value.get() == dest_value.get()) {
     return empty_maybe{};
   }
 
-  return left(dest_value.move());
+  return EitherType(left(dest_value.move()));
 }
 
 void diff_waypoints(uint32_t net_sync_id, const GameSnapshot& base,
@@ -218,6 +224,9 @@ Maybe<Either<component::StandardNavigationParams,
              GameSnapshotDiff::ComponentType>>
 generate_nav_params_diff(uint32_t net_sync_id, const GameSnapshot& base,
                          const GameSnapshot& dest) {
+  using EitherType = Either<component::StandardNavigationParams,
+                            GameSnapshotDiff::ComponentType>;
+
   auto base_value = base.standard_navigation_params(net_sync_id);
   auto dest_value = dest.standard_navigation_params(net_sync_id);
 
@@ -226,14 +235,15 @@ generate_nav_params_diff(uint32_t net_sync_id, const GameSnapshot& base,
   }
 
   if (base_value.has_value() && dest_value.is_empty()) {
-    return right(GameSnapshotDiff::ComponentType::StandardNavigationParams);
+    return EitherType(
+        right(GameSnapshotDiff::ComponentType::StandardNavigationParams));
   }
 
   if (base_value.get() == dest_value.get()) {
     return empty_maybe{};
   }
 
-  return left(dest_value.move());
+  return EitherType(left(dest_value.move()));
 }
 
 void diff_nav_params(uint32_t net_sync_id, const GameSnapshot& base,
@@ -258,7 +268,8 @@ void diff_nav_params(uint32_t net_sync_id, const GameSnapshot& base,
 //
 ////////////////////////////////////////////////////
 
-GameSnapshotDiff::GameSnapshotDiff() {}
+GameSnapshotDiff::GameSnapshotDiff()
+    : base_snapshot_id_(0u), dest_snapshot_id_(0u), snapshot_time_(0.f) {}
 
 void GameSnapshotDiff::upsert(uint32_t net_sync_id,
                               Maybe<component::MapLocation> map_location) {
@@ -363,6 +374,8 @@ PodVector<GameSnapshotDiff::ComponentType> GameSnapshotDiff::deleted_components(
 pb::GameSnapshotDiff GameSnapshotDiff::serialize() const {
   pb::GameSnapshotDiff diff_proto{};
   diff_proto.set_game_time(snapshot_time_);
+  diff_proto.set_base_snapshot_id(base_snapshot_id());
+  diff_proto.set_dest_snapshot_id(dest_snapshot_id());
 
   // Upserted entities
   for (auto upsert_net_sync_id : upsert_entities_) {
@@ -405,6 +418,8 @@ GameSnapshotDiff GameSnapshotDiff::Deserialize(
     const pb::GameSnapshotDiff& diff) {
   GameSnapshotDiff diff_model{};
   diff_model.snapshot_time_ = diff.game_time();
+  diff_model.dest_snapshot_id_ = diff.dest_snapshot_id();
+  diff_model.base_snapshot_id_ = diff.base_snapshot_id();
 
   // Upserted entities
   for (const pb::GameEntityUpdateMask& upserted_entities :
@@ -440,12 +455,14 @@ GameSnapshotDiff GameSnapshotDiff::Deserialize(
 //
 ////////////////////////////////////////////////////
 
-GameSnapshot::GameSnapshot() {}
+GameSnapshot::GameSnapshot() : snapshot_id_(0u) {}
 
 GameSnapshotDiff GameSnapshot::CreateDiff(const GameSnapshot& base_snapshot,
                                           const GameSnapshot& dest_snapshot) {
   GameSnapshotDiff diff{};
   diff.snapshot_time(dest_snapshot.snapshot_time_);
+  diff.base_snapshot_id(base_snapshot.snapshot_id());
+  diff.dest_snapshot_id(dest_snapshot.snapshot_id());
 
   // Upsert all elements found in the base snapshot, unless they are identical
   // in the destination snapshot. This upsertion may include deleting components
@@ -469,8 +486,16 @@ GameSnapshotDiff GameSnapshot::CreateDiff(const GameSnapshot& base_snapshot,
 
 GameSnapshot GameSnapshot::ApplyDiff(const GameSnapshot& base_snapshot,
                                      const GameSnapshotDiff& diff) {
+  if (base_snapshot.snapshot_id() != diff.base_snapshot_id()) {
+    Logger::err(kSnapshotLabel)
+        << "Attempting to apply diff for base " << diff.base_snapshot_id()
+        << " to base " << base_snapshot.snapshot_id()
+        << " - the result will likely be nonsense!";
+  }
+
   GameSnapshot dest = base_snapshot;
   dest.snapshot_time(diff.snapshot_time());
+  dest.snapshot_id(diff.dest_snapshot_id());
 
   PodVector<uint32_t> deleted_entities = diff.deleted_entities();
   for (int i = 0; i < deleted_entities.size(); i++) {
@@ -529,6 +554,8 @@ void GameSnapshot::add(uint32_t net_sync_id,
 
 void GameSnapshot::snapshot_time(float time) { snapshot_time_ = time; }
 
+void GameSnapshot::snapshot_id(uint32_t id) { snapshot_id_ = id; }
+
 void GameSnapshot::delete_entity(uint32_t net_sync_id) {
   alive_entities_.erase(net_sync_id);
   map_location_components_.erase(net_sync_id);
@@ -580,9 +607,12 @@ GameSnapshot::standard_navigation_params(uint32_t net_sync_id) const {
 
 float GameSnapshot::snapshot_time() const { return snapshot_time_; }
 
+uint32_t GameSnapshot::snapshot_id() const { return snapshot_id_; }
+
 pb::GameSnapshotFull GameSnapshot::serialize() const {
   pb::GameSnapshotFull proto{};
   proto.set_game_time(snapshot_time());
+  proto.set_snapshot_id(snapshot_id());
 
   for (uint32_t net_sync_id : alive_entities_) {
     pb::GameEntity* game_entity = proto.add_game_entities();
@@ -602,6 +632,7 @@ pb::GameSnapshotFull GameSnapshot::serialize() const {
 GameSnapshot GameSnapshot::Deserialize(const pb::GameSnapshotFull& diff) {
   GameSnapshot snapshot{};
   snapshot.snapshot_time(diff.game_time());
+  snapshot.snapshot_id(diff.snapshot_id());
 
   for (const pb::GameEntity& proto_entity : diff.game_entities()) {
     uint32_t net_sync_id = proto_entity.net_sync_id();
@@ -613,4 +644,8 @@ GameSnapshot GameSnapshot::Deserialize(const pb::GameSnapshotFull& diff) {
   }
 
   return snapshot;
+}
+
+const std::set<uint32_t>& GameSnapshot::alive_entities() const {
+  return alive_entities_;
 }

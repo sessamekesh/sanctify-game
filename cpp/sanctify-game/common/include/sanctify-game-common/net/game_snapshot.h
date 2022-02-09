@@ -39,10 +39,15 @@ class GameSnapshotDiff {
   void delete_entity(uint32_t net_sync_id);
   void delete_component(uint32_t net_sync_id, ComponentType component_type);
 
+  void dest_snapshot_id(uint32_t id) { dest_snapshot_id_ = id; }
+  void base_snapshot_id(uint32_t id) { base_snapshot_id_ = id; }
   void snapshot_time(float time);
-  float snapshot_time() const;
 
   // Queries
+  uint32_t dest_snapshot_id() const { return dest_snapshot_id_; }
+  uint32_t base_snapshot_id() const { return base_snapshot_id_; }
+  float snapshot_time() const;
+
   indigo::core::PodVector<uint32_t> deleted_entities() const;
   indigo::core::PodVector<uint32_t> upserted_entities() const;
 
@@ -62,6 +67,8 @@ class GameSnapshotDiff {
 
  private:
   float snapshot_time_;
+  uint32_t base_snapshot_id_;
+  uint32_t dest_snapshot_id_;
 
   std::set<uint32_t> upsert_entities_;
   std::set<uint32_t> deleted_entities_;
@@ -98,6 +105,7 @@ class GameSnapshot {
   void add(uint32_t net_sync_id,
            indigo::core::Maybe<component::NavWaypointList> nav_waypoint_list);
   void snapshot_time(float time);
+  void snapshot_id(uint32_t id);
   void delete_entity(uint32_t net_sync_id);
   void delete_component(uint32_t net_sync_id,
                         GameSnapshotDiff::ComponentType component_type);
@@ -110,6 +118,8 @@ class GameSnapshot {
   indigo::core::Maybe<component::StandardNavigationParams>
   standard_navigation_params(uint32_t net_sync_id) const;
   float snapshot_time() const;
+  uint32_t snapshot_id() const;
+  const std::set<uint32_t>& alive_entities() const;
 
   // Serialization
   pb::GameSnapshotFull serialize() const;
@@ -117,6 +127,8 @@ class GameSnapshot {
 
  private:
   float snapshot_time_;
+  uint32_t snapshot_id_;
+
   std::set<uint32_t> alive_entities_;
   std::unordered_map<uint32_t, component::MapLocation> map_location_components_;
   std::unordered_map<uint32_t, component::StandardNavigationParams>

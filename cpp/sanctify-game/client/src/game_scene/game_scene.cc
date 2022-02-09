@@ -67,7 +67,8 @@ GameScene::GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
       fovy_(fovy),
       client_clock_(0.f),
       server_clock_(-1.f),
-      connection_state_(net_client->get_connection_state()) {}
+      connection_state_(net_client->get_connection_state()),
+      snapshot_cache_(5) {}
 
 void GameScene::post_ctor_setup() {
   arena_camera_input_->attach();
@@ -118,6 +119,7 @@ void GameScene::update(float dt) {
   // Server state changes
   //
   handle_server_events();
+  reconcile_net_state();
 
   //
   // User input
@@ -140,6 +142,7 @@ void GameScene::update(float dt) {
   //
   // Game logic execution
   //
+  advance_simulation(world_, dt);
 
   //
   // Dispatch any queued up client messages
@@ -251,7 +254,13 @@ void GameScene::handle_server_events() {
     ::new (&net_message_queue_) Vector<pb::GameServerMessage>(4);
   }
 
-  for (int i = 0; i < messages.size(); i++) {
+  // Only consider the last 50 messages (if there are a lot of them!)k
+  int start_idx = 0;
+  if (messages.size() > 50) {
+    start_idx = messages.size() - 50;
+  }
+
+  for (int i = start_idx; i < messages.size(); i++) {
     const pb::GameServerMessage& msg = messages[i];
 
     if (server_clock_ < 0.f) {
@@ -260,15 +269,66 @@ void GameScene::handle_server_events() {
       server_clock_ = glm::min(server_clock_, msg.clock_time());
     }
 
+    // Ignore any old messages (older than 8 seconds)
+    if (msg.clock_time() < server_clock_ - 8.f) {
+      continue;
+    }
+
     if (msg.has_initial_connection_response()) {
       continue;
     } else if (msg.has_actions_list()) {
       for (int j = 0; j < msg.actions_list().messages_size(); j++) {
-        const pb::GameServerSingleMessage& single_msg =
-            msg.actions_list().messages(j);
+        handle_single_message(msg.actions_list().messages(j));
       }
     }
   }
+}
+
+void GameScene::handle_single_message(const pb::GameServerSingleMessage& msg) {
+  // Common case first!
+  if (msg.has_game_snapshot_diff()) {
+    GameSnapshotDiff diff =
+        GameSnapshotDiff::Deserialize(msg.game_snapshot_diff());
+    Maybe<GameSnapshot> maybe_snapshot =
+        snapshot_cache_.assemble_diff_and_store_snapshot(diff);
+    if (maybe_snapshot.is_empty()) {
+      // Ignore this snapshot, since it cannot be assembled with the current
+      // state.
+      return;
+    }
+
+    GameSnapshot snapshot = maybe_snapshot.move();
+    reconcile_net_state_system_.register_server_snapshot(snapshot,
+                                                         server_clock_);
+
+    pb::GameClientSingleMessage msg{};
+    msg.mutable_snapshot_received()->set_snapshot_id(snapshot.snapshot_id());
+    pending_client_message_queue_.push_back(msg);
+
+    return;
+  }
+
+  if (msg.has_game_snapshot_full()) {
+    GameSnapshot snapshot = GameSnapshot::Deserialize(msg.game_snapshot_full());
+    snapshot_cache_.store_server_snapshot(snapshot);
+    reconcile_net_state_system_.register_server_snapshot(snapshot,
+                                                         server_clock_);
+
+    pb::GameClientSingleMessage msg{};
+    msg.mutable_snapshot_received()->set_snapshot_id(snapshot.snapshot_id());
+    pending_client_message_queue_.push_back(msg);
+
+    return;
+  }
+
+  if (msg.has_player_movement()) {
+    // TODO (sessamekesh): Spawn the little player movement indicator thingy!
+    return;
+  }
+
+  Logger::err(kLogLabel) << "Unexpected single message type - has kind "
+                         << (uint32_t)msg.msg_body_case()
+                         << " (see sanctify-net.proto for what that is)";
 }
 
 void GameScene::dispatch_client_messages() {
@@ -292,4 +352,23 @@ void GameScene::dispatch_client_messages() {
   ::new (&pending_client_message_queue_) Vector<pb::GameClientSingleMessage>(4);
 
   net_client_->send_message(msg);
+}
+
+void GameScene::reconcile_net_state() {
+  reconcile_net_state_system_.advance_time_to_and_maybe_reconcile(
+      world_,
+      [this](entt::registry& server_sim, float dt) {
+        advance_simulation(server_sim, dt);
+      },
+      server_clock_);
+}
+
+void GameScene::advance_simulation(entt::registry& world, float dt) {
+  const float kMaxFrameTime = 1.f / 60.f;
+
+  while (dt > kMaxFrameTime) {
+    locomotion_system_.apply_standard_locomotion(world, kMaxFrameTime);
+    dt -= kMaxFrameTime;
+  }
+  locomotion_system_.apply_standard_locomotion(world, dt);
 }

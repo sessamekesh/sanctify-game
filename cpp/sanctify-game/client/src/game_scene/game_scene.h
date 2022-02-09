@@ -1,6 +1,8 @@
 #ifndef SANCTIFY_GAME_CLIENT_SRC_GAME_SCENE_GAME_SCENE_H
 #define SANCTIFY_GAME_CLIENT_SRC_GAME_SCENE_GAME_SCENE_H
 
+#include <game_scene/net/reconcile_net_state_system.h>
+#include <game_scene/net/snapshot_cache.h>
 #include <game_scene/systems/player_render_system.h>
 #include <igcore/vector.h>
 #include <iggpu/texture.h>
@@ -10,6 +12,7 @@
 #include <render/solid_animated/solid_animated_pipeline.h>
 #include <render/terrain/terrain_geo.h>
 #include <render/terrain/terrain_pipeline.h>
+#include <sanctify-game-common/gameplay/locomotion.h>
 #include <scene_base.h>
 #include <webgpu/webgpu_cpp.h>
 
@@ -75,8 +78,12 @@ class GameScene : public ISceneBase,
   void setup_depth_texture(uint32_t width, uint32_t height);
 
   void handle_server_events();
+  void handle_single_message(const pb::GameServerSingleMessage& msg);
 
   void dispatch_client_messages();
+  void reconcile_net_state();
+
+  void advance_simulation(entt::registry& world, float dt);
 
  private:
   std::shared_ptr<AppBase> base_;
@@ -104,6 +111,8 @@ class GameScene : public ISceneBase,
   // Net state...
   float server_clock_;
   system::PlayerRenderSystem player_render_system_;
+  SnapshotCache snapshot_cache_;
+  ReconcileNetStateSystem reconcile_net_state_system_;
 
   std::mutex mut_connection_state_;
   NetClient::ConnectionState connection_state_;
@@ -112,6 +121,9 @@ class GameScene : public ISceneBase,
   std::mutex mut_pending_client_message_queue_;
   indigo::core::Vector<pb::GameClientSingleMessage>
       pending_client_message_queue_;
+
+  // Simulation update helpers...
+  system::LocomotionSystem locomotion_system_;
 };
 
 }  // namespace sanctify

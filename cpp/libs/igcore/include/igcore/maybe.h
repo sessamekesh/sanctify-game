@@ -192,6 +192,15 @@ class Maybe {
   bool is_initialized_;
 };
 
+template <typename T>
+Maybe<T> maybe_from_nullable_ptr(T* ptr) {
+  if (ptr == nullptr) {
+    return empty_maybe{};
+  }
+
+  return *ptr;
+}
+
 }  // namespace indigo::core
 
 #endif
