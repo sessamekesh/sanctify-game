@@ -6,9 +6,9 @@
 #include <emscripten/html5.h>
 #endif
 
+using namespace sanctify;
 using namespace indigo;
 using namespace core;
-using namespace sanctify;
 
 namespace {
 const char* kLogLabel = "SanctifyClientApp";

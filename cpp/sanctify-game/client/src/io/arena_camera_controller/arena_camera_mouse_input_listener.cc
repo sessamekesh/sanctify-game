@@ -1,6 +1,10 @@
 #include <io/arena_camera_controller/arena_camera_mouse_input_listener.h>
 #include <io/glfw_event_emitter.h>
 
+#ifdef EMSCRIPTEN
+#include <emscripten/html5.h>
+#endif
+
 using namespace sanctify;
 
 std::shared_ptr<ArenaCameraMouseInputListener>
@@ -51,7 +55,11 @@ ArenaCameraMouseInputListener::events_since_last_poll() {
 
 ArenaCameraInputState ArenaCameraMouseInputListener::get_input_state() {
   int width, height;
+#ifdef EMSCRIPTEN
+  emscripten_get_canvas_element_size("#app_canvas", &width, &height);
+#else
   glfwGetWindowSize(window_, &width, &height);
+#endif
 
   float screen_up_movement = 0.f;
   float screen_right_movement = 0.f;
