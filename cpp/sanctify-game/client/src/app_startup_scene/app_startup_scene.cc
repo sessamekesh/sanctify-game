@@ -114,7 +114,13 @@ void AppStartupScene::render() {
   pass.SetViewport(0.f, 0.f, base_->Width, base_->Height, 0.f, 1.f);
   pass.SetBindGroup(0, bind_group_);
   pass.Draw(4);
+
+  // TODO (sessamekesh): Update Emscripten library to support .End() method
+#ifdef __EMSCRIPTEN__
   pass.EndPass();
+#else
+  pass.End();
+#endif
 
   wgpu::CommandBuffer buffer = command_encoder.Finish();
 

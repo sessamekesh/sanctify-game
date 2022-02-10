@@ -211,7 +211,12 @@ void GameScene::render() {
       .set_material_inputs(player_shit_.JointsMaterial)
       .draw();
 
+  // TODO (sessamekesh): Update Emscripten library to support .End() method
+#ifdef __EMSCRIPTEN__
   static_geo_pass.EndPass();
+#else
+  static_geo_pass.End();
+#endif
   wgpu::CommandBuffer main_pass_commands = main_pass_command_encoder.Finish();
 
   device.GetQueue().Submit(1, &main_pass_commands);

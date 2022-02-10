@@ -1,6 +1,6 @@
 #include <app_base.h>
 #include <dawn/dawn_proc.h>
-#include <dawn_native/DawnNative.h>
+#include <dawn/native/DawnNative.h>
 #include <igcore/log.h>
 
 #include <cassert>
@@ -158,7 +158,7 @@ core::Either<std::shared_ptr<AppBase>, AppBaseCreateError> AppBase::Create(
   }
 
   // Feature toggles
-  dawn_native::DawnDeviceDescriptor device_descriptor;
+  wgpu::DawnTogglesDeviceDescriptor feature_toggles{};
   std::vector<const char*> enabled_toggles;
 
   // Prevents accidental use of SPIR-V, since that isn't supported in
@@ -171,9 +171,14 @@ core::Either<std::shared_ptr<AppBase>, AppBaseCreateError> AppBase::Create(
   enabled_toggles.push_back("disable_symbol_renaming");
 #endif
 
-  device_descriptor.forceEnabledToggles = enabled_toggles;
+  feature_toggles.forceEnabledTogglesCount = enabled_toggles.size();
+  feature_toggles.forceEnabledToggles = &enabled_toggles[0];
 
-  WGPUDevice raw_device = adapter.CreateDevice(&device_descriptor);
+  wgpu::DeviceDescriptor device_desc{};
+  device_desc.nextInChain = &feature_toggles;
+  device_desc.label = "DawnDevice";
+
+  WGPUDevice raw_device = adapter.CreateDevice(&device_desc);
   if (!raw_device) {
     return core::right(AppBaseCreateError::WGPUDeviceCreationFailed);
   }
