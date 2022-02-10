@@ -1,11 +1,6 @@
 #ifndef SANCTIFY_GAME_CLIENT_SRC_SANCTIFY_CLIENT_APP_H
 #define SANCTIFY_GAME_CLIENT_SRC_SANCTIFY_CLIENT_APP_H
 
-// TODO (sessamekesh): Copy this over from WGPU lake app,
-// make this the exposed application point that handles
-// updates, renders, etc., but also kicks off the main
-// scene and allows scene swapping (this should be a pretty narrow class)
-
 #include <app_base.h>
 #include <igasync/frame_task_scheduler.h>
 #include <igasync/task_list.h>

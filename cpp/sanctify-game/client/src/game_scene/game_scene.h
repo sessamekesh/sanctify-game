@@ -3,12 +3,16 @@
 
 #include <game_scene/net/reconcile_net_state_system.h>
 #include <game_scene/net/snapshot_cache.h>
+#include <game_scene/systems/player_move_indicator_render_system.h>
 #include <game_scene/systems/player_render_system.h>
 #include <igcore/vector.h>
 #include <iggpu/texture.h>
 #include <io/arena_camera_controller/arena_camera_input.h>
+#include <io/viewport_click/viewport_click_controller_input.h>
 #include <netclient/net_client.h>
 #include <render/camera/arena_camera.h>
+#include <render/debug_geo/debug_geo.h>
+#include <render/debug_geo/debug_geo_pipeline.h>
 #include <render/solid_animated/solid_animated_pipeline.h>
 #include <render/terrain/terrain_geo.h>
 #include <render/terrain/terrain_pipeline.h>
@@ -52,13 +56,28 @@ class GameScene : public ISceneBase,
     solid_animated::MatWorldInstanceBuffer InstanceBuffers;
   };
 
+  // TODO (sessamekesh): Consolidate identical bind groups even more!!!
+  //  You'll probably need to stop using the UboBase concept for these
+  //  shared buffers like camera common and lighting common.
+  struct DebugGeoShit {
+    debug_geo::DebugGeoPipelineBuilder pipelineBuilder;
+    debug_geo::DebugGeoPipeline pipeline;
+    debug_geo::FramePipelineInputs frameInputs;
+    debug_geo::ScenePipelineInputs sceneInputs;
+
+    debug_geo::DebugGeo cubeGeo;
+
+    debug_geo::InstanceBuffer cubeInstanceBuffer;
+  };
+
  public:
   static std::shared_ptr<GameScene> Create(
       std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
       std::shared_ptr<IArenaCameraInput> camera_input_system,
+      std::shared_ptr<ViewportClickInput> viewport_click_info,
       TerrainShit terrain_shit, PlayerShit player_shit,
-      std::shared_ptr<NetClient> net_client, float camera_movement_speed,
-      float fovy);
+      DebugGeoShit debug_geo_shit, std::shared_ptr<NetClient> net_client,
+      float camera_movement_speed, float fovy);
   ~GameScene();
 
   // ISceneBase
@@ -70,9 +89,10 @@ class GameScene : public ISceneBase,
  private:
   GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
             std::shared_ptr<IArenaCameraInput> camera_input_system,
+            std::shared_ptr<ViewportClickInput> viewport_click_info,
             TerrainShit terrain_shit, PlayerShit player_shit,
-            std::shared_ptr<NetClient> net_client, float camera_movement_speed,
-            float fovy);
+            DebugGeoShit debug_geo_shit, std::shared_ptr<NetClient> net_client,
+            float camera_movement_speed, float fovy);
   void post_ctor_setup();
 
   void setup_depth_texture(uint32_t width, uint32_t height);
@@ -92,6 +112,7 @@ class GameScene : public ISceneBase,
   wgpu::TextureView depth_view_;
 
   std::shared_ptr<IArenaCameraInput> arena_camera_input_;
+  std::shared_ptr<ViewportClickInput> viewport_click_info_;
   float camera_movement_speed_;
   float fovy_;
   ArenaCamera arena_camera_;
@@ -101,6 +122,7 @@ class GameScene : public ISceneBase,
   // dealing with Lua, and might as well put in some simple AABB/frustum culling
   TerrainShit terrain_shit_;
   PlayerShit player_shit_;
+  DebugGeoShit debug_geo_shit_;
 
   std::shared_ptr<NetClient> net_client_;
 
@@ -111,6 +133,7 @@ class GameScene : public ISceneBase,
   // Net state...
   float server_clock_;
   system::PlayerRenderSystem player_render_system_;
+  PlayerMoveIndicatorRenderSystem player_move_indicator_render_system_;
   SnapshotCache snapshot_cache_;
   ReconcileNetStateSystem reconcile_net_state_system_;
 

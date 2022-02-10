@@ -17,6 +17,7 @@ enum class GameSceneConstructionError {
 
   TerrainShitBuildFailed,
   PlayerShitBuildFailed,
+  DebugGeoShitBuildFailed,
   NetClientBuildFailed,
 };
 

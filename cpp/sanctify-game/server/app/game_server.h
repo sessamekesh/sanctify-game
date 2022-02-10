@@ -74,7 +74,7 @@ class GameServer : public std::enable_shared_from_this<GameServer> {
 
   // Inidivual handlers for net client inputs...
   void handle_travel_to_location(
-      entt::entity player_entity,
+      const PlayerId& player_id, entt::entity player_entity,
       const pb::PlayerMovement& travel_to_location_request);
 
  private:

@@ -40,12 +40,14 @@ wgpu::RenderPassEncoder create_geo_pass(
 std::shared_ptr<GameScene> GameScene::Create(
     std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
     std::shared_ptr<IArenaCameraInput> camera_input_system,
+    std::shared_ptr<ViewportClickInput> viewport_click_info,
     TerrainShit terrain_shit, PlayerShit player_shit,
-    std::shared_ptr<NetClient> net_client, float camera_movement_speed,
-    float fovy) {
+    DebugGeoShit debug_geo_shit, std::shared_ptr<NetClient> net_client,
+    float camera_movement_speed, float fovy) {
   auto game_scene = std::shared_ptr<GameScene>(new GameScene(
-      base, arena_camera, camera_input_system, std::move(terrain_shit),
-      std::move(player_shit), net_client, camera_movement_speed, fovy));
+      base, arena_camera, camera_input_system, viewport_click_info,
+      std::move(terrain_shit), std::move(player_shit),
+      std::move(debug_geo_shit), net_client, camera_movement_speed, fovy));
 
   game_scene->post_ctor_setup();
 
@@ -54,24 +56,32 @@ std::shared_ptr<GameScene> GameScene::Create(
 
 GameScene::GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
                      std::shared_ptr<IArenaCameraInput> camera_input_system,
+                     std::shared_ptr<ViewportClickInput> viewport_click_info,
                      TerrainShit terrain_shit, PlayerShit player_shit,
+                     DebugGeoShit debug_geo_shit,
                      std::shared_ptr<NetClient> net_client,
                      float camera_movement_speed, float fovy)
     : base_(base),
       arena_camera_(arena_camera),
       arena_camera_input_(camera_input_system),
+      viewport_click_info_(viewport_click_info),
       net_client_(net_client),
       terrain_shit_(std::move(terrain_shit)),
       player_shit_(std::move(player_shit)),
+      debug_geo_shit_(std::move(debug_geo_shit)),
       camera_movement_speed_(camera_movement_speed),
       fovy_(fovy),
       client_clock_(0.f),
       server_clock_(-1.f),
       connection_state_(net_client->get_connection_state()),
-      snapshot_cache_(5) {}
+      snapshot_cache_(5),
+      player_move_indicator_render_system_(
+          glm::vec3(0.4f, 0.4f, 1.f), glm::vec3(0.f, 0.f, 0.6f), 1.2f,
+          glm::vec3(1.f, 1.f, 1.f), glm::vec3(0.2f, 0.2f, 0.2f)) {}
 
 void GameScene::post_ctor_setup() {
   arena_camera_input_->attach();
+  viewport_click_info_->attach();
 
   setup_depth_texture(base_->Width, base_->Height);
 
@@ -107,7 +117,10 @@ void GameScene::post_ctor_setup() {
       });
 }
 
-GameScene::~GameScene() { arena_camera_input_->detach(); }
+GameScene::~GameScene() {
+  arena_camera_input_->detach();
+  viewport_click_info_->detach();
+}
 
 void GameScene::update(float dt) {
   if (server_clock_ >= 0.f) {
@@ -135,14 +148,35 @@ void GameScene::update(float dt) {
     arena_camera_.set_look_at(arena_camera_.look_at() + camera_movement);
   }
 
-  // TODO (sessamekesh): Handle player clicks here!
+  // Discard for now
+  auto camera_events = arena_camera_input_->events_since_last_poll();
 
-  // TODO (sessamekesh): Also handle camera events (click and drag) here
+  auto maybe_click_evt = viewport_click_info_->get_frame_action(
+      fovy_, (float)base_->Width / base_->Height,
+      arena_camera_.look_at() - arena_camera_.position(),
+      arena_camera_.position(), arena_camera_.screen_up());
+  if (maybe_click_evt.has_value()) {
+    pb::GameClientSingleMessage msg{};
+    pb::Vec2* travel_request =
+        msg.mutable_travel_to_location_request()->mutable_destination();
+
+    glm::vec2 endpoint = maybe_click_evt.get().mapLocation;
+
+    travel_request->set_x(endpoint.y);
+    travel_request->set_y(endpoint.x);
+
+    pending_client_message_queue_.push_back(msg);
+  }
 
   //
   // Game logic execution
   //
   advance_simulation(world_, dt);
+
+  //
+  // Render state (not part of core game logic)
+  //
+  player_move_indicator_render_system_.update(dt);
 
   //
   // Dispatch any queued up client messages
@@ -156,6 +190,10 @@ void GameScene::render() {
   terrain_shit_.FrameInputs.CameraFragmentParamsUbo.get_mutable().CameraPos =
       arena_camera_.position();
   terrain_shit_.FrameInputs.CameraFragmentParamsUbo.sync(device);
+
+  debug_geo_shit_.frameInputs.cameraFragParams.get_mutable().cameraPos =
+      arena_camera_.position();
+  debug_geo_shit_.frameInputs.cameraFragParams.sync(device);
 
   // TODO (sessamekesh): Consolidate
   {
@@ -173,6 +211,14 @@ void GameScene::render() {
     camera_params.MatProj = glm::perspective(
         fovy_, (float)base_->Width / base_->Height, 0.1f, 4000.f);
     player_shit_.FrameInputs.CameraParamsUbo.sync(device);
+  }
+  {
+    auto& camera_params =
+        debug_geo_shit_.frameInputs.cameraVertParams.get_mutable();
+    camera_params.matView = arena_camera_.mat_view();
+    camera_params.matProj = glm::perspective(
+        fovy_, (float)base_->Width / base_->Height, 0.1f, 4000.f);
+    debug_geo_shit_.frameInputs.cameraVertParams.sync(device);
   }
 
   //
@@ -209,6 +255,17 @@ void GameScene::render() {
       .draw()
       .set_geometry(player_shit_.JointsGeo)
       .set_material_inputs(player_shit_.JointsMaterial)
+      .draw();
+
+  const auto& debug_cube_instances = player_move_indicator_render_system_.get();
+  debug_geo_shit_.cubeInstanceBuffer.update_index_data(device,
+                                                       debug_cube_instances);
+
+  debug_geo::RenderUtil(static_geo_pass, debug_geo_shit_.pipeline)
+      .set_frame_inputs(debug_geo_shit_.frameInputs)
+      .set_scene_inputs(debug_geo_shit_.sceneInputs)
+      .set_geometry(debug_geo_shit_.cubeGeo)
+      .set_instances(debug_geo_shit_.cubeInstanceBuffer)
       .draw();
 
   // TODO (sessamekesh): Update Emscripten library to support .End() method
@@ -328,6 +385,13 @@ void GameScene::handle_single_message(const pb::GameServerSingleMessage& msg) {
 
   if (msg.has_player_movement()) {
     // TODO (sessamekesh): Spawn the little player movement indicator thingy!
+    Logger::log(kLogLabel) << "Player movement event received for: "
+                           << msg.player_movement().destination().x() << ", "
+                           << msg.player_movement().destination().y();
+    player_move_indicator_render_system_.add_at_location(
+        glm::vec3(msg.player_movement().destination().x(), 0.f,
+                  msg.player_movement().destination().y()));
+
     return;
   }
 

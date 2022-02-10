@@ -137,6 +137,7 @@ sanctify::load_player_shit(
         auto pipeline =
             pipeline_builder.create_pipeline(device, swap_chain_format);
 
+        // TODO (sessamekesh): Inject this as some sort of app configuration
         auto scene_inputs = pipeline.create_scene_inputs(
             device, glm::normalize(glm::vec3(1.f, -3.f, 1.f)),
             glm::vec3(1.f, 1.f, 1.f), 0.3f, 50.f);

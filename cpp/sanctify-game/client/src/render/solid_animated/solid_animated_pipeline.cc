@@ -189,7 +189,6 @@ SolidAnimatedPipeline SolidAnimatedPipelineBuilder::create_pipeline(
 
   wgpu::RenderPipelineDescriptor desc{};
   desc.label = "SolidAnimatedPipeline";
-  desc.vertex.bufferCount = 1;
   desc.vertex.buffers = vb_layouts;
   desc.vertex.bufferCount = std::size(vb_layouts);
   desc.vertex.module = vert_module_;

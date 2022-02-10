@@ -175,7 +175,7 @@ void GameServer::apply_single_player_input(
 
     switch (action.msg_body_case()) {
       case pb::GameClientSingleMessage::MsgBodyCase::kTravelToLocationRequest:
-        handle_travel_to_location(player_entity,
+        handle_travel_to_location(player, player_entity,
                                   action.travel_to_location_request());
         break;
       case pb::GameClientSingleMessage::MsgBodyCase::kSnapshotReceived:
@@ -242,10 +242,20 @@ void GameServer::send_player_updates() {
 }
 
 void GameServer::handle_travel_to_location(
-    entt::entity player_entity,
+    const PlayerId& player_id, entt::entity player_entity,
     const pb::PlayerMovement& travel_to_location_request) {
-  server_locomotion_system_.handle_player_movement_event(
+  auto maybe_dest = server_locomotion_system_.handle_player_movement_event(
       travel_to_location_request, player_entity, world_);
+  if (maybe_dest.has_value()) {
+    pb::GameServerMessage msg{};
+    pb::Vec2* loc = msg.mutable_actions_list()
+                        ->add_messages()
+                        ->mutable_player_movement()
+                        ->mutable_destination();
+    loc->set_x(maybe_dest.get().x);
+    loc->set_y(maybe_dest.get().y);
+    player_message_cb_(player_id, msg);
+  }
 }
 
 void GameServer::update(float dt) {

@@ -16,4 +16,20 @@ plan {
       entry_point: "main"
     }
   }
+ actions {
+    copy_wgsl_source {
+      igasset_name: "debug3dVertWgsl"
+      input_file_path: "engine/debug_3d.vert.wgsl"
+      shader_type: VERTEX
+      entry_point: "main"
+    }
+  }
+  actions {
+    copy_wgsl_source {
+      igasset_name: "debug3dFragWgsl"
+      input_file_path: "engine/debug_3d.frag.wgsl"
+      shader_type: FRAGMENT
+      entry_point: "main"
+    }
+  }
 }

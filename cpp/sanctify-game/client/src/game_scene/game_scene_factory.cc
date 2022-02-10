@@ -1,10 +1,12 @@
 #include <game_scene/factory_util/build_character_geo.h>
+#include <game_scene/factory_util/build_debug_geo_shit.h>
 #include <game_scene/factory_util/build_net_client.h>
 #include <game_scene/factory_util/build_terrain_shit.h>
 #include <game_scene/game_scene_factory.h>
 #include <igasset/igpack_loader.h>
 #include <igasync/promise_combiner.h>
 #include <io/arena_camera_controller/arena_camera_mouse_input_listener.h>
+#include <io/viewport_click/viewport_click_mouse_impl.h>
 
 using namespace indigo;
 using namespace core;
@@ -28,6 +30,8 @@ std::string sanctify::to_string(const GameSceneConstructionError& err) {
       return "TerrainShitBuildFailed";
     case GameSceneConstructionError::PlayerShitBuildFailed:
       return "PlayerShitBuildFailed";
+    case GameSceneConstructionError::DebugGeoShitBuildFailed:
+      return "DebugGeoShitBuildFailed";
     case GameSceneConstructionError::NetClientBuildFailed:
       return "NetClientBuildFailed";
   }
@@ -81,6 +85,13 @@ std::shared_ptr<GamePromise> GameSceneFactory::build() const {
   auto solid_animated_fs_src_promise =
       base_shader_sources_loader.extract_wgsl_shader("solidAnimatedFragWgsl",
                                                      async_task_list_);
+  auto debug_geo_vs_src_promise =
+      base_shader_sources_loader.extract_wgsl_shader("debug3dVertWgsl",
+                                                     async_task_list_);
+  auto debug_geo_fs_src_promise =
+      base_shader_sources_loader.extract_wgsl_shader("debug3dFragWgsl",
+                                                     async_task_list_);
+
   auto ybot_surface_geo_promise =
       ybot_character_loader.extract_draco_geo("ybotBase", async_task_list_);
   auto ybot_joints_geo_promise =
@@ -95,6 +106,10 @@ std::shared_ptr<GamePromise> GameSceneFactory::build() const {
       solid_animated_vs_src_promise, solid_animated_fs_src_promise,
       ybot_surface_geo_promise, ybot_joints_geo_promise, main_thread_task_list_,
       async_task_list_);
+  auto debug_geo_shit_promise = ::load_debug_geo_shit(
+      device, base_->preferred_swap_chain_texture_format(),
+      debug_geo_vs_src_promise, debug_geo_fs_src_promise,
+      main_thread_task_list_, async_task_list_);
 
   // TODO (sessamekesh): Remove this hardcoded URL base
 #ifdef __EMSCRIPTEN__
@@ -111,10 +126,13 @@ std::shared_ptr<GamePromise> GameSceneFactory::build() const {
   auto combiner = PromiseCombiner::Create();
   auto terrain_shit_key = combiner->add(terrain_shit_promise, async_task_list_);
   auto player_shit_key = combiner->add(player_shit_promise, async_task_list_);
+  auto debug_geo_shit_key =
+      combiner->add(debug_geo_shit_promise, async_task_list_);
   auto net_client_key = combiner->add(net_client_promise, async_task_list_);
 
   return combiner->combine()->then<GamePromiseRsl>(
-      [base, terrain_shit_key, player_shit_key, net_client_key](
+      [base, terrain_shit_key, player_shit_key, net_client_key,
+       debug_geo_shit_key](
           const PromiseCombiner::PromiseCombinerResult& rsl) -> GamePromiseRsl {
         //
         // Extract intermediate results
@@ -123,6 +141,8 @@ std::shared_ptr<GamePromise> GameSceneFactory::build() const {
             rsl.move(terrain_shit_key);
         Maybe<GameScene::PlayerShit> player_shit_rsl =
             rsl.move(player_shit_key);
+        Maybe<GameScene::DebugGeoShit> debug_geso_shit_rsl =
+            rsl.move(debug_geo_shit_key);
         Maybe<std::shared_ptr<NetClient>> net_client_rsl =
             rsl.move(net_client_key);
 
@@ -134,6 +154,10 @@ std::shared_ptr<GamePromise> GameSceneFactory::build() const {
         if (player_shit_rsl.is_empty()) {
           result_extract_errors.push_back(
               GameSceneConstructionError::PlayerShitBuildFailed);
+        }
+        if (debug_geso_shit_rsl.is_empty()) {
+          result_extract_errors.push_back(
+              GameSceneConstructionError::DebugGeoShitBuildFailed);
         }
         if (net_client_rsl.is_empty()) {
           result_extract_errors.push_back(
@@ -152,11 +176,17 @@ std::shared_ptr<GamePromise> GameSceneFactory::build() const {
         // TODO (sessamekesh): inject this configurably, not always with this
         std::shared_ptr<IArenaCameraInput> arena_camera_input =
             ArenaCameraMouseInputListener::Create(base->Window);
+        std::shared_ptr<IViewportClickControllerInput>
+            viewport_click_controller =
+                ViewportClickMouseImpl::Create(base->Window);
+        std::shared_ptr<ViewportClickInput> input =
+            std::make_shared<ViewportClickInput>(viewport_click_controller);
 
         return left(
-            GameScene::Create(base, arena_camera, arena_camera_input,
+            GameScene::Create(base, arena_camera, arena_camera_input, input,
                               terrain_shit_rsl.move(), player_shit_rsl.move(),
-                              net_client_rsl.get(), 0.8f, glm::radians(40.f)));
+                              debug_geso_shit_rsl.move(), net_client_rsl.get(),
+                              0.8f, glm::radians(40.f)));
       },
       async_task_list_);
 }
