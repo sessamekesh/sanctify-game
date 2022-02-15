@@ -67,21 +67,21 @@ DebugGeo DebugGeo::CreateDebugUnitCube(const wgpu::Device& device) {
   vertices.push_back({glm::vec3(1.f, 1.f, -1.f), glm::vec3(1.f, 0.f, 0.f)});
   vertices.push_back({glm::vec3(1.f, 1.f, 1.f), glm::vec3(1.f, 0.f, 0.f)});
   vertices.push_back({glm::vec3(1.f, -1.f, 1.f), glm::vec3(1.f, 0.f, 0.f)});
-  indices.push_back(12, 13, 14, 12, 15, 14);
+  indices.push_back(12, 13, 14, 12, 14, 15);
 
   // Top
   vertices.push_back({glm::vec3(1.f, 1.f, 1.f), glm::vec3(0.f, 1.f, 0.f)});
   vertices.push_back({glm::vec3(-1.f, 1.f, 1.f), glm::vec3(0.f, 1.f, 0.f)});
   vertices.push_back({glm::vec3(-1.f, 1.f, -1.f), glm::vec3(0.f, 1.f, 0.f)});
   vertices.push_back({glm::vec3(1.f, 1.f, -1.f), glm::vec3(0.f, 1.f, 0.f)});
-  indices.push_back(16, 17, 18, 16, 18, 19);
+  indices.push_back(16, 18, 17, 16, 19, 18);
 
   // Bottom
   vertices.push_back({glm::vec3(1.f, -1.f, 1.f), glm::vec3(0.f, -1.f, 0.f)});
   vertices.push_back({glm::vec3(-1.f, -1.f, 1.f), glm::vec3(0.f, -1.f, 0.f)});
   vertices.push_back({glm::vec3(-1.f, -1.f, -1.f), glm::vec3(0.f, -1.f, 0.f)});
   vertices.push_back({glm::vec3(1.f, -1.f, -1.f), glm::vec3(0.f, -1.f, 0.f)});
-  indices.push_back(20, 21, 22, 20, 23, 22);
+  indices.push_back(20, 22, 21, 20, 23, 22);
 
   return DebugGeo(device, vertices, indices);
 }

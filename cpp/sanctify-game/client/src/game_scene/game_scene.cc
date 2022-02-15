@@ -76,7 +76,7 @@ GameScene::GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
       connection_state_(net_client->get_connection_state()),
       snapshot_cache_(5),
       player_move_indicator_render_system_(
-          glm::vec3(0.4f, 0.4f, 1.f), glm::vec3(0.f, 0.f, 0.6f), 1.2f,
+          glm::vec3(0.4f, 0.4f, 1.f), glm::vec3(0.f, 0.f, 0.6f), 0.4f,
           glm::vec3(1.f, 1.f, 1.f), glm::vec3(0.2f, 0.2f, 0.2f)) {}
 
 void GameScene::post_ctor_setup() {
@@ -157,13 +157,14 @@ void GameScene::update(float dt) {
       arena_camera_.position(), arena_camera_.screen_up());
   if (maybe_click_evt.has_value()) {
     pb::GameClientSingleMessage msg{};
+
     pb::Vec2* travel_request =
         msg.mutable_travel_to_location_request()->mutable_destination();
 
     glm::vec2 endpoint = maybe_click_evt.get().mapLocation;
 
-    travel_request->set_x(endpoint.y);
-    travel_request->set_y(endpoint.x);
+    travel_request->set_x(endpoint.x);
+    travel_request->set_y(endpoint.y);
 
     pending_client_message_queue_.push_back(msg);
   }

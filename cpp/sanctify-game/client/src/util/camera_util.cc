@@ -14,11 +14,11 @@ glm::vec3 camera_util::get_camera_pick_ray(float fovy, float aspect,
   float pick_x = x_pct * 2.f - 1.f;
   float pick_y = y_pct * 2.f - 1.f;
 
-  glm::mat4 proj = glm::perspective(fovy, aspect, 0.1f, 100.f);
+  glm::mat4 proj = glm::perspective(fovy, aspect, 0.1f, 4000.f);
   glm::mat4 view = glm::lookAt(glm::vec3(0.f), camera_direction, camera_up);
 
   glm::mat4 inv_vp = glm::inverse(proj * view);
-  glm::vec4 screen_pos = glm::vec4(pick_x, pick_y, 1.f, 1.f);
+  glm::vec4 screen_pos = glm::vec4(pick_x, -pick_y, 1.f, 1.f);
   glm::vec4 world_pos = inv_vp * screen_pos;
 
   return glm::normalize(glm::vec3(world_pos));

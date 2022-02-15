@@ -23,6 +23,8 @@ void PlayerMoveIndicatorRenderSystem::add_at_location(glm::vec3 location) {
   data.ObjectColor = start_color_;
   instances_.push_back(data);
 
+  location.y += 0.5;
+
   movement_indicator_data_.push_back(MovementIndicator{lifetime_, location});
 }
 
