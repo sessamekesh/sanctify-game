@@ -177,6 +177,31 @@ if (MSVC)
 endif ()
 add_subdirectory(entt)
 
+# Dear ImGUI (used in certain tooling builds)
+add_library(imgui
+  "imgui/imgui.cpp"
+  "imgui/imgui.h"
+  "imgui/imgui_draw.cpp"
+  "imgui/imgui_demo.cpp"
+  "imgui/imgui_tables.cpp"
+  "imgui/imgui_widgets.cpp"
+  "imgui/misc/cpp/imgui_stdlib.cpp"
+  "imgui/backends/imgui_impl_wgpu.cpp"
+  "imgui/backends/imgui_impl_wgpu.h"
+  "imgui/backends/imgui_impl_glfw.cpp"
+  "imgui/backends/imgui_impl_glfw.h")
+target_include_directories(imgui PUBLIC imgui imgui/backends)
+target_link_libraries(imgui PUBLIC glfw dawncpp)
+
+# Native file dialog (useful in GUI tooling builds)
+if (NOT EMSCRIPTEN)
+  add_library(nativefiledialog
+    "nativefiledialog/src/nfd_common.c"
+    "nativefiledialog/src/nfd_win.cpp")
+  target_include_directories(nativefiledialog PUBLIC
+    "nativefiledialog/src/include")
+endif ()
+
 if (EMSCRIPTEN)
   set_wasm_target_properties(TARGET_NAME libprotobuf AS_LIB 1)
   set_wasm_target_properties(TARGET_NAME Recast AS_LIB 1)
@@ -184,4 +209,5 @@ if (EMSCRIPTEN)
   set_wasm_target_properties(TARGET_NAME DetourCrowd AS_LIB 1)
   set_wasm_target_properties(TARGET_NAME draco_static AS_LIB 1)
   set_wasm_target_properties(TARGET_NAME stb AS_LIB 1)
+  set_wasm_target_properties(TARGET_NAME imgui AS_LIB 1)
 endif ()

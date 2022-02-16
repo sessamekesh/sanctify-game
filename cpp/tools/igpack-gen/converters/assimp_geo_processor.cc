@@ -69,7 +69,7 @@ bool AssimpGeoProcessor::export_static_draco_geo(
 
     aiMesh* mesh = maybe_mesh.get();
 
-    for (int idx = 0; idx < mesh->mNumVertices; idx++) {
+    for (unsigned int idx = 0; idx < mesh->mNumVertices; idx++) {
       asset::PositionNormalVertexData data{};
       data.Position.x = mesh->mVertices[idx].x;
       data.Position.y = mesh->mVertices[idx].y;
@@ -115,7 +115,7 @@ bool AssimpGeoProcessor::export_static_draco_geo(
       }
     }
 
-    for (int idx = 0; idx < mesh->mNumFaces; idx++) {
+    for (unsigned int idx = 0; idx < mesh->mNumFaces; idx++) {
       if (mesh->mFaces[idx].mNumIndices != 3) {
         core::Logger::err(kLogLabel)
             << "Encountered non-triangular face in mesh " << mesh_name;

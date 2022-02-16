@@ -16,3 +16,9 @@
 [submodule "cpp/extern/HTTPRequest"]
 	path = cpp/extern/HTTPRequest
 	url = https://github.com/elnormous/HTTPRequest
+[submodule "cpp/extern/imgui"]
+	path = cpp/extern/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "cpp/extern/nativefiledialog"]
+	path = cpp/extern/nativefiledialog
+	url = https://github.com/mlabbe/nativefiledialog

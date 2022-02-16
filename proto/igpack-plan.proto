@@ -40,6 +40,39 @@ message AssimpToStaticDracoGeoAction {
   string mesh_igasset_name = 4;
 }
 
+message AssembleRecastNavMeshAction {
+  // XZ cell size - param "cs" in Recast API calls
+  float cell_size = 1;
+
+  message BB {
+    float min_x = 1;
+    float min_y = 2;
+    float min_z = 3;
+    float max_x = 4;
+    float max_y = 5;
+    float max_z = 6;
+  }
+
+  // Bounding box override - params bim/bmax in Recast API calls
+  BB bb_override = 2;
+
+  message AssimpGeoDef {
+    string assimp_file_name = 1;
+    string assimp_mesh_name = 2;
+  }
+
+  message RecastOp {
+    oneof op {
+      AssimpGeoDef include_assimp_geo = 1;
+      AssimpGeoDef exclude_assimp_geo = 2;
+    }
+  }
+
+  // An ordered list of Recast construction operations to apply in order
+  //  to build the Recast navmesh.
+  repeated RecastOp recast_build_ops = 3;
+}
+
 message SingleAction {
   oneof request {
     CopyWgslSourceAction copy_wgsl_source = 1;

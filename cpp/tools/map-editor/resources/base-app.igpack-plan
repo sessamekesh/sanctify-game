@@ -1,0 +1,19 @@
+plan {
+  asset_pack_file_path: "resources/base-app.igpack"
+  actions {
+    copy_wgsl_source {
+      igasset_name: "vsGrid"
+      input_file_path: "tooling/grid.vs.wgsl"
+      shader_type: VERTEX
+      entry_point: "main"
+    }
+  }
+  actions {
+    copy_wgsl_source {
+      igasset_name: "fsGrid"
+      input_file_path: "tooling/grid.fs.wgsl"
+      shader_type: FRAGMENT
+      entry_point: "main"
+    }
+  }
+}
