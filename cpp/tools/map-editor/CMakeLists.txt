@@ -1,5 +1,6 @@
 set(INCLUDE_LIST
   "src/util/assimp_loader.h"
+  "src/util/recast_builder.h"
   "src/util/recast_params.h"
   "src/views/navmesh_params_view.h"
   "src/views/viewport_view.h"
@@ -8,6 +9,7 @@ set(INCLUDE_LIST
 
 set(SRC_LIST
   "src/util/assimp_loader.cc"
+  "src/util/recast_builder.cc"
   "src/util/recast_params.cc"
   "src/views/navmesh_params_view.cc"
   "src/views/viewport_view.cc"

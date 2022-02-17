@@ -11,6 +11,21 @@ package indigo.igpackgen.pb;
  *  the Indigo engine.                           *
 \*************************************************/
 
+message Vec3f {
+  float x = 1;
+  float y = 2;
+  float z = 3;
+}
+
+// Rotation, expressed as an axis and angle (to build a quaternion)
+message Rotation {
+  float x = 1;
+  float y = 2;
+  float z = 3;
+  
+  float angle = 4;
+}
+
 message CopyWgslSourceAction {
   enum ShaderType {
     UNKNOWN = 0;
@@ -59,6 +74,10 @@ message AssembleRecastNavMeshAction {
   message AssimpGeoDef {
     string assimp_file_name = 1;
     string assimp_mesh_name = 2;
+
+    Vec3f position = 3;
+    Rotation rotation = 4;
+    Vec3f scale = 5;
   }
 
   message RecastOp {

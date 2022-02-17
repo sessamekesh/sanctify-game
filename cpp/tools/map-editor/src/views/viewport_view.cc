@@ -28,9 +28,11 @@ struct GridParamsData {
 std::shared_ptr<ViewportView> ViewportView::Create(
     std::shared_ptr<indigo::core::TaskList> main_thread_task_list,
     std::shared_ptr<indigo::core::TaskList> async_task_list,
-    std::shared_ptr<RecastParams> recast_params, wgpu::Device device) {
-  auto tr = std::shared_ptr<ViewportView>(new ViewportView(
-      main_thread_task_list, async_task_list, recast_params, device));
+    std::shared_ptr<RecastParams> recast_params,
+    std::shared_ptr<RecastBuilder> recast_builder, wgpu::Device device) {
+  auto tr = std::shared_ptr<ViewportView>(
+      new ViewportView(main_thread_task_list, async_task_list, recast_params,
+                       recast_builder, device));
 
   tr->load_view();
 
@@ -40,7 +42,8 @@ std::shared_ptr<ViewportView> ViewportView::Create(
 ViewportView::ViewportView(
     std::shared_ptr<indigo::core::TaskList> main_thread_task_list,
     std::shared_ptr<indigo::core::TaskList> async_task_list,
-    std::shared_ptr<RecastParams> recast_params, wgpu::Device device)
+    std::shared_ptr<RecastParams> recast_params,
+    std::shared_ptr<RecastBuilder> recast_builder, wgpu::Device device)
     : main_thread_task_list_(main_thread_task_list),
       async_task_list_(async_task_list),
       cameraTarget(0.f, 0.f, 0.f),
@@ -56,6 +59,7 @@ ViewportView::ViewportView(
       cameraTilt(glm::radians(30.f)),
       cameraSpin(glm::radians(45.f)),
       recast_params_(recast_params),
+      recast_builder_(recast_builder),
       device_(device),
       gridPipeline(nullptr),
       gridCommon3dBindGroup(nullptr),
@@ -187,7 +191,11 @@ void ViewportView::render(uint32_t w, uint32_t h) {
   }
 
   wgpu::RenderPassColorAttachment attachment{};
-  attachment.clearColor = {0.55f, 0.65f, 0.55f, 1.f};
+  if (recast_builder_->is_valid_state()) {
+    attachment.clearColor = {0.55f, 0.65f, 0.55f, 1.f};
+  } else {
+    attachment.clearColor = {0.85f, 0.2f, 0.2f, 1.f};
+  }
   attachment.loadOp = wgpu::LoadOp::Clear;
   attachment.storeOp = wgpu::StoreOp::Store;
   attachment.view = viewportOutView;

@@ -4,6 +4,7 @@
 #include <igasset/igpack_loader.h>
 #include <igasync/task_list.h>
 #include <iggpu/texture.h>
+#include <util/recast_builder.h>
 #include <util/recast_params.h>
 #include <webgpu/webgpu_cpp.h>
 
@@ -11,12 +12,19 @@
 
 namespace mapeditor {
 
+// TODO (sessamekesh): Include the Assimp file loader doodad here
+// TODO (sessamekesh): Include a RecastBuilder doodad here
+//  RecastBuilder maintains all the vertices used in here, and is updated when
+//  the RecastParams are rebuilt. RecastBuilder may be in a bad state if the
+//  RecastParams are also in a bad state.
+
 class ViewportView : public std::enable_shared_from_this<ViewportView> {
  public:
   static std::shared_ptr<ViewportView> Create(
       std::shared_ptr<indigo::core::TaskList> main_thread_task_list,
       std::shared_ptr<indigo::core::TaskList> async_task_list,
-      std::shared_ptr<RecastParams> recast_params, wgpu::Device device);
+      std::shared_ptr<RecastParams> recast_params,
+      std::shared_ptr<RecastBuilder> recast_builder, wgpu::Device device);
 
   void update(float dt);
   void render(uint32_t w, uint32_t h);
@@ -32,6 +40,7 @@ class ViewportView : public std::enable_shared_from_this<ViewportView> {
   ViewportView(std::shared_ptr<indigo::core::TaskList> main_thread_task_list,
                std::shared_ptr<indigo::core::TaskList> async_task_list,
                std::shared_ptr<RecastParams> recast_params,
+               std::shared_ptr<RecastBuilder> recast_builder,
                wgpu::Device device);
   void load_view();
 
@@ -67,6 +76,7 @@ class ViewportView : public std::enable_shared_from_this<ViewportView> {
   // Shared logical resources
   //
   std::shared_ptr<RecastParams> recast_params_;
+  std::shared_ptr<RecastBuilder> recast_builder_;
 
   //
   // WebGPU render resources

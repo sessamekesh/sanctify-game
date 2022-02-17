@@ -57,11 +57,13 @@ MapEditorApp::MapEditorApp(
       time_to_next_swap_chain_update_(0.f),
       executor_threads_(std::move(executor_threads)),
       recast_params_(std::make_shared<RecastParams>()),
+      recast_builder_(std::make_shared<RecastBuilder>()),
       viewport_view_(ViewportView::Create(main_thread_task_list,
                                           async_task_list, recast_params_,
-                                          base->device())),
+                                          recast_builder_, base->device())),
       nav_mesh_params_view_(std::make_shared<NavMeshParamsView>(
-          recast_params_, async_task_list, main_thread_task_list)) {}
+          recast_params_, recast_builder_, async_task_list,
+          main_thread_task_list)) {}
 
 MapEditorApp::~MapEditorApp() { teardown_imgui(); }
 

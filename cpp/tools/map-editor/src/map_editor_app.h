@@ -6,6 +6,7 @@
 #include <igasync/frame_task_scheduler.h>
 #include <igasync/task_list.h>
 #include <igcore/either.h>
+#include <util/recast_builder.h>
 #include <util/recast_params.h>
 #include <views/navmesh_params_view.h>
 #include <views/viewport_view.h>
@@ -52,6 +53,7 @@ class MapEditorApp : public std::enable_shared_from_this<MapEditorApp> {
 
   // Shared logical resources
   std::shared_ptr<RecastParams> recast_params_;
+  std::shared_ptr<RecastBuilder> recast_builder_;
 
   // Views
   std::shared_ptr<ViewportView> viewport_view_;

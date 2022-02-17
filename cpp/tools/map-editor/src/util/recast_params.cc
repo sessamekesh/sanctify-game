@@ -1,5 +1,7 @@
+#include <google/protobuf/text_format.h>
 #include <util/recast_params.h>
 
+using namespace indigo;
 using namespace mapeditor;
 
 namespace {
@@ -40,4 +42,42 @@ glm::vec3 RecastParams::max_bb() const {
   }
 
   return ::kDefaultMaxBb;
+}
+
+std::vector<igpackgen::pb::AssembleRecastNavMeshAction_RecastOp>
+RecastParams::recast_ops() const {
+  std::vector<igpackgen::pb::AssembleRecastNavMeshAction_RecastOp> ops;
+
+  for (const auto& op : recast_nav_mesh_action_proto_.recast_build_ops()) {
+    ops.push_back(op);
+  }
+
+  return ops;
+}
+
+void RecastParams::recast_ops(
+    std::vector<indigo::igpackgen::pb::AssembleRecastNavMeshAction_RecastOp>
+        ops) {
+  recast_nav_mesh_action_proto_.clear_recast_build_ops();
+  for (const auto& op : ops) {
+    *recast_nav_mesh_action_proto_.add_recast_build_ops() = op;
+  }
+}
+
+std::filesystem::path RecastParams::asset_root() const { return asset_root_; }
+
+void RecastParams::asset_root(std::filesystem::path path) {
+  asset_root_ = path;
+}
+
+std::string RecastParams::proto_text() const {
+  std::string text;
+  google::protobuf::TextFormat::PrintToString(recast_nav_mesh_action_proto_,
+                                              &text);
+  return text;
+}
+
+bool RecastParams::proto_text(std::string text) {
+  return google::protobuf::TextFormat::ParseFromString(
+      text, &recast_nav_mesh_action_proto_);
 }
