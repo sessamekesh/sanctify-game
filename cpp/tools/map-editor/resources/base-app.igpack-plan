@@ -16,4 +16,20 @@ plan {
       entry_point: "main"
     }
   }
+  actions {
+    copy_wgsl_source {
+      igasset_name: "vsMapPreview"
+      input_file_path: "tooling/map_preview.vs.wgsl"
+      shader_type: VERTEX
+      entry_point: "main"
+    }
+  }
+  actions {
+    copy_wgsl_source {
+      igasset_name: "fsMapPreview"
+      input_file_path: "tooling/map_preview.fs.wgsl"
+      shader_type: FRAGMENT
+      entry_point: "main"
+    }
+  }
 }

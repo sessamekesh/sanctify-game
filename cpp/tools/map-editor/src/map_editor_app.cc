@@ -57,7 +57,7 @@ MapEditorApp::MapEditorApp(
       time_to_next_swap_chain_update_(0.f),
       executor_threads_(std::move(executor_threads)),
       recast_params_(std::make_shared<RecastParams>()),
-      recast_builder_(std::make_shared<RecastBuilder>()),
+      recast_builder_(std::make_shared<RecastBuilder>(base->device())),
       viewport_view_(ViewportView::Create(main_thread_task_list,
                                           async_task_list, recast_params_,
                                           recast_builder_, base->device())),

@@ -129,3 +129,20 @@ std::vector<std::string> AssimpLoader::mesh_names_in_loaded_file(
 
   return mesh_names;
 }
+
+const aiMesh* AssimpLoader::get_loaded_mesh(std::string file_name,
+                                            std::string mesh_name) const {
+  auto it = scenes_.find(file_name);
+  if (it == scenes_.end()) {
+    return nullptr;
+  }
+
+  const auto* scene = it->second->scene;
+  for (int i = 0; i < scene->mNumMeshes; i++) {
+    if (scene->mMeshes[i]->mName.C_Str() == mesh_name) {
+      return scene->mMeshes[i];
+    }
+  }
+
+  return nullptr;
+}

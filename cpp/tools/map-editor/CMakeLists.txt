@@ -23,7 +23,7 @@ add_executable(map-editor ${INCLUDE_LIST} ${SRC_LIST})
 target_link_libraries(map-editor PUBLIC
     igasset igasset_proto igpack_plan_proto draco_lib CLI11
     assimp dawncpp glfw dawn_native dawn_wire dawn_utils
-    dawn_proc imgui iggpu nativefiledialog)
+    dawn_proc imgui iggpu nativefiledialog ignav)
 
 target_include_directories(map-editor PRIVATE src "${PROJECT_SOURCE_DIR}/extern/draco/src" .)
 
@@ -39,6 +39,8 @@ build_ig_asset_pack_plan(
   INFILES
     "tooling/grid.vs.wgsl"
     "tooling/grid.fs.wgsl"
+    "tooling/map_preview.vs.wgsl"
+    "tooling/map_preview.fs.wgsl"
   TARGET_OUTPUT_FILES
     "resources/base-app.igpack"
 )

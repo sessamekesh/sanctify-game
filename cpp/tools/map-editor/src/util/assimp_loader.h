@@ -36,7 +36,11 @@ class AssimpLoader {
 
   std::vector<std::string> file_names();
   bool is_loading(std::string file_name);
-  std::vector<std::string> mesh_names_in_loaded_file(std::string loaded_file_name);
+  std::vector<std::string> mesh_names_in_loaded_file(
+      std::string loaded_file_name);
+
+  const aiMesh* get_loaded_mesh(std::string file_name,
+                                std::string mesh_name) const;
 
  private:
   std::set<std::string> currently_loading_;

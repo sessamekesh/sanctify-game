@@ -206,7 +206,7 @@ void ViewportView::render(uint32_t w, uint32_t h) {
   depth_attachment.depthLoadOp = wgpu::LoadOp::Clear;
   depth_attachment.depthStoreOp = wgpu::StoreOp::Store;
   depth_attachment.stencilLoadOp = wgpu::LoadOp::Clear;
-  depth_attachment.stencilStoreOp = wgpu::StoreOp::Store;
+  depth_attachment.stencilStoreOp = wgpu::StoreOp::Discard;
   depth_attachment.view = depthView;
 
   wgpu::RenderPassDescriptor rp_desc{};
@@ -218,19 +218,21 @@ void ViewportView::render(uint32_t w, uint32_t h) {
   //
   // Update bind groups
   //
+  glm::vec3 camera_pos =
+      cameraTarget + glm::vec3(glm::sin(cameraTilt) * glm::sin(cameraSpin),
+                               glm::cos(cameraTilt),
+                               glm::sin(cameraTilt) * -glm::cos(cameraSpin)) *
+                         cameraRadius;
+  glm::mat4 mat_view =
+      glm::lookAt(camera_pos, cameraTarget, glm::vec3(0.f, 1.f, 0.f));
+  glm::mat4 mat_proj = glm::perspective(
+      glm::radians(40.f),
+      (float)current_viewport_width_ / (float)current_viewport_height_, 0.1f,
+      1000.f);
   {
-    glm::vec3 pos =
-        cameraTarget + glm::vec3(glm::sin(cameraTilt) * glm::sin(cameraSpin),
-                                 glm::cos(cameraTilt),
-                                 glm::sin(cameraTilt) * -glm::cos(cameraSpin)) *
-                           cameraRadius;
     ::Common3dParamsData commonData{};
-    commonData.matView =
-        glm::lookAt(pos, cameraTarget, glm::vec3(0.f, 1.f, 0.f));
-    commonData.matProj = glm::perspective(
-        glm::radians(40.f),
-        (float)current_viewport_width_ / (float)current_viewport_height_, 0.1f,
-        1000.f);
+    commonData.matView = mat_view;
+    commonData.matProj = mat_proj;
     device_.GetQueue().WriteBuffer(common3dVertParams, 0, &commonData,
                                    sizeof(commonData));
   }
@@ -256,6 +258,12 @@ void ViewportView::render(uint32_t w, uint32_t h) {
   // ImGui submission
   //
   ImGui::Image((void*)viewportOutView.Get(), ImVec2(w, h));
+
+  //
+  // Let the recast builder at it if it would lik
+  //
+  recast_builder_->render(mat_view, mat_proj, camera_pos, viewportOutView,
+                          depthView);
 }
 
 void ViewportView::create_static_resources() {
