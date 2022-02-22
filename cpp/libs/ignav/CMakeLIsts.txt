@@ -1,14 +1,16 @@
 set (HEADER_LIST
+  "include/ignav/detour_navmesh.h"
   "include/ignav/recast_compiler.h")
 
 set (SRC_LIST
+  "src/detour_navmesh.cc"
   "src/recast_compiler.cc")
 
 add_library(ignav STATIC ${HEADER_LIST} ${SRC_LIST})
 
 target_include_directories(ignav PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-target_link_libraries(ignav PUBLIC igcore igasset)
+target_link_libraries(ignav PUBLIC igcore igasset RecastNavigation::Recast RecastNavigation::Detour)
 
 set_property(TARGET ignav PROPERTY CXX_STANDARD 17)
 target_compile_features(ignav PUBLIC cxx_std_17)

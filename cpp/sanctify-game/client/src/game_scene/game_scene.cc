@@ -242,6 +242,8 @@ void GameScene::render() {
       .set_geometry(terrain_shit_.BaseGeo)
       .draw()
       .set_geometry(terrain_shit_.DecorationGeo)
+      .draw()
+      .set_geometry(terrain_shit_.MidTowerGeo)
       .draw();
 
   auto player_instance_data = player_render_system_.get_instance_data(world_);
@@ -385,10 +387,6 @@ void GameScene::handle_single_message(const pb::GameServerSingleMessage& msg) {
   }
 
   if (msg.has_player_movement()) {
-    // TODO (sessamekesh): Spawn the little player movement indicator thingy!
-    Logger::log(kLogLabel) << "Player movement event received for: "
-                           << msg.player_movement().destination().x() << ", "
-                           << msg.player_movement().destination().y();
     player_move_indicator_render_system_.add_at_location(
         glm::vec3(msg.player_movement().destination().x(), 0.f,
                   msg.player_movement().destination().y()));

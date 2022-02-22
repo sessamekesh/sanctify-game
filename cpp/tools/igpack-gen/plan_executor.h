@@ -2,6 +2,7 @@
 #define TOOLS_IGPACK_GEN_PLAN_EXECUTOR_H
 
 #include <converters/assimp_geo_processor.h>
+#include <converters/recast_navmesh_processor.h>
 #include <converters/wgsl_processor.h>
 #include <igasset/proto/igasset.pb.h>
 #include <igpack-gen/proto/igpack-plan.pb.h>
@@ -41,11 +42,16 @@ class PlanExecutor {
                            const pb::AssimpToStaticDracoGeoAction& action,
                            FileCache& file_cache,
                            AssimpSceneCache& assimp_scene_cache);
+  bool assemble_navmesh(asset::pb::AssetPack& output_asset_pack,
+                        const pb::AssembleRecastNavMeshAction& action,
+                        FileCache& file_cache,
+                        AssimpSceneCache& assimp_scene_cache);
 
  private:
   uint32_t max_file_memory_cache_;
   WgslProcessor wgsl_processor_;
   AssimpGeoProcessor assimp_geo_processor_;
+  RecastNavmeshProcessor recast_navmesh_processor_;
 };
 }  // namespace indigo::igpackgen
 

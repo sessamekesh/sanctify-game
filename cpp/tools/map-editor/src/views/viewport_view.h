@@ -35,6 +35,8 @@ class ViewportView : public std::enable_shared_from_this<ViewportView> {
   float* camera_look_at_y();
   float* camera_look_at_z();
   float* camera_radius();
+  bool* render_map_geo();
+  bool* render_navmesh_geo();
 
  private:
   ViewportView(std::shared_ptr<indigo::core::TaskList> main_thread_task_list,
@@ -67,6 +69,8 @@ class ViewportView : public std::enable_shared_from_this<ViewportView> {
   uint32_t next_viewport_width_;
   uint32_t next_viewport_height_;
   float time_to_resize_viewport_;
+  bool render_map_geo_;
+  bool render_navmesh_geo_;
 
   glm::vec3 gridMinBb;
   glm::vec3 gridMaxBb;

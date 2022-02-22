@@ -68,7 +68,9 @@ ViewportView::ViewportView(
       viewportOutTex({}),
       viewportOutView(nullptr),
       gridVertexBuffer(nullptr),
-      numGridVertices(0) {}
+      numGridVertices(0),
+      render_map_geo_(true),
+      render_navmesh_geo_(true) {}
 
 void ViewportView::load_view() {
   create_static_resources();
@@ -263,7 +265,7 @@ void ViewportView::render(uint32_t w, uint32_t h) {
   // Let the recast builder at it if it would lik
   //
   recast_builder_->render(mat_view, mat_proj, camera_pos, viewportOutView,
-                          depthView);
+                          depthView, render_map_geo_, render_navmesh_geo_);
 }
 
 void ViewportView::create_static_resources() {
@@ -361,3 +363,5 @@ float* ViewportView::camera_look_at_x() { return &cameraTarget.x; }
 float* ViewportView::camera_look_at_y() { return &cameraTarget.y; }
 float* ViewportView::camera_look_at_z() { return &cameraTarget.z; }
 float* ViewportView::camera_radius() { return &cameraRadius; }
+bool* ViewportView::render_map_geo() { return &render_map_geo_; }
+bool* ViewportView::render_navmesh_geo() { return &render_navmesh_geo_; }

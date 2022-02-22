@@ -46,6 +46,19 @@ class NavMeshParamsView {
   std::shared_ptr<indigo::core::TaskList> main_thread_task_list_;
 
   float cell_size_;
+  float cell_height_;
+  float max_slope_degrees_;
+  float walkable_climb_;
+  float walkable_height_;
+  float agent_radius_;
+  float min_region_area_;
+  float merge_region_area_;
+  float max_contour_error_;
+  float max_edge_length_;
+  float detail_sample_distance_;
+  float detail_max_error_;
+
+  bool is_loading_;
 };
 
 }  // namespace mapeditor

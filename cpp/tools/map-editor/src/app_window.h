@@ -22,13 +22,14 @@ class MapEditorAppWindow {
   MapEditorAppWindow(GLFWwindow* window, wgpu::Device device,
                      const wgpu::Surface& surface,
                      const wgpu::SwapChain& swap_chain, uint32_t width,
-                     uint32_t height)
+                     uint32_t height, float dpi)
       : window_(window),
         device_(device),
         surface_(surface),
         swap_chain_(swap_chain),
         width_(width),
-        height_(height) {}
+        height_(height),
+        dpi_(dpi) {}
 
   ~MapEditorAppWindow();
 
@@ -46,6 +47,7 @@ class MapEditorAppWindow {
   const wgpu::SwapChain& swap_chain() const { return swap_chain_; }
   uint32_t width() const { return width_; }
   uint32_t height() const { return height_; }
+  float dpi() const { return dpi_; }
 
  private:
   GLFWwindow* window_;
@@ -54,6 +56,7 @@ class MapEditorAppWindow {
   wgpu::SwapChain swap_chain_;
   uint32_t width_;
   uint32_t height_;
+  float dpi_;
 };
 
 }  // namespace mapeditor

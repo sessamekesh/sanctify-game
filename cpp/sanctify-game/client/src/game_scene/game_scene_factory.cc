@@ -78,6 +78,8 @@ std::shared_ptr<GamePromise> GameSceneFactory::build() const {
       terrain_geo_loader.extract_draco_geo("arenaBaseGeo", async_task_list_);
   auto decoration_geo_promise = terrain_geo_loader.extract_draco_geo(
       "arenaDecorationsGeo", async_task_list_);
+  auto mid_tower_geo_promiose =
+      terrain_geo_loader.extract_draco_geo("midTowerGeo", async_task_list_);
 
   auto solid_animated_vs_src_promise =
       base_shader_sources_loader.extract_wgsl_shader("solidAnimatedVertWgsl",
@@ -100,7 +102,7 @@ std::shared_ptr<GamePromise> GameSceneFactory::build() const {
   auto terrain_shit_promise = ::load_terrain_shit(
       device, base_->preferred_swap_chain_texture_format(), vs_src_promise,
       fs_src_promise, base_geo_promise, decoration_geo_promise,
-      main_thread_task_list_, async_task_list_);
+      mid_tower_geo_promiose, main_thread_task_list_, async_task_list_);
   auto player_shit_promise = ::load_player_shit(
       device, base_->preferred_swap_chain_texture_format(),
       solid_animated_vs_src_promise, solid_animated_fs_src_promise,

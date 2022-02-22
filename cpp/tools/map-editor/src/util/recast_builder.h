@@ -2,6 +2,7 @@
 #define TOOLS_MAP_EDITOR_SRC_UTIL_RECAST_BUILDER_H
 
 #include <igcore/maybe.h>
+#include <ignav/recast_compiler.h>
 #include <util/assimp_loader.h>
 #include <util/recast_params.h>
 #include <webgpu/webgpu_cpp.h>
@@ -9,9 +10,6 @@
 namespace mapeditor {
 
 struct Renderable {
-  std::string assimpFileName;
-  std::string meshName;
-
   wgpu::Buffer PositionVertexBuffer;
   wgpu::Buffer NormalVertexBuffer;
   wgpu::Buffer IndexBuffer;
@@ -53,19 +51,34 @@ class RecastBuilder {
   void set_lighting_params(LightingParams lighting_params);
 
   void render(glm::mat4 matView, glm::mat4 matProj, glm::vec3 cameraPos,
-              wgpu::TextureView target, wgpu::TextureView depthBuffer);
+              wgpu::TextureView target, wgpu::TextureView depthBuffer,
+              bool render_assimp_geo, bool render_navmesh_geo);
 
  private:
-  indigo::core::Maybe<Renderable> build_from_op(
+  struct GeoExtraction {
+    indigo::core::PodVector<glm::vec3> positions;
+    indigo::core::PodVector<glm::vec3> normals;
+    indigo::core::PodVector<uint32_t> indices;
+  };
+
+  indigo::core::Maybe<GeoExtraction> extract_geo(
       const indigo::igpackgen::pb::AssembleRecastNavMeshAction_AssimpGeoDef&
           def,
-      glm::vec4 color, std::shared_ptr<RecastParams> params,
+      std::shared_ptr<RecastParams> params,
       std::shared_ptr<AssimpLoader> loader);
+
+  bool add_include_geo_to_compiler(indigo::nav::RecastCompiler& compiler,
+                                   const GeoExtraction& geo);
+
+  indigo::core::Maybe<Renderable> build_from_geo(glm::vec4 color,
+                                                 const GeoExtraction& geo);
+  void add_navmesh_renderable(const indigo::nav::DetourNavmesh& detour_navmesh);
 
  private:
   wgpu::Device device_;
 
-  std::vector<Renderable> renderables_;
+  std::vector<Renderable> assimp_renderables_;
+  std::vector<Renderable> recast_renderables_;
 
   wgpu::RenderPipeline map_preview_pipeline_;
 

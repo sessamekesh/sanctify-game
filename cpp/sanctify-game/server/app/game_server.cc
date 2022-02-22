@@ -53,12 +53,13 @@ const float kMaxTimeBetweenUpdates = 0.1f;
 
 }  // namespace
 
-GameServer::GameServer()
+GameServer::GameServer(nav::DetourNavmesh navmesh)
     : player_message_cb_(::default_player_message_handler),
       is_running_(false),
       sim_clock_(0.f),
       next_net_sync_id_(1u),
-      net_serialize_system_(kMaxTimeBetweenUpdates, kMaxTimeBetweenFullSyncs) {}
+      net_serialize_system_(kMaxTimeBetweenUpdates, kMaxTimeBetweenFullSyncs),
+      navmesh_(std::move(navmesh)) {}
 
 GameServer::~GameServer() {}
 
@@ -245,7 +246,7 @@ void GameServer::handle_travel_to_location(
     const PlayerId& player_id, entt::entity player_entity,
     const pb::PlayerMovement& travel_to_location_request) {
   auto maybe_dest = server_locomotion_system_.handle_player_movement_event(
-      travel_to_location_request, player_entity, world_);
+      travel_to_location_request, player_entity, world_, navmesh_);
   if (maybe_dest.has_value()) {
     pb::GameServerMessage msg{};
     pb::Vec2* loc = msg.mutable_actions_list()

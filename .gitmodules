@@ -22,3 +22,6 @@
 [submodule "cpp/extern/nativefiledialog"]
 	path = cpp/extern/nativefiledialog
 	url = https://github.com/mlabbe/nativefiledialog
+[submodule "cpp/extern/recastnavigation"]
+	path = cpp/extern/recastnavigation
+	url = https://github.com/recastnavigation/recastnavigation

@@ -59,6 +59,39 @@ message AssembleRecastNavMeshAction {
   // XZ cell size - param "cs" in Recast API calls
   float cell_size = 1;
 
+  // Y cell size - param "ch" in Recast API calls
+  float cell_height = 4;
+
+  // What is the maximum slope that can be traversed by the agent?
+  float max_slope_degrees = 5;
+
+  // What is the height that the agent can climb?
+  float walkable_climb = 6;
+
+  // What is the minimum vertical height that the agent can stand?
+  float walkable_height = 7;
+
+  // What is the radius of the agent?
+  float agent_radius = 8;
+
+  // What is the minimum region size that will be included in a navmesh?
+  float min_region_area = 9;
+
+  // What is the region size below which regions will be merged?
+  float merge_region_area = 10;
+
+  // What is the maximum error a contour edge should have from the mesh border?
+  float max_contour_error = 11;
+
+  // What is the maximum allowable length of a contour edge?
+  float max_edge_length = 12;
+
+  // What is the sample distance to use in building the detail mesh?
+  float detail_sample_distance = 13;
+
+  // What is the maximum error allowed when building the detail mesh?
+  float detail_max_error = 14;
+
   message BB {
     float min_x = 1;
     float min_y = 2;
@@ -90,12 +123,16 @@ message AssembleRecastNavMeshAction {
   // An ordered list of Recast construction operations to apply in order
   //  to build the Recast navmesh.
   repeated RecastOp recast_build_ops = 3;
+
+  string igasset_name = 16;
+  // Next ID: 15
 }
 
 message SingleAction {
   oneof request {
     CopyWgslSourceAction copy_wgsl_source = 1;
     AssimpToStaticDracoGeoAction assimp_to_static_draco_geo = 2;
+    AssembleRecastNavMeshAction assemble_navmesh = 3;
   }
 }
 

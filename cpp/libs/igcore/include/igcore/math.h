@@ -29,6 +29,11 @@ glm::vec3 camera_sphere_coords(float spin, float tilt);
 glm::vec4 extract_normal_quat(glm::vec3 tangent, glm::vec3 bitangent,
                               glm::vec3 normal);
 
+glm::mat4 transform_matrix(glm::vec3 pos = {0.f, 0.f, 0.f},
+                                  glm::vec3 rot_axis = {0.f, 1.f, 0.f},
+                                  float rot_angle = 0.f,
+                                  glm::vec3 scl = {1.f, 1.f, 1.f});
+
 }  // namespace indigo::core::igmath
 
 #endif

@@ -55,6 +55,13 @@ message WgslSource {
 }
 
 /**
+ * Recast/Detour navmesh definition
+ */
+message DetourNavmeshDef {
+  bytes raw_detour_data = 1;
+};
+
+/**
  * Container for a single Indigo asset of any form
  */
 message SingleAsset {
@@ -66,6 +73,7 @@ message SingleAsset {
     PngTextureDef png_texture_def = 3;
     DracoGeometryDef draco_geo = 4;
     WgslSource wgsl_source = 5;
+    DetourNavmeshDef detour_navmesh_def = 6;
   }
 
   // Next token: 6

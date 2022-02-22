@@ -242,7 +242,7 @@ class Promise : public std::enable_shared_from_this<Promise<ValT>> {
    * Final consumption of a promise - like "on_success" but consumes the value
    * of the promise on execution
    */
-  Promise<ValT>& consume(std::function<void(ValT&&)> cb,
+  Promise<ValT>& consume(std::function<void(ValT)> cb,
                          std::shared_ptr<TaskList> task_list,
                          std::string op_label = "") {
     std::lock_guard l(then_queue_mutex_);

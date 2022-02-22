@@ -159,7 +159,8 @@ MapEditorAppWindow::Create(uint32_t width, uint32_t height) {
   }
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  auto window = glfwCreateWindow(width, height, "App Base", nullptr, nullptr);
+  auto window =
+      glfwCreateWindow(width, height, "Indigo map editor", nullptr, nullptr);
 
   if (!window) {
     return right(MapEditorAppWindowCreateError::WindowCreationFailed);
@@ -247,8 +248,15 @@ MapEditorAppWindow::Create(uint32_t width, uint32_t height) {
     return right(MapEditorAppWindowCreateError::WGPUSwapChainCreateFailed);
   }
 
+  float dpi = 1.f;
+  {
+    float dpi_x = 1.f, dpi_y = 1.f;
+    glfwGetWindowContentScale(window, &dpi_x, &dpi_y);
+    dpi = (dpi_x >= dpi_y) ? dpi_x : dpi_y;
+  }
+
   auto app_base = std::make_shared<MapEditorAppWindow>(
-      window, device, surface, swap_chain, width, height);
+      window, device, surface, swap_chain, width, height, dpi);
 
   return left(std::move(app_base));
 }

@@ -5,6 +5,7 @@
 #include <app/systems/locomotion.h>
 #include <app/systems/net_serialize.h>
 #include <igasync/promise.h>
+#include <ignav/detour_navmesh.h>
 #include <net/net_server.h>
 #include <sanctify-game-common/gameplay/locomotion.h>
 #include <sanctify-game-common/proto/sanctify-net.pb.h>
@@ -36,7 +37,7 @@ class GameServer : public std::enable_shared_from_this<GameServer> {
 
  public:
   // Initialization
-  GameServer();
+  GameServer(indigo::nav::DetourNavmesh navmesh);
   ~GameServer();
 
   using GameInitializePromise =
@@ -108,6 +109,11 @@ class GameServer : public std::enable_shared_from_this<GameServer> {
   //
   system::ServerLocomotionSystem server_locomotion_system_;
   system::LocomotionSystem locomotion_system_;
+
+  //
+  // Game server resources
+  //
+  indigo::nav::DetourNavmesh navmesh_;
 };
 
 }  // namespace sanctify

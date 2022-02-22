@@ -38,3 +38,10 @@ glm::vec4 igmath::extract_normal_quat(glm::vec3 tangent, glm::vec3 bitangent,
 
   return glm::vec4(rot.x, rot.y, rot.z, rot.w);
 }
+
+glm::mat4 igmath::transform_matrix(glm::vec3 pos, glm::vec3 rot_axis,
+                                          float rot_angle, glm::vec3 scl) {
+  return glm::translate(glm::mat4(1.f), pos) *
+         glm::toMat4(glm::angleAxis(rot_angle, rot_axis)) *
+         glm::scale(glm::mat4(1.f), scl);
+}

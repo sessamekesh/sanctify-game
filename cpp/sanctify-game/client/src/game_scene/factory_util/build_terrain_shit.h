@@ -17,6 +17,7 @@ load_terrain_shit(
     indigo::asset::IgpackLoader::ExtractDracoBufferPromiseT base_geo_promise,
     indigo::asset::IgpackLoader::ExtractDracoBufferPromiseT
         decoration_geo_promise,
+    indigo::asset::IgpackLoader::ExtractDracoBufferPromiseT tower_geo_promise,
     std::shared_ptr<indigo::core::TaskList> main_thread_task_list,
     std::shared_ptr<indigo::core::TaskList> async_task_list);
 

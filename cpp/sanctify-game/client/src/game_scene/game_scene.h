@@ -35,6 +35,7 @@ class GameScene : public ISceneBase,
     terrain_pipeline::MaterialPipelineInputs MaterialInputs;
     terrain_pipeline::TerrainGeo BaseGeo;
     terrain_pipeline::TerrainGeo DecorationGeo;
+    terrain_pipeline::TerrainGeo MidTowerGeo;
     terrain_pipeline::TerrainMatWorldInstanceBuffer IdentityBuffer;
   };
 

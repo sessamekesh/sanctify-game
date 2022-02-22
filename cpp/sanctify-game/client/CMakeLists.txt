@@ -72,7 +72,7 @@ build_ig_asset_pack_plan(
   PLAN resources/terrain-geo.igpack-plan
   INDIR "${asset_root}"
   INFILES
-    "sanctify_arena/sanctify-arena.fbx"
+    "sanctify_arena/practice-arena.fbx"
     "engine/solid_3d.vert.wgsl"
     "engine/solid_3d.frag.wgsl"
   TARGET_OUTPUT_FILES

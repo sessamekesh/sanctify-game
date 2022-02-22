@@ -3,15 +3,22 @@ plan {
   actions {
     assimp_to_static_draco_geo {
       mesh_igasset_name: "arenaBaseGeo"
-      input_file_path: "sanctify_arena/sanctify-arena.fbx"
+      input_file_path: "sanctify_arena/practice-arena.fbx"
       assimp_mesh_names: "ArenaBase"
     }
   }
   actions {
     assimp_to_static_draco_geo {
       mesh_igasset_name: "arenaDecorationsGeo"
-      input_file_path: "sanctify_arena/sanctify-arena.fbx"
-      assimp_mesh_names: "ArenaDecorations"
+      input_file_path: "sanctify_arena/practice-arena.fbx"
+      assimp_mesh_names: "BorderGeo"
+    }
+  }
+  actions {
+    assimp_to_static_draco_geo {
+      mesh_igasset_name: "midTowerGeo"
+      input_file_path: "sanctify_arena/practice-arena.fbx"
+      assimp_mesh_names: "MidTowerGeo"
     }
   }
   actions {

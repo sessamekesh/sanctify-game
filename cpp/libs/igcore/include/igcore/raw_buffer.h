@@ -27,6 +27,8 @@ class RawBuffer {
 
   RawBuffer clone() const;
 
+  bool detach(uint8_t** o_data, size_t* o_size);
+
  private:
   uint8_t* data_;
   size_t size_;

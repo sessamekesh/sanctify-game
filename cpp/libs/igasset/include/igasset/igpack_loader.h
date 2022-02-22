@@ -12,6 +12,7 @@
 #include <igasync/promise.h>
 #include <igcore/either.h>
 #include <igcore/raw_buffer.h>
+#include <ignav/detour_navmesh.h>
 
 #include <string>
 
@@ -54,6 +55,15 @@ class IgpackLoader {
   typedef std::shared_ptr<core::Promise<ExtractRgbaImageDataT>>
       ExtractRgbaImagePromiseT;
   ExtractRgbaImagePromiseT extract_rgba_image(
+      std::string asset_name,
+      std::shared_ptr<core::TaskList> extract_task_list) const;
+
+  // Detour navmesh
+  typedef core::Either<nav::DetourNavmesh, IgpackExtractError>
+      ExtractDetourNavmeshDataT;
+  typedef std::shared_ptr<core::Promise<ExtractDetourNavmeshDataT>>
+      ExtractDetourNavmeshPromiseT;
+  ExtractDetourNavmeshPromiseT extract_detour_navmesh(
       std::string asset_name,
       std::shared_ptr<core::TaskList> extract_task_list) const;
 

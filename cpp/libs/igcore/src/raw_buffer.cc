@@ -87,5 +87,15 @@ const size_t RawBuffer::size() const { return size_; }
 
 uint8_t& RawBuffer::operator[](size_t size) const { return data_[size]; }
 
+bool RawBuffer::detach(uint8_t** o_data, size_t* o_size) {
+  if (!owns_data_) return false;
+  if (o_data == nullptr || o_size == nullptr) return false;
+
+  *o_data = data_;
+  *o_size = size_;
+
+  owns_data_ = false;
+}
+
 }  // namespace core
 }  // namespace indigo

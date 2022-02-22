@@ -231,6 +231,9 @@ void MapEditorApp::render_preview_settings_view() {
     ImGui::SliderFloat("Target Z", viewport_view_->camera_look_at_z(),
                        recast_params_->min_bb().z, recast_params_->max_bb().z,
                        "%.2f");
+    ImGui::Checkbox("Render map geometry", viewport_view_->render_map_geo());
+    ImGui::Checkbox("Render navmesh geometry",
+                    viewport_view_->render_navmesh_geo());
     ImGui::TreePop();
   }
 }
@@ -240,6 +243,7 @@ void MapEditorApp::setup_imgui() {
   ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO();
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+  io.FontGlobalScale = base_->dpi();
 
   io.IniFilename = NULL;
 

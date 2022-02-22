@@ -13,6 +13,7 @@ sanctify::load_terrain_shit(
     IgpackLoader::ExtractWgslShaderPromiseT fs_src_promise,
     IgpackLoader::ExtractDracoBufferPromiseT base_geo_promise,
     IgpackLoader::ExtractDracoBufferPromiseT decoration_geo_promise,
+    IgpackLoader::ExtractDracoBufferPromiseT tower_geo_promise,
     std::shared_ptr<TaskList> main_thread_task_list,
     std::shared_ptr<TaskList> async_task_list) {
   auto combiner = PromiseCombiner::Create();
@@ -22,11 +23,12 @@ sanctify::load_terrain_shit(
   auto base_geo_key = combiner->add(base_geo_promise, async_task_list);
   auto decoration_geo_key =
       combiner->add(decoration_geo_promise, async_task_list);
+  auto tower_geo_key = combiner->add(tower_geo_promise, async_task_list);
 
   return combiner->combine()->then<Maybe<GameScene::TerrainShit>>(
       [device, main_thread_task_list, swap_chain_format, vs_src_key, fs_src_key,
-       base_geo_key,
-       decoration_geo_key](const PromiseCombiner::PromiseCombinerResult& rsl)
+       base_geo_key, decoration_geo_key,
+       tower_geo_key](const PromiseCombiner::PromiseCombinerResult& rsl)
           -> Maybe<GameScene::TerrainShit> {
         const char* kTerrainShitLabel = "GameSceneFactory::load_terrain_shit";
 
@@ -37,6 +39,8 @@ sanctify::load_terrain_shit(
         IgpackLoader::ExtractDracoBufferT base_geo_rsl = rsl.move(base_geo_key);
         IgpackLoader::ExtractDracoBufferT decoration_geo_rsl =
             rsl.move(decoration_geo_key);
+        IgpackLoader::ExtractDracoBufferT tower_geo_rsl =
+            rsl.move(tower_geo_key);
 
         //
         // Process the initial outputs for result errors - later code assumes
@@ -67,6 +71,12 @@ sanctify::load_terrain_shit(
               << asset::to_string(decoration_geo_rsl.get_right());
           has_error = true;
         }
+        if (tower_geo_rsl.is_right()) {
+          Logger::err(kTerrainShitLabel)
+              << "Mid tower geo load error - "
+              << asset::to_string(tower_geo_rsl.get_right());
+          has_error = true;
+        }
         if (has_error) {
           return empty_maybe();
         }
@@ -76,6 +86,8 @@ sanctify::load_terrain_shit(
             base_geo_rsl.left_move();
         std::shared_ptr<asset::DracoDecoder> decoration_draco =
             decoration_geo_rsl.left_move();
+        std::shared_ptr<asset::DracoDecoder> mid_tower_draco =
+            tower_geo_rsl.left_move();
 
         //
         // Pull geometry data out of Draco decoders - may also fail.
@@ -84,6 +96,8 @@ sanctify::load_terrain_shit(
         auto base_geo_indices = base_draco->get_index_data();
         auto decoration_geo_vertices = decoration_draco->get_pos_norm_data();
         auto decoration_geo_indices = decoration_draco->get_index_data();
+        auto mid_tower_geo_vertices = mid_tower_draco->get_pos_norm_data();
+        auto mid_tower_geo_indices = mid_tower_draco->get_index_data();
 
         has_error = false;
         if (base_geo_vertices.is_right()) {
@@ -120,6 +134,10 @@ sanctify::load_terrain_shit(
             decoration_geo_vertices.left_move();
         core::PodVector<uint32_t> decoration_indices =
             decoration_geo_indices.left_move();
+        core::PodVector<asset::PositionNormalVertexData> mid_tower_verts =
+            mid_tower_geo_vertices.left_move();
+        core::PodVector<uint32_t> mid_tower_indices =
+            mid_tower_geo_indices.left_move();
 
         //
         // Assemble all the objects that go in the TerrainShit struct
@@ -154,13 +172,12 @@ sanctify::load_terrain_shit(
         terrain_pipeline::TerrainGeo base_geo(device, base_verts, base_indices);
         terrain_pipeline::TerrainGeo decoration_geo(device, decoration_verts,
                                                     decoration_indices);
+        terrain_pipeline::TerrainGeo mid_tower_geo(device, mid_tower_verts,
+                                                   mid_tower_indices);
         core::PodVector<terrain_pipeline::TerrainMatWorldInstanceData>
             identity_instance(1);
-        // TODO (sessamekesh): this rotation will be a common case for Assimp
-        // files, you should handle this in pre-processing (igpack-gen)
-        glm::mat4 rotate_i_guess = glm::rotate(
-            glm::mat4(1.f), glm::radians(-90.f), glm::vec3(1.f, 0.f, 0.f));
-        identity_instance.push_back({rotate_i_guess});
+        identity_instance.push_back(
+            {glm::scale(glm::mat4(1.f), glm::vec3(5.f))});
         terrain_pipeline::TerrainMatWorldInstanceBuffer identity_buffer(
             device, identity_instance);
 
@@ -168,7 +185,8 @@ sanctify::load_terrain_shit(
             std::move(pipeline_builder), std::move(pipeline),
             std::move(frame_inputs),     std::move(scene_inputs),
             std::move(material_inputs),  std::move(base_geo),
-            std::move(decoration_geo),   std::move(identity_buffer)};
+            std::move(decoration_geo),   std::move(mid_tower_geo),
+            std::move(identity_buffer)};
       },
       main_thread_task_list);
 }

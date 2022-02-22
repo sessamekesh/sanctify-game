@@ -1,5 +1,6 @@
 #include <app/game_server.h>
 #include <google/protobuf/util/json_util.h>
+#include <igasset/igpack_loader.h>
 #include <igasync/promise_combiner.h>
 #include <igcore/log.h>
 #include <net/build_game_token_exchanger.h>
@@ -57,7 +58,32 @@ int main(int argc, const char** argv) {
       NetServer::Create(async_task_list, game_token_exchanger, event_scheduler,
                         35000u, ws_port, allow_json_messages);
 
-  std::shared_ptr<GameServer> game_server = std::make_shared<GameServer>();
+  std::shared_ptr<GameServer> game_server = nullptr;
+  {
+    // TODO (sessamekesh): Get rid of this evil hack by loading the game server
+    // asynchronously
+    auto evil_task_list = std::make_shared<core::TaskList>();
+    asset::IgpackLoader loader("resources/terrain-navmesh.igpack",
+                               evil_task_list);
+    loader.extract_detour_navmesh("practiceArenaNavmesh", evil_task_list)
+        ->consume(
+            [&game_server](asset::IgpackLoader::ExtractDetourNavmeshDataT rsl) {
+              if (rsl.is_right()) {
+                core::Logger::err(kLogLabel)
+                    << "Well, navmesh failed to load, shit.";
+                return;
+              }
+
+              game_server = std::make_shared<GameServer>(rsl.left_move());
+            },
+            evil_task_list);
+    while (evil_task_list->execute_next()) {
+    }
+    if (!game_server) {
+      Logger::err(kLogLabel) << "Failed to create game server, exiting";
+      return -1;
+    }
+  }
 
   //
   // Wire everything together...

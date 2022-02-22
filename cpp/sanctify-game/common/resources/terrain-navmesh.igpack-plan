@@ -1,0 +1,38 @@
+plan {
+  asset_pack_file_path: "resources/terrain-navmesh.igpack"
+  actions {
+    assemble_navmesh {
+      cell_size: 1.5
+      recast_build_ops {
+        include_assimp_geo {
+          assimp_file_name: "sanctify_arena\\practice-arena.fbx"
+          assimp_mesh_name: "ArenaBase"
+          scale {
+            x: 5
+            y: 5
+            z: 5
+          }
+        }
+      }
+      recast_build_ops {
+        include_assimp_geo {
+          assimp_file_name: "sanctify_arena\\practice-arena.fbx"
+          assimp_mesh_name: "MidTowerGeo"
+          scale {
+            x: 5
+            y: 5
+            z: 5
+          }
+        }
+      }
+      cell_height: 1
+      agent_radius: 5
+      min_region_area: 150
+      merge_region_area: 300
+      max_contour_error: 0.125
+      max_edge_length: 60
+      detail_sample_distance: 0.5
+      igasset_name: "practiceArenaNavmesh"
+    }
+  }
+}

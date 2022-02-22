@@ -52,7 +52,6 @@ class Maybe {
   Maybe(T&& o) {
     static_assert(std::is_move_constructible<T>::value,
                   "Cannot create move constructor for a non-movable T");
-
     ::new (&value_) T(std::move(o));
     is_initialized_ = true;
   }

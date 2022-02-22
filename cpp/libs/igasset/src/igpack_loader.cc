@@ -1,4 +1,5 @@
 #include <igasset/igpack_loader.h>
+#include <ignav/recast_compiler.h>
 #include <igplatform/file_promise.h>
 
 using namespace indigo;
@@ -184,6 +185,47 @@ IgpackLoader::ExtractRgbaImagePromiseT IgpackLoader::extract_rgba_image(
           }
 
           return core::left(rgba_image_rsl.left_move());
+        }
+
+        return core::right(IgpackExtractError::ResourceNotFound);
+      },
+      extract_task_list);
+}
+
+IgpackLoader::ExtractDetourNavmeshPromiseT IgpackLoader::extract_detour_navmesh(
+    std::string asset_name,
+    std::shared_ptr<core::TaskList> extract_task_list) const {
+  return file_promise_->then<ExtractDetourNavmeshDataT>(
+      [asset_name](const auto& rsl) -> ExtractDetourNavmeshDataT {
+        if (rsl.is_right()) {
+          return core::right(rsl.get_right());
+        }
+
+        const asset::pb::AssetPack& asset_pack = rsl.get_left();
+        for (int i = 0; i < asset_pack.assets_size(); i++) {
+          const auto& asset = asset_pack.assets(i);
+          if (asset.name() != asset_name) {
+            continue;
+          }
+
+          if (!asset.has_detour_navmesh_def()) {
+            core::Logger::err(kLogLabel) << "Resource " << asset_name
+                                         << " is not a Detour navmesh source";
+            return core::right(IgpackExtractError::WrongResourceType);
+          }
+
+          const auto& navmesh_def = asset.detour_navmesh_def();
+
+          core::RawBuffer b(navmesh_def.raw_detour_data().size());
+          memcpy(b.get(), &navmesh_def.raw_detour_data()[0], b.size());
+
+          auto navmesh_rsl =
+              nav::RecastCompiler::navmesh_from_raw(std::move(b));
+          if (navmesh_rsl.is_empty()) {
+            return core::right(IgpackExtractError::AssetExtractError);
+          }
+
+          return core::left(navmesh_rsl.move());
         }
 
         return core::right(IgpackExtractError::ResourceNotFound);

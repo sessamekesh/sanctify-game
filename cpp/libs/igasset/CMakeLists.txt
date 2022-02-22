@@ -31,7 +31,8 @@ target_include_directories(igasset PUBLIC
   "${CMAKE_BINARY_DIR}"
   "${draco_SOURCE_DIR}/src")
 
-target_link_libraries(igasset PUBLIC igasset_proto igcore igasync draco_lib igplatform stb)
+target_link_libraries(igasset PUBLIC
+    igasset_proto igcore igasync draco_lib igplatform stb ignav)
 
 if (EMSCRIPTEN)
   set_wasm_target_properties(TARGET_NAME igasset AS_LIB 1)

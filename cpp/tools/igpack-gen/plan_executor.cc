@@ -11,7 +11,9 @@ using namespace indigo;
 using namespace igpackgen;
 
 PlanExecutor::PlanExecutor(uint32_t max_file_memory_cache)
-    : max_file_memory_cache_(max_file_memory_cache), assimp_geo_processor_() {}
+    : max_file_memory_cache_(max_file_memory_cache),
+      assimp_geo_processor_(),
+      recast_navmesh_processor_() {}
 
 bool PlanExecutor::execute_plan(const PlanInvocationDesc& desc) {
   for (int i = 0; i < desc.Plan.plan_size(); i++) {
@@ -50,6 +52,13 @@ bool PlanExecutor::execute_plan(const PlanInvocationDesc& desc) {
             core::Logger::err(kLogLabel)
                 << "Failed to convert Assimp from source "
                 << action.assimp_to_static_draco_geo().input_file_path();
+            return false;
+          }
+          break;
+        case pb::SingleAction::kAssembleNavmesh:
+          if (!assemble_navmesh(out_asset_pack, action.assemble_navmesh(),
+                                file_cache, assimp_scene_cache)) {
+            core::Logger::err(kLogLabel) << "Failed to assemble navmesh";
             return false;
           }
           break;
@@ -115,6 +124,18 @@ bool PlanExecutor::validate_inputs_exist(
           return false;
         }
         break;
+      case pb::SingleAction::kAssembleNavmesh:
+        for (const auto& op : action.assemble_navmesh().recast_build_ops()) {
+          if (op.has_include_assimp_geo() &&
+              !peek_file(input_root,
+                         op.include_assimp_geo().assimp_file_name())) {
+            core::Logger::err(kLogLabel)
+                << "Assimp file not found: "
+                << input_root / op.include_assimp_geo().assimp_file_name();
+            return false;
+          }
+        }
+        break;
       default:
         core::Logger::err(kLogLabel)
             << "Unexpected request_case for validate_inputs_exist";
@@ -144,5 +165,13 @@ bool PlanExecutor::convert_assimp_file(
     const pb::AssimpToStaticDracoGeoAction& action, FileCache& file_cache,
     AssimpSceneCache& assimp_scene_cache) {
   return assimp_geo_processor_.export_static_draco_geo(
+      output_asset_pack, action, file_cache, assimp_scene_cache);
+}
+
+bool PlanExecutor::assemble_navmesh(
+    asset::pb::AssetPack& output_asset_pack,
+    const pb::AssembleRecastNavMeshAction& action, FileCache& file_cache,
+    AssimpSceneCache& assimp_scene_cache) {
+  return recast_navmesh_processor_.export_recast_navmesh(
       output_asset_pack, action, file_cache, assimp_scene_cache);
 }
