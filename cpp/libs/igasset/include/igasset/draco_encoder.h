@@ -37,8 +37,8 @@ class DracoEncoder {
       const core::PodVector<PositionNormalVertexData>& data);
   DracoEncoderResult add_texcoord_data(
       const core::PodVector<TexcoordVertexData>& data);
-  // DracoEncoderResult add_skeletal_animation_data(
-  //    const core::PodVector<SkeletalAnimationVertexData>& data);
+  DracoEncoderResult add_skeletal_animation_data(
+      const core::PodVector<SkeletalAnimationVertexData>& data);
 
   // Eventually, custom attribute encoding is going to be needed here too...
   // Probably can include it with a descriptor and raw buffer - e.g., "this

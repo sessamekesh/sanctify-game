@@ -25,3 +25,6 @@
 [submodule "cpp/extern/recastnavigation"]
 	path = cpp/extern/recastnavigation
 	url = https://github.com/recastnavigation/recastnavigation
+[submodule "cpp/extern/ozz-animation"]
+	path = cpp/extern/ozz-animation
+	url = https://github.com/guillaumeblanc/ozz-animation

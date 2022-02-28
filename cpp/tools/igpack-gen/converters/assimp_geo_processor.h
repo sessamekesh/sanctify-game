@@ -13,9 +13,14 @@ namespace indigo::igpackgen {
 class AssimpGeoProcessor {
  public:
   bool export_static_draco_geo(asset::pb::AssetPack& output_asset_pack,
-                        const pb::AssimpToStaticDracoGeoAction& action,
-                        FileCache& file_cache,
-                        AssimpSceneCache& assimp_scene_cache);
+                               const pb::AssimpToStaticDracoGeoAction& action,
+                               FileCache& file_cache,
+                               AssimpSceneCache& assimp_scene_cache);
+
+  bool export_skinned_draco_geo(
+      asset::pb::AssetPack& output_asset_pack,
+      const pb::AssimpExtractSkinnedMeshToDraco& action, FileCache& file_cache,
+      AssimpSceneCache& assimp_scene_cache);
 };
 
 }  // namespace indigo::igpackgen

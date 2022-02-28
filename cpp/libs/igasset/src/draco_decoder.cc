@@ -2,6 +2,8 @@
 #include <igasset/draco_decoder.h>
 #include <igcore/log.h>
 
+#include <map>
+
 using namespace indigo;
 using namespace asset;
 
@@ -23,12 +25,18 @@ std::string indigo::asset::to_string(DracoDecoderResult rsl) {
       return "NoData";
     case DracoDecoderResult::DrcPointCloudIsNotMesh:
       return "DrcPointCloudIsNotMesh";
+    case DracoDecoderResult::TooManyBones:
+      return "TooManyBones";
+    case DracoDecoderResult::BoneDataNotLoaded:
+      return "BoneDataNotLoaded";
+    case DracoDecoderResult::BoneDataIncomplete:
+      return "BoneDataIncomplete";
   }
 
   return "<<DracoDecoderResult::Undefined>>";
 }
 
-DracoDecoder::DracoDecoder() {}
+DracoDecoder::DracoDecoder() : num_bones_(-1) {}
 
 DracoDecoderResult DracoDecoder::decode(const core::RawBuffer& buffer) {
   draco::Decoder decoder;
@@ -51,7 +59,33 @@ DracoDecoderResult DracoDecoder::decode(const core::RawBuffer& buffer) {
   }
 
   mesh_ = std::move(mesh_rsl).value();
+
+  auto idx_attrib = mesh_->GetNamedAttributeByUniqueId(
+      draco::GeometryAttribute::Type::GENERIC, 2);
+  if (idx_attrib != nullptr &&
+      idx_attrib->data_type() == draco::DataType::DT_UINT8 &&
+      idx_attrib->num_components() == 4) {
+    for (draco::PointIndex vert_idx(0); vert_idx < mesh_->num_points();
+         vert_idx++) {
+      glm::u8vec4 bone_indices{};
+      idx_attrib->ConvertValue(idx_attrib->mapped_index(vert_idx), 4,
+                               &bone_indices.x);
+      num_bones_ =
+          std::max({(int)bone_indices.x, (int)bone_indices.y,
+                    (int)bone_indices.z, (int)bone_indices.w, num_bones_});
+    }
+  }
+
   return DracoDecoderResult::Ok;
+}
+
+DracoDecoderResult DracoDecoder::add_bone_data(std::string bone_name,
+                                               glm::mat4 inv_bind_pos) {
+  if (bone_data_.size() >= num_bones_) {
+    return DracoDecoderResult::TooManyBones;
+  }
+
+  bone_data_.push_back({bone_name, inv_bind_pos});
 }
 
 core::Either<core::PodVector<PositionNormalVertexData>, DracoDecoderResult>
@@ -70,7 +104,7 @@ DracoDecoder::get_pos_norm_data() const {
     return core::right(DracoDecoderResult::NoData);
   }
 
-  core::PodVector<PositionNormalVertexData> vertices;
+  core::PodVector<PositionNormalVertexData> vertices(mesh_->num_points());
 
   for (draco::PointIndex vert_idx(0); vert_idx < mesh_->num_points();
        vert_idx++) {
@@ -100,7 +134,7 @@ DracoDecoder::get_texcoord_data() const {
     return core::right(DracoDecoderResult::NoData);
   }
 
-  core::PodVector<TexcoordVertexData> vertices;
+  core::PodVector<TexcoordVertexData> vertices(mesh_->num_points());
 
   for (draco::PointIndex vert_idx(0); vert_idx < mesh_->num_points();
        vert_idx++) {
@@ -138,4 +172,139 @@ DracoDecoder::get_index_data() const {
   }
 
   return core::left<core::PodVector<uint32_t>>(result);
+}
+
+core::Either<core::PodVector<SkeletalAnimationVertexData>, DracoDecoderResult>
+DracoDecoder::get_skeletal_animation_vertices(
+    const ozz::animation::Skeleton& ozz_skeleton) const {
+  //
+  // Step 1: verify that skeleton data is loaded and correct
+  //
+  if (bone_data_.size() == 0) {
+    return core::right(DracoDecoderResult::BoneDataNotLoaded);
+  }
+
+  if (num_bones_ == 0 && bone_data_.size() == 0) {
+    return core::right(DracoDecoderResult::NoData);
+  }
+
+  if (num_bones_ != bone_data_.size()) {
+    return core::right(DracoDecoderResult::BoneDataIncomplete);
+  }
+
+  std::map<std::string, int> name_to_skeleton_index;
+  {
+    auto joint_names = ozz_skeleton.joint_names();
+
+    for (int i = 0; i < joint_names.size(); i++) {
+      const char* joint_name = joint_names[i];
+      name_to_skeleton_index.emplace(joint_name, i);
+    }
+  }
+  std::function<int(std::string)> get_joint_index =
+      [&name_to_skeleton_index](std::string name) -> int {
+    auto idx_it = name_to_skeleton_index.find(name);
+    if (idx_it == name_to_skeleton_index.end()) {
+      return -1;
+    }
+    return idx_it->second;
+  };
+
+  //
+  // Step 2: Extract non-transformed skeleton data from Draco source
+  //
+  if (mesh_ == nullptr) {
+    return core::right(DracoDecoderResult::MeshDataMissing);
+  }
+
+  auto bone_weights_attrib =
+      mesh_->GetNamedAttribute(draco::GeometryAttribute::Type::GENERIC, 1);
+  auto bone_indices_attrib =
+      mesh_->GetNamedAttribute(draco::GeometryAttribute::Type::GENERIC, 2);
+
+  if (bone_weights_attrib->data_type() != draco::DataType::DT_FLOAT32 ||
+      bone_indices_attrib->data_type() != draco::DataType::DT_UINT8 ||
+      bone_weights_attrib->num_components() != 4 ||
+      bone_indices_attrib->num_components() != 4) {
+    return core::right(DracoDecoderResult::NoData);
+  }
+
+  core::PodVector<SkeletalAnimationVertexData> vertices(mesh_->num_points());
+
+  for (draco::PointIndex vert_idx(0); vert_idx < mesh_->num_points();
+       vert_idx++) {
+    SkeletalAnimationVertexData vert{};
+
+    bone_weights_attrib->ConvertValue(
+        bone_weights_attrib->mapped_index(vert_idx), 4, &vert.BoneWeights[0]);
+    bone_indices_attrib->ConvertValue(
+        bone_indices_attrib->mapped_index(vert_idx), 4, &vert.BoneIndices[0]);
+
+    vertices.push_back(vert);
+  }
+
+  //
+  // Step 3: Transform all bone indices to transformed skeleton values
+  //
+  for (int vert_idx = 0; vert_idx < vertices.size(); vert_idx++) {
+    for (int idx_idx = 0; idx_idx < 4; idx_idx++) {
+      int in_idx = vertices[vert_idx].BoneIndices[idx_idx];
+      std::string in_name = bone_data_[in_idx].boneName;
+      int out_idx = get_joint_index(in_name);
+
+      if (out_idx < 0) {
+        return core::right(DracoDecoderResult::BoneDataIncomplete);
+      }
+
+      vertices[vert_idx].BoneIndices[idx_idx] = out_idx;
+    }
+  }
+
+  // Finished, return
+  return core::left(std::move(vertices));
+}
+
+core::Either<indigo::core::PodVector<glm::mat4>, DracoDecoderResult>
+DracoDecoder::get_inv_bind_poses(
+    const ozz::animation::Skeleton& ozz_skeleton) const {
+  //
+  // Step 1: verify that skeleton data is loaded and correct
+  //
+  if (bone_data_.size() == 0) {
+    return core::right(DracoDecoderResult::BoneDataNotLoaded);
+  }
+
+  if (num_bones_ == 0 && bone_data_.size() == 0) {
+    return core::right(DracoDecoderResult::NoData);
+  }
+
+  if (num_bones_ != bone_data_.size()) {
+    return core::right(DracoDecoderResult::BoneDataIncomplete);
+  }
+
+  //
+  // Step 2: re-order the loaded bone data
+  //
+  core::PodVector<glm::mat4> inv_bind_poses(bone_data_.size());
+
+  auto joint_names = ozz_skeleton.joint_names();
+  for (int i = 0; i < joint_names.size(); i++) {
+    bool is_found = false;
+    glm::mat4 inv_bind_pos{};
+
+    for (int j = 0; j < bone_data_.size(); j++) {
+      if (bone_data_[j].boneName == joint_names[i]) {
+        is_found = true;
+        inv_bind_pos = bone_data_[j].invBindPose;
+      }
+    }
+
+    if (!is_found) {
+      return core::right(DracoDecoderResult::BoneDataIncomplete);
+    }
+
+    inv_bind_poses.push_back(inv_bind_pos);
+  }
+
+  return core::left(std::move(inv_bind_poses));
 }

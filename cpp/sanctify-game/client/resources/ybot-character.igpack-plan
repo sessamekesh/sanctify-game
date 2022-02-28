@@ -1,17 +1,50 @@
 plan {
   asset_pack_file_path: "resources/ybot-character.igpack"
   actions {
-    assimp_to_static_draco_geo {
+    extract_skinned_draco_geo {
       mesh_igasset_name: "ybotBase"
       input_file_path: "characters/y-bot/Jog Forward.fbx"
-      assimp_mesh_names: "Alpha_Surface"
+      assimp_mesh_name: "Alpha_Surface"
     }
   }
   actions {
-    assimp_to_static_draco_geo {
+    extract_skinned_draco_geo {
       mesh_igasset_name: "ybotJoints"
       input_file_path: "characters/y-bot/Jog Forward.fbx"
-      assimp_mesh_names: "Alpha_Joints"
+      assimp_mesh_name: "Alpha_Joints"
+    }
+  }
+}
+plan {
+  asset_pack_file_path: "resources/ybot-basic-animations.igpack"
+  actions {
+    extract_ozz_skeleton {
+      input_file_path: "characters/y-bot/Jog Forward.fbx"
+      skeleton_igasset_name: "ybotSkeleton"
+    }
+  }
+  actions {
+    extract_ozz_animation {
+      input_file_path: "characters/y-bot/Jog Forward.fbx"
+      assimp_animation_name: "mixamo.com"
+      animation_igasset_name: "ybotJog"
+      skeleton_igasset_name: "ybotSkeleton"
+      optimization_parameters {
+        default_error_measurement_distance: 0.01
+        default_error_tolerance: 0.0001
+      }
+    }
+  }
+  actions {
+    extract_ozz_animation {
+      input_file_path: "characters/y-bot/Happy Idle.fbx"
+      assimp_animation_name: "mixamo.com"
+      animation_igasset_name: "ybotIdle"
+      skeleton_igasset_name: "ybotSkeleton"
+      optimization_parameters {
+        default_error_measurement_distance: 0.01
+        default_error_tolerance: 0.0001
+      }
     }
   }
 }

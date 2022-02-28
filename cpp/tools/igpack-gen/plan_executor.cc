@@ -16,6 +16,7 @@ PlanExecutor::PlanExecutor(uint32_t max_file_memory_cache)
       recast_navmesh_processor_() {}
 
 bool PlanExecutor::execute_plan(const PlanInvocationDesc& desc) {
+  // Validate all inputs are present
   for (int i = 0; i < desc.Plan.plan_size(); i++) {
     if (!validate_inputs_exist(desc.InputAssetPathRoot, desc.Plan.plan(i))) {
       core::Logger::err(kLogLabel) << "Error - input plan " << i
@@ -26,6 +27,47 @@ bool PlanExecutor::execute_plan(const PlanInvocationDesc& desc) {
 
   FileCache file_cache(desc.InputAssetPathRoot, max_file_memory_cache_);
   AssimpSceneCache assimp_scene_cache(max_file_memory_cache_);
+
+  // Pre-register which skeleton bones will be used from each animation in the
+  //  file, and make sure that all skeletons loaded are (1) used by animations,
+  //  and (2) well-formed
+  for (int plan_idx = 0; plan_idx < desc.Plan.plan_size(); plan_idx++) {
+    for (int action_idx = 0;
+         action_idx < desc.Plan.plan(plan_idx).actions_size(); action_idx++) {
+      const pb::SingleAction& action =
+          desc.Plan.plan(plan_idx).actions(action_idx);
+      if (action.has_extract_ozz_animation()) {
+        if (!assimp_animation_processor_.preload_animation_bones(
+                action.extract_ozz_animation(), file_cache,
+                assimp_scene_cache)) {
+          core::Logger::err(kLogLabel)
+              << "Failed to pre-validate animations for plan "
+              << desc.Plan.plan(plan_idx).asset_pack_file_path();
+          return false;
+        }
+      }
+    }
+  }
+
+  // Once all animations have had their say on which bones are used, make sure
+  //  all the loaded skeletons also comply.
+  for (int plan_idx = 0; plan_idx < desc.Plan.plan_size(); plan_idx++) {
+    for (int action_idx = 0;
+         action_idx < desc.Plan.plan(plan_idx).actions_size(); action_idx++) {
+      const pb::SingleAction& action =
+          desc.Plan.plan(plan_idx).actions(action_idx);
+      if (action.has_extract_ozz_skeleton()) {
+        if (!assimp_animation_processor_.validate_bones_exist(
+                action.extract_ozz_skeleton(), file_cache,
+                assimp_scene_cache)) {
+          core::Logger::err(kLogLabel)
+              << "Failed to pre-validate animations for plan "
+              << desc.Plan.plan(plan_idx).asset_pack_file_path();
+          return false;
+        }
+      }
+    }
+  }
 
   for (int plan_idx = 0; plan_idx < desc.Plan.plan_size(); plan_idx++) {
     const pb::SingleIgpackPlan& plan = desc.Plan.plan(plan_idx);
@@ -59,6 +101,38 @@ bool PlanExecutor::execute_plan(const PlanInvocationDesc& desc) {
           if (!assemble_navmesh(out_asset_pack, action.assemble_navmesh(),
                                 file_cache, assimp_scene_cache)) {
             core::Logger::err(kLogLabel) << "Failed to assemble navmesh";
+            return false;
+          }
+          break;
+        case pb::SingleAction::kExtractSkinnedDracoGeo:
+          if (!convert_skinned_assimp_file(out_asset_pack,
+                                           action.extract_skinned_draco_geo(),
+                                           file_cache, assimp_scene_cache)) {
+            core::Logger::err(kLogLabel)
+                << "Failed to extract skinned mesh from Assimp source "
+                << action.assimp_to_static_draco_geo().input_file_path();
+            return false;
+          }
+          break;
+        case pb::SingleAction::kExtractOzzAnimation:
+          if (!create_and_export_animation(out_asset_pack,
+                                           action.extract_ozz_animation(),
+                                           file_cache, assimp_scene_cache)) {
+            core::Logger::err(kLogLabel)
+                << "Failed to extract Ozz animation "
+                << action.extract_ozz_animation().animation_igasset_name()
+                << " from Assimp source";
+            return false;
+          }
+          break;
+        case pb::SingleAction::kExtractOzzSkeleton:
+          if (!create_and_export_skeleton(out_asset_pack,
+                                          action.extract_ozz_skeleton(),
+                                          file_cache, assimp_scene_cache)) {
+            core::Logger::err(kLogLabel)
+                << "Failed to extract Ozz skeleton "
+                << action.extract_ozz_skeleton().skeleton_igasset_name()
+                << " from Assimp source";
             return false;
           }
           break;
@@ -104,6 +178,8 @@ bool PlanExecutor::validate_inputs_exist(
   for (int i = 0; i < plan.actions_size(); i++) {
     const pb::SingleAction& action = plan.actions(i);
 
+    std::set<std::string> skeleton_names;
+
     switch (action.request_case()) {
       case pb::SingleAction::kCopyWgslSource:
         if (!peek_file(input_root,
@@ -134,6 +210,36 @@ bool PlanExecutor::validate_inputs_exist(
                 << input_root / op.include_assimp_geo().assimp_file_name();
             return false;
           }
+        }
+        break;
+      case pb::SingleAction::kExtractOzzAnimation:
+        if (!peek_file(input_root,
+                       action.extract_ozz_animation().input_file_path())) {
+          core::Logger::err(kLogLabel)
+              << "Assimp file not found: "
+              << input_root /
+                     action.assimp_to_static_draco_geo().input_file_path();
+          return false;
+        }
+        break;
+      case pb::SingleAction::kExtractOzzSkeleton:
+        if (!peek_file(input_root,
+                       action.extract_ozz_skeleton().input_file_path())) {
+          core::Logger::err(kLogLabel)
+              << "Assimp file not found: "
+              << input_root /
+                     action.assimp_to_static_draco_geo().input_file_path();
+          return false;
+        }
+        break;
+      case pb::SingleAction::kExtractSkinnedDracoGeo:
+        if (!peek_file(input_root,
+                       action.extract_skinned_draco_geo().input_file_path())) {
+          core::Logger::err(kLogLabel)
+              << "Assimp file not found: "
+              << input_root /
+                     action.assimp_to_static_draco_geo().input_file_path();
+          return false;
         }
         break;
       default:
@@ -168,10 +274,34 @@ bool PlanExecutor::convert_assimp_file(
       output_asset_pack, action, file_cache, assimp_scene_cache);
 }
 
+bool PlanExecutor::convert_skinned_assimp_file(
+    asset::pb::AssetPack& output_asset_pack,
+    const pb::AssimpExtractSkinnedMeshToDraco& action, FileCache& file_cache,
+    AssimpSceneCache& assimp_scene_cache) {
+  return assimp_geo_processor_.export_skinned_draco_geo(
+      output_asset_pack, action, file_cache, assimp_scene_cache);
+}
+
 bool PlanExecutor::assemble_navmesh(
     asset::pb::AssetPack& output_asset_pack,
     const pb::AssembleRecastNavMeshAction& action, FileCache& file_cache,
     AssimpSceneCache& assimp_scene_cache) {
   return recast_navmesh_processor_.export_recast_navmesh(
+      output_asset_pack, action, file_cache, assimp_scene_cache);
+}
+
+bool PlanExecutor::create_and_export_skeleton(
+    asset::pb::AssetPack& output_asset_pack,
+    const pb::AssimpExtractSkeletonToOzz& action, FileCache& file_cache,
+    AssimpSceneCache& assimp_scene_cache) {
+  return assimp_animation_processor_.export_skeleton(
+      output_asset_pack, action, file_cache, assimp_scene_cache);
+}
+
+bool PlanExecutor::create_and_export_animation(
+    asset::pb::AssetPack& output_asset_pack,
+    const pb::AssimpExtractAnimationToOzz& action, FileCache& file_cache,
+    AssimpSceneCache& assimp_scene_cache) {
+  return assimp_animation_processor_.export_animation(
       output_asset_pack, action, file_cache, assimp_scene_cache);
 }

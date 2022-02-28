@@ -8,12 +8,14 @@ set (HEADER_LIST
   "include/igasset/draco_encoder.h"
   "include/igasset/igpack_loader.h"
   "include/igasset/image_data.h"
+  "include/igasset/proto_converters.h"
   "include/igasset/vertex_formats.h")
 
 set (SRC_LIST
   "src/draco_decoder.cc"
   "src/draco_encoder.cc"
   "src/image_data.cc"
+  "src/proto_converter.cc"
   "src/igpack_loader.cc")
 
 set (VISUAL_STUDIO_EMPTY_SOURCES "src/vertex_formats.cc")
@@ -32,7 +34,8 @@ target_include_directories(igasset PUBLIC
   "${draco_SOURCE_DIR}/src")
 
 target_link_libraries(igasset PUBLIC
-    igasset_proto igcore igasync draco_lib igplatform stb ignav)
+    igasset_proto igcore igasync draco_lib igplatform stb ignav
+    ozz_animation ozz_geometry)
 
 if (EMSCRIPTEN)
   set_wasm_target_properties(TARGET_NAME igasset AS_LIB 1)

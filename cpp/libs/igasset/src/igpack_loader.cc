@@ -1,6 +1,9 @@
 #include <igasset/igpack_loader.h>
+#include <igasset/proto_converters.h>
 #include <ignav/recast_compiler.h>
 #include <igplatform/file_promise.h>
+#include <ozz/base/io/archive.h>
+#include <ozz/base/io/stream.h>
 
 using namespace indigo;
 using namespace asset;
@@ -98,6 +101,17 @@ IgpackLoader::ExtractDracoBufferPromiseT IgpackLoader::extract_draco_geo(
                 << "Could not process Draco asset in " << asset_name << " - "
                 << ::to_string(rsl);
             return core::right(IgpackExtractError::AssetExtractError);
+          }
+
+          for (int bone_data_idx = 0;
+               bone_data_idx < asset.draco_geo().ozz_bone_names_size() &&
+               bone_data_idx < asset.draco_geo().inv_bind_pose_size();
+               bone_data_idx++) {
+            glm::mat4 inv_bind_pos{};
+            read_pb_mat4(inv_bind_pos,
+                         asset.draco_geo().inv_bind_pose(bone_data_idx));
+            decoder->add_bone_data(
+                asset.draco_geo().ozz_bone_names(bone_data_idx), inv_bind_pos);
           }
 
           return core::left(std::move(decoder));
@@ -229,6 +243,107 @@ IgpackLoader::ExtractDetourNavmeshPromiseT IgpackLoader::extract_detour_navmesh(
         }
 
         return core::right(IgpackExtractError::ResourceNotFound);
+      },
+      extract_task_list);
+}
+
+IgpackLoader::ExtractOzzSkeletonPromiseT IgpackLoader::extract_ozz_skeleton(
+    std::string asset_name,
+    std::shared_ptr<core::TaskList> extract_task_list) const {
+  return file_promise_->then<ExtractOzzSkeletonT>(
+      [asset_name](const auto& rsl) -> ExtractOzzSkeletonT {
+        if (rsl.is_right()) {
+          return core::right(rsl.get_right());
+        }
+
+        const asset::pb::AssetPack& asset_pack = rsl.get_left();
+        for (int i = 0; i < asset_pack.assets_size(); i++) {
+          const auto& asset = asset_pack.assets(i);
+          if (asset.name() != asset_name) {
+            continue;
+          }
+
+          if (!asset.has_ozz_skeleton_def()) {
+            core::Logger::err(kLogLabel) << "Resource " << asset_name
+                                         << " is not an Ozz skeleton source";
+            return core::right(IgpackExtractError::WrongResourceType);
+          }
+
+          const auto& ozz_skeleton_def = asset.ozz_skeleton_def();
+
+          // TODO (sessamekesh): write a Stream implementation that can read
+          // straight from proto bytes
+          ozz::io::MemoryStream stream;
+          stream.Write(ozz_skeleton_def.ozz_data().c_str(),
+                       ozz_skeleton_def.ozz_data().size());
+          stream.Seek(0, ozz::io::Stream::kSet);
+
+          ozz::io::IArchive archive(&stream);
+          if (!archive.TestTag<ozz::animation::Skeleton>()) {
+            core::Logger::err(kLogLabel)
+                << "Raw data does not contain an OZZ skeleton";
+            return core::right(IgpackExtractError::AssetExtractError);
+          }
+
+          ozz::animation::Skeleton skeleton;
+          archive >> skeleton;
+
+          return core::left(std::move(skeleton));
+        }
+      },
+      extract_task_list);
+}
+
+IgpackLoader::ExtractOzzAnimationPromiseT IgpackLoader::extract_ozz_animation(
+    std::string asset_name,
+    std::shared_ptr<core::TaskList> extract_task_list) const {
+  return file_promise_->then<ExtractOzzAnimationT>(
+      [asset_name](const auto& rsl) -> ExtractOzzAnimationT {
+        if (rsl.is_right()) {
+          return core::right(rsl.get_right());
+        }
+
+        const asset::pb::AssetPack& asset_pack = rsl.get_left();
+        for (int i = 0; i < asset_pack.assets_size(); i++) {
+          const auto& asset = asset_pack.assets(i);
+          if (asset.name() != asset_name) {
+            continue;
+          }
+
+          if (!asset.has_ozz_animation_def()) {
+            core::Logger::err(kLogLabel) << "Resource " << asset_name
+                                         << " is not an Ozz animation source";
+            return core::right(IgpackExtractError::WrongResourceType);
+          }
+
+          const auto& ozz_animation_def = asset.ozz_animation_def();
+
+          // TODO (sessamekesh): write a Stream implementation that can read
+          // straight from proto bytes
+          ozz::io::MemoryStream stream;
+          stream.Write(ozz_animation_def.data().c_str(),
+                       ozz_animation_def.data().size());
+          stream.Seek(0, ozz::io::Stream::kSet);
+
+          ozz::io::IArchive archive(&stream);
+          if (!archive.TestTag<ozz::animation::Animation>()) {
+            core::Logger::err(kLogLabel)
+                << "Raw data does not contain an OZZ animation";
+            return core::right(IgpackExtractError::AssetExtractError);
+          }
+
+          ozz::animation::Animation raw_animation;
+          archive >> raw_animation;
+
+          core::Vector<std::string> bone_names(
+              ozz_animation_def.ozz_bone_names_size());
+          for (const std::string& bone_name :
+               ozz_animation_def.ozz_bone_names()) {
+            bone_names.push_back(bone_name);
+          }
+
+          return core::left(std::move(raw_animation));
+        }
       },
       extract_task_list);
 }

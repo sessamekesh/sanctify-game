@@ -4,6 +4,17 @@
 #include <assimp/Importer.hpp>
 #include <iostream>
 
+void print_scene_graph(const aiNode* node, int level, int total_levels) {
+  if (level >= total_levels) return;
+  for (int i = 0; i < level + 1; i++) {
+    std::cout << "--";
+  }
+  std::cout << " " << node->mName.C_Str() << std::endl;
+  for (int i = 0; i < node->mNumChildren; i++) {
+    ::print_scene_graph(node->mChildren[i], level + 1, total_levels);
+  }
+}
+
 int main(int argc, char** argv) {
   if (argc != 2) {
     std::cerr
@@ -51,6 +62,9 @@ int main(int argc, char** argv) {
               << scene->mTextures[i]->mHeight << " "
               << scene->mTextures[i]->achFormatHint << ")" << std::endl;
   }
+
+  std::cout << "\n\nScene graph (top 3 levels)\n";
+  ::print_scene_graph(scene->mRootNode, 0, 3);
 
   return 0;
 }

@@ -95,6 +95,44 @@ DracoEncoderResult DracoEncoder::add_texcoord_data(
   return DracoEncoderResult::Ok;
 }
 
+DracoEncoderResult DracoEncoder::add_skeletal_animation_data(
+    const core::PodVector<SkeletalAnimationVertexData>& data) {
+  auto size_rsl = validate_size(data.size());
+  if (size_rsl != DracoEncoderResult::Ok) {
+    return size_rsl;
+  }
+
+  draco::DataBuffer raw_vert_data;
+  raw_vert_data.Update(&data[0], data.raw_size());
+
+  draco::GeometryAttribute bone_weights_attrib;
+  bone_weights_attrib.Init(draco::GeometryAttribute::GENERIC, &raw_vert_data, 4,
+                           draco::DT_FLOAT32, false,
+                           sizeof(SkeletalAnimationVertexData),
+                           offsetof(SkeletalAnimationVertexData, BoneWeights));
+  auto bone_weight_attrib_id =
+      mesh_.AddAttribute(bone_weights_attrib, true, data.size());
+
+  draco::GeometryAttribute bone_indices_attrib;
+  bone_indices_attrib.Init(draco::GeometryAttribute::GENERIC, &raw_vert_data, 4,
+                           draco::DT_UINT8, false,
+                           sizeof(SkeletalAnimationVertexData),
+                           offsetof(SkeletalAnimationVertexData, BoneIndices));
+  auto bone_indices_attrib_id =
+      mesh_.AddAttribute(bone_indices_attrib, true, data.size());
+
+  for (int i = 0; i < data.size(); i++) {
+    mesh_.attribute(bone_weight_attrib_id)
+        ->SetAttributeValue(draco::AttributeValueIndex(i),
+                            &data[0].BoneWeights);
+    mesh_.attribute(bone_indices_attrib_id)
+        ->SetAttributeValue(draco::AttributeValueIndex(i),
+                            &data[0].BoneIndices);
+  }
+
+  return DracoEncoderResult::Ok;
+}
+
 DracoEncoderResult DracoEncoder::add_index_data(
     const core::PodVector<uint32_t>& data) {
   if (data.size() % 3 != 0) {

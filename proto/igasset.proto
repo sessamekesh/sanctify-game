@@ -9,6 +9,10 @@ package indigo.asset.pb;
  *  be in a format listed below.                 *
 \*************************************************/
 
+message Mat4 {
+  repeated float values = 1;
+}
+
 /**
  * Flat texture definition - specifies a solid RGBA from
  *  which the engine can generate a flat image
@@ -36,7 +40,32 @@ message DracoGeometryDef {
 
   bool has_pos_norm = 2;
   bool has_texcoords = 3;
+  bool has_bone_data = 4;
+
+  // Ordering maps 1:1 with the bone indices in the skeleton bone data
+  repeated string ozz_bone_names = 5;
+  repeated Mat4 inv_bind_pose = 6;
 }
+
+/**
+ * Raw data buffer containing an Ozz skeleton (this includes bone names
+ *  when parsed by the Ozz library)
+ */
+message OzzSkeletonDef {
+  bytes ozz_data = 1;
+}
+
+/**
+ * Raw data buffer containing an Ozz animation. Animation channels also
+ *  include bone names when parsed by the Ozz library.
+ */
+ message OzzAnimationDef {
+   bytes data = 1;
+
+   // Ordering maps 1:1 with the channel indices in the OZZ
+   //  animation structure
+   repeated string ozz_bone_names = 2;
+ }
 
 /**
  * WGSL shader (preferred for web targets apparently)
@@ -74,6 +103,8 @@ message SingleAsset {
     DracoGeometryDef draco_geo = 4;
     WgslSource wgsl_source = 5;
     DetourNavmeshDef detour_navmesh_def = 6;
+    OzzSkeletonDef ozz_skeleton_def = 7;
+    OzzAnimationDef ozz_animation_def = 8;
   }
 
   // Next token: 6

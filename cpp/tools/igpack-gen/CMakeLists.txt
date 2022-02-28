@@ -5,6 +5,7 @@ add_proto_lib(
 )
 
 set(HEADER_LIST
+  "converters/assimp_animation_processor.h"
   "converters/assimp_geo_processor.h"
   "converters/recast_navmesh_processor.h"
   "converters/wgsl_processor.h"
@@ -13,6 +14,7 @@ set(HEADER_LIST
   "plan_executor.h")
 
 set (SRC_LIST
+  "converters/assimp_animation_processor.cc"
   "converters/assimp_geo_processor.cc"
   "converters/recast_navmesh_processor.cc"
   "converters/wgsl_processor.cc"
@@ -26,5 +28,5 @@ add_executable(igpack-gen ${SRC_LIST} ${HEADER_LIST})
 
 target_link_libraries(igpack-gen PUBLIC
     igasset stb igasset_proto igpack_plan_proto draco_lib CLI11
-    assimp ignav)
+    assimp ignav ozz_animation_offline ozz_animation)
 target_include_directories(igpack-gen PRIVATE "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/extern/draco/src" .)

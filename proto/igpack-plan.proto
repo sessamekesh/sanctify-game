@@ -55,6 +55,43 @@ message AssimpToStaticDracoGeoAction {
   string mesh_igasset_name = 4;
 }
 
+message AssimpExtractAnimationToOzz {
+  string input_file_path = 1;
+  string assimp_animation_name = 2;
+  string animation_igasset_name = 3;
+  string skeleton_igasset_name = 5;
+
+  message OptimizationParameters {
+    float default_error_measurement_distance = 2;
+    float default_error_tolerance = 3;
+
+    message JointOptimizationParameter {
+      string joint_name = 1;
+      float error_measurement_distance = 2;
+      float error_tolerance = 3;
+    }
+
+    repeated JointOptimizationParameter joint_optimization_parameters = 4;
+  }
+
+  OptimizationParameters optimization_parameters = 4;
+
+  // Next token: 6
+}
+
+message AssimpExtractSkeletonToOzz {
+  string input_file_path = 1;
+  string skeleton_igasset_name = 2;
+}
+
+message AssimpExtractSkinnedMeshToDraco {
+  string input_file_path = 1;
+  string assimp_mesh_name = 2;
+  DracoConversionParams draco_params = 3;
+
+  string mesh_igasset_name = 4;
+}
+
 message AssembleRecastNavMeshAction {
   // XZ cell size - param "cs" in Recast API calls
   float cell_size = 1;
@@ -133,6 +170,9 @@ message SingleAction {
     CopyWgslSourceAction copy_wgsl_source = 1;
     AssimpToStaticDracoGeoAction assimp_to_static_draco_geo = 2;
     AssembleRecastNavMeshAction assemble_navmesh = 3;
+    AssimpExtractAnimationToOzz extract_ozz_animation = 4;
+    AssimpExtractSkeletonToOzz extract_ozz_skeleton = 5;
+    AssimpExtractSkinnedMeshToDraco extract_skinned_draco_geo = 6;
   }
 }
 

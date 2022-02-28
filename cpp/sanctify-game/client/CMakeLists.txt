@@ -85,8 +85,10 @@ build_ig_asset_pack_plan(
   INDIR "${asset_root}"
   INFILES
     "characters/y-bot/Jog Forward.fbx"
+    "characters/y-bot/Happy Idle.fbx"
   TARGET_OUTPUT_FILES
     "resources/ybot-character.igpack"
+    "resources/ybot-basic-animations.igpack"
 )
 
 build_ig_asset_pack_plan(

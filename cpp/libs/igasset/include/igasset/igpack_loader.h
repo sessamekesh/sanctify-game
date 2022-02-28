@@ -13,6 +13,8 @@
 #include <igcore/either.h>
 #include <igcore/raw_buffer.h>
 #include <ignav/detour_navmesh.h>
+#include <ozz/animation/runtime/animation.h>
+#include <ozz/animation/runtime/skeleton.h>
 
 #include <string>
 
@@ -64,6 +66,24 @@ class IgpackLoader {
   typedef std::shared_ptr<core::Promise<ExtractDetourNavmeshDataT>>
       ExtractDetourNavmeshPromiseT;
   ExtractDetourNavmeshPromiseT extract_detour_navmesh(
+      std::string asset_name,
+      std::shared_ptr<core::TaskList> extract_task_list) const;
+
+  // Ozz skeleton
+  typedef core::Either<ozz::animation::Skeleton, IgpackExtractError>
+      ExtractOzzSkeletonT;
+  typedef std::shared_ptr<core::Promise<ExtractOzzSkeletonT>>
+      ExtractOzzSkeletonPromiseT;
+  ExtractOzzSkeletonPromiseT extract_ozz_skeleton(
+      std::string asset_name,
+      std::shared_ptr<core::TaskList> extract_task_list) const;
+
+  // Ozz animation
+  typedef core::Either<ozz::animation::Animation, IgpackExtractError>
+      ExtractOzzAnimationT;
+  typedef std::shared_ptr<core::Promise<ExtractOzzAnimationT>>
+      ExtractOzzAnimationPromiseT;
+  ExtractOzzAnimationPromiseT extract_ozz_animation(
       std::string asset_name,
       std::shared_ptr<core::TaskList> extract_task_list) const;
 
