@@ -15,8 +15,14 @@ enum class GameSceneConstructionError {
   MissingMainThreadTaskList,
   MissingAsyncTaskList,
 
+  SolidAnimatedPipelineBuilderMissing,
+
+  YBotGeoLoadFail,
+  YBotIdleAnimationLoadFail,
+  YBotWalkAnimationLoadFail,
+  YBotSkeletonLoadFail,
+
   TerrainShitBuildFailed,
-  PlayerShitBuildFailed,
   DebugGeoShitBuildFailed,
   NetClientBuildFailed,
 };

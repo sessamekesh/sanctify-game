@@ -115,7 +115,7 @@ DracoEncoderResult DracoEncoder::add_skeletal_animation_data(
 
   draco::GeometryAttribute bone_indices_attrib;
   bone_indices_attrib.Init(draco::GeometryAttribute::GENERIC, &raw_vert_data, 4,
-                           draco::DT_UINT8, false,
+                           draco::DT_UINT32, false,
                            sizeof(SkeletalAnimationVertexData),
                            offsetof(SkeletalAnimationVertexData, BoneIndices));
   auto bone_indices_attrib_id =
@@ -124,10 +124,10 @@ DracoEncoderResult DracoEncoder::add_skeletal_animation_data(
   for (int i = 0; i < data.size(); i++) {
     mesh_.attribute(bone_weight_attrib_id)
         ->SetAttributeValue(draco::AttributeValueIndex(i),
-                            &data[0].BoneWeights);
+                            &data[i].BoneWeights);
     mesh_.attribute(bone_indices_attrib_id)
         ->SetAttributeValue(draco::AttributeValueIndex(i),
-                            &data[0].BoneIndices);
+                            &data[i].BoneIndices);
   }
 
   return DracoEncoderResult::Ok;

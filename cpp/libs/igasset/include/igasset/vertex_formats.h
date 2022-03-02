@@ -45,7 +45,7 @@ struct TexcoordVertexData {
  */
 struct SkeletalAnimationVertexData {
   glm::vec4 BoneWeights;
-  glm::u8vec4 BoneIndices;
+  glm::u32vec4 BoneIndices;
 };
 
 /**

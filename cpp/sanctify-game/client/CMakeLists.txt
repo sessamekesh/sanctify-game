@@ -8,7 +8,6 @@ set(header_list
   "platform_src/app_base.h"
   "src/app_startup_scene/app_startup_scene.h"
   "src/app_startup_scene/startup_shader_src.h"
-  "src/game_scene/factory_util/build_character_geo.h"
   "src/game_scene/factory_util/build_debug_geo_shit.h"
   "src/game_scene/factory_util/build_net_client.h"
   "src/game_scene/factory_util/build_terrain_shit.h"
@@ -24,6 +23,7 @@ set(header_list
   "src/io/viewport_click/viewport_click_mouse_impl.h"
   "src/io/glfw_event_emitter.h"
   "src/render/camera/arena_camera.h"
+  "src/render/common/camera_ubo.h"
   "src/render/debug_geo/debug_geo.h"
   "src/render/debug_geo/debug_geo_pipeline.h"
   "src/render/solid_animated/solid_animated_geo.h"
@@ -31,13 +31,14 @@ set(header_list
   "src/render/terrain/terrain_geo.h"
   "src/render/terrain/terrain_pipeline.h"
   "src/util/camera_util.h"
+  "src/util/resource_registry.h"
+  "src/util/scene_setup_util.h"
   "src/sanctify_client_app.h")
 
 set(src_list
   "platform_src/netclient/game_api.cc"
   "platform_src/netclient/net_client.cc"
   "platform_src/netclient/ws_client_base.cc"
-  "src/game_scene/factory_util/build_character_geo.cc"
   "src/game_scene/factory_util/build_debug_geo_shit.cc"
   "src/game_scene/factory_util/build_net_client.cc"
   "src/game_scene/factory_util/build_terrain_shit.cc"
@@ -60,6 +61,8 @@ set(src_list
   "src/render/terrain/terrain_geo.cc"
   "src/render/terrain/terrain_pipeline.cc"
   "src/util/camera_util.cc"
+  "src/util/resource_registry.cc"
+  "src/util/scene_setup_util.cc"
   "src/sanctify_client_app.cc")
 
 #

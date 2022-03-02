@@ -25,7 +25,7 @@ class UboBase {
   T& get_mutable() { return data_; }
   const T& get_immutable() const { return data_; }
 
-  uint32_t size() { return sizeof(T); }
+  uint32_t size() const { return sizeof(T); }
 
   void sync(const wgpu::Device& device) {
     if (data_.is_dirty()) {

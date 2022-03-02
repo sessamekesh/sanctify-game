@@ -10,7 +10,10 @@
 #include <io/arena_camera_controller/arena_camera_input.h>
 #include <io/viewport_click/viewport_click_controller_input.h>
 #include <netclient/net_client.h>
+#include <ozz/animation/runtime/animation.h>
+#include <ozz/animation/runtime/skeleton.h>
 #include <render/camera/arena_camera.h>
+#include <render/common/camera_ubo.h>
 #include <render/debug_geo/debug_geo.h>
 #include <render/debug_geo/debug_geo_pipeline.h>
 #include <render/solid_animated/solid_animated_pipeline.h>
@@ -18,6 +21,7 @@
 #include <render/terrain/terrain_pipeline.h>
 #include <sanctify-game-common/gameplay/locomotion.h>
 #include <scene_base.h>
+#include <util/resource_registry.h>
 #include <webgpu/webgpu_cpp.h>
 
 #include <entt/entt.hpp>
@@ -27,6 +31,15 @@ namespace sanctify {
 class GameScene : public ISceneBase,
                   public std::enable_shared_from_this<GameScene> {
  public:
+  using OzzSkeletonRegistry =
+      std::shared_ptr<ReadonlyResourceRegistry<ozz::animation::Skeleton>>;
+  using OzzAnimationRegistry =
+      std::shared_ptr<ReadonlyResourceRegistry<ozz::animation::Animation>>;
+  using SolidAnimatedGeoRegistry = std::shared_ptr<
+      ReadonlyResourceRegistry<solid_animated::SolidAnimatedGeo>>;
+  using SolidAnimatedMaterialRegistry = std::shared_ptr<
+      ReadonlyResourceRegistry<solid_animated::MaterialPipelineInputs>>;
+
   struct TerrainShit {
     terrain_pipeline::TerrainPipelineBuilder PipelineBuilder;
     terrain_pipeline::TerrainPipeline Pipeline;
@@ -37,24 +50,6 @@ class GameScene : public ISceneBase,
     terrain_pipeline::TerrainGeo DecorationGeo;
     terrain_pipeline::TerrainGeo MidTowerGeo;
     terrain_pipeline::TerrainMatWorldInstanceBuffer IdentityBuffer;
-  };
-
-  // TODO (sessamekesh): Consolidate identical bind groups (frame/scene
-  //  inputs can certainly be shared - allow constructors of these UBOs
-  //  to take in existing buffers)
-  struct PlayerShit {
-    solid_animated::SolidAnimatedPipelineBuilder PipelineBuilder;
-    solid_animated::SolidAnimatedPipeline Pipeline;
-    solid_animated::FramePipelineInputs FrameInputs;
-    solid_animated::ScenePipelineInputs SceneInputs;
-
-    solid_animated::MaterialPipelineInputs BaseMaterial;
-    solid_animated::MaterialPipelineInputs JointsMaterial;
-
-    solid_animated::SolidAnimatedGeo BaseGeo;
-    solid_animated::SolidAnimatedGeo JointsGeo;
-
-    solid_animated::MatWorldInstanceBuffer InstanceBuffers;
   };
 
   // TODO (sessamekesh): Consolidate identical bind groups even more!!!
@@ -71,14 +66,32 @@ class GameScene : public ISceneBase,
     debug_geo::InstanceBuffer cubeInstanceBuffer;
   };
 
+  struct GameGeometryKeySet {
+    ReadonlyResourceRegistry<ozz::animation::Skeleton>::Key ybotSkeletonKey;
+    ReadonlyResourceRegistry<ozz::animation::Animation>::Key
+        ybotIdleAnimationKey;
+    ReadonlyResourceRegistry<ozz::animation::Animation>::Key
+        ybotWalkAnimationKey;
+    ReadonlyResourceRegistry<solid_animated::SolidAnimatedGeo>::Key
+        ybotJointsGeoKey;
+    ReadonlyResourceRegistry<solid_animated::SolidAnimatedGeo>::Key
+        ybotBaseGeoKey;
+  };
+
  public:
   static std::shared_ptr<GameScene> Create(
       std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
       std::shared_ptr<IArenaCameraInput> camera_input_system,
       std::shared_ptr<ViewportClickInput> viewport_click_info,
-      TerrainShit terrain_shit, PlayerShit player_shit,
-      DebugGeoShit debug_geo_shit, std::shared_ptr<NetClient> net_client,
-      float camera_movement_speed, float fovy);
+      TerrainShit terrain_shit,
+      solid_animated::SolidAnimatedPipelineBuilder
+          solid_animated_pipeline_builder,
+      GameGeometryKeySet game_geometry_key_set, DebugGeoShit debug_geo_shit,
+      SolidAnimatedGeoRegistry solid_animated_geo_registry,
+      OzzSkeletonRegistry ozz_skeleton_registry,
+      OzzAnimationRegistry ozz_animation_registry,
+      std::shared_ptr<NetClient> net_client, float camera_movement_speed,
+      float fovy);
   ~GameScene();
 
   // ISceneBase
@@ -91,12 +104,20 @@ class GameScene : public ISceneBase,
   GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
             std::shared_ptr<IArenaCameraInput> camera_input_system,
             std::shared_ptr<ViewportClickInput> viewport_click_info,
-            TerrainShit terrain_shit, PlayerShit player_shit,
-            DebugGeoShit debug_geo_shit, std::shared_ptr<NetClient> net_client,
-            float camera_movement_speed, float fovy);
+            TerrainShit terrain_shit,
+            solid_animated::SolidAnimatedPipelineBuilder
+                solid_animated_pipeline_builder,
+            GameGeometryKeySet game_geometry_key_set,
+            DebugGeoShit debug_geo_shit,
+            SolidAnimatedGeoRegistry solid_animated_geo_registry,
+            OzzSkeletonRegistry ozz_animation_registry,
+            OzzAnimationRegistry ozz_skeleton_registry,
+            std::shared_ptr<NetClient> net_client, float camera_movement_speed,
+            float fovy);
   void post_ctor_setup();
 
   void setup_depth_texture(uint32_t width, uint32_t height);
+  void setup_pipelines(wgpu::TextureFormat swap_chain_format);
 
   void handle_server_events();
   void handle_single_message(const pb::GameServerSingleMessage& msg);
@@ -122,9 +143,35 @@ class GameScene : public ISceneBase,
   // You'll need a scene graph and renderable handle system, especially when
   // dealing with Lua, and might as well put in some simple AABB/frustum culling
   TerrainShit terrain_shit_;
-  PlayerShit player_shit_;
   DebugGeoShit debug_geo_shit_;
 
+  // Hey, here's some better, more fleshed-out systems...
+  render::CameraCommonVsUbo camera_common_vs_ubo_;
+  render::CameraCommonFsUbo camera_common_fs_ubo_;
+  solid_animated::SolidAnimatedPipelineBuilder solid_animated_pipeline_builder_;
+  SolidAnimatedGeoRegistry solid_animated_geo_registry_;
+  SolidAnimatedMaterialRegistry solid_animated_material_registry_;
+  OzzSkeletonRegistry ozz_skeleton_registry_;
+  OzzAnimationRegistry ozz_animation_registry_;
+
+  // Eeeeh I still don't like this part
+  GameGeometryKeySet game_geometry_key_set_;
+  struct {
+    ReadonlyResourceRegistry<solid_animated::MaterialPipelineInputs>::Key base;
+    ReadonlyResourceRegistry<solid_animated::MaterialPipelineInputs>::Key joint;
+  } ybot_materials_keys_;
+
+  // ... and the resources that are created in ctor from pipeline things
+  struct {
+    solid_animated::SolidAnimatedPipeline pipeline;
+    solid_animated::ScenePipelineInputs sceneInputs;
+    solid_animated::FramePipelineInputs frameInputs;
+  } solid_animated_gpu_;
+
+  // Net client (communicate with server)
+  // TODO (sessamekesh): The game should be able to run with or without a net
+  //  client! Run full local sim if the net client is not present (different
+  //  impl?)
   std::shared_ptr<NetClient> net_client_;
 
   // Game state...

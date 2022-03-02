@@ -3,7 +3,9 @@
 
 #include <igasset/proto/igasset.pb.h>
 #include <igcore/maybe.h>
+#include <iggpu/thin_ubo.h>
 #include <iggpu/ubo_base.h>
+#include <render/common/camera_ubo.h>
 #include <render/solid_animated/solid_animated_geo.h>
 #include <webgpu/webgpu_cpp.h>
 
@@ -11,11 +13,6 @@
 #include <string>
 
 namespace sanctify::solid_animated {
-
-struct CameraParamsUboData {
-  glm::mat4 MatView;
-  glm::mat4 MatProj;
-};
 
 struct LightingParamsUboData {
   glm::vec3 LightDirection;
@@ -28,16 +25,9 @@ struct SolidColorParamsUboData {
   glm::vec3 ObjectColor;
 };
 
-struct CameraFragmentParamsUboData {
-  glm::vec3 CameraPos;
-};
-
 // Pipeline inputs that are expected to change per-frame (camera parameters)
 struct FramePipelineInputs {
   wgpu::BindGroup FrameBindGroup;
-
-  indigo::iggpu::UboBase<CameraParamsUboData> CameraParamsUbo;
-  indigo::iggpu::UboBase<CameraFragmentParamsUboData> CameraFragmentParamsUbo;
 };
 
 // Pipeline inputs that are expected to change per-scene (lighting params)
@@ -54,11 +44,21 @@ struct MaterialPipelineInputs {
   indigo::iggpu::UboBase<SolidColorParamsUboData> SolidColorParams;
 };
 
+// Pipeline inputs that change per animation state (skeleton params)
+struct AnimationPipelineInputs {
+  wgpu::BindGroup AnimationBindGroup;
+
+  indigo::iggpu::ThinUbo SkinMatricesUbo;
+};
+
 struct SolidAnimatedPipeline {
   wgpu::TextureFormat OutputFormat;
   wgpu::RenderPipeline Pipeline;
 
-  FramePipelineInputs create_frame_inputs(const wgpu::Device& device) const;
+  FramePipelineInputs create_frame_inputs(
+      const wgpu::Device& device,
+      const render::CameraCommonVsUbo& camera_vs_ubo,
+      const render::CameraCommonFsUbo& camera_fs_ubo) const;
   ScenePipelineInputs create_scene_inputs(const wgpu::Device& device,
                                           glm::vec3 light_direction,
                                           glm::vec3 light_color,
@@ -66,6 +66,8 @@ struct SolidAnimatedPipeline {
                                           float specular_power) const;
   MaterialPipelineInputs create_material_inputs(const wgpu::Device& device,
                                                 glm::vec3 object_color) const;
+  AnimationPipelineInputs create_animation_inputs(
+      const wgpu::Device& device) const;
 };
 
 class SolidAnimatedPipelineBuilder {
@@ -102,6 +104,7 @@ class RenderUtil {
   RenderUtil& set_scene_inputs(const ScenePipelineInputs& inputs);
   RenderUtil& set_frame_inputs(const FramePipelineInputs& inputs);
   RenderUtil& set_material_inputs(const MaterialPipelineInputs& inputs);
+  RenderUtil& set_animation_inputs(const AnimationPipelineInputs& inputs);
   RenderUtil& set_geometry(const SolidAnimatedGeo& geo);
   RenderUtil& set_instances(const MatWorldInstanceBuffer& instances);
   RenderUtil& draw();
@@ -113,6 +116,7 @@ class RenderUtil {
   bool frame_inputs_set_;
   bool scene_inputs_set_;
   bool material_inputs_set_;
+  bool animation_inputs_set_;
 
   int32_t num_indices_;
   int32_t num_instances_;

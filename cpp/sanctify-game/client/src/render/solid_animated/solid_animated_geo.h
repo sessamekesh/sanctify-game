@@ -9,6 +9,7 @@ namespace sanctify::solid_animated {
 
 struct SolidAnimatedGeo {
   wgpu::Buffer GeoVertexBuffer;
+  wgpu::Buffer AnimationVertexBuffer;
   wgpu::Buffer IndexBuffer;
   int32_t NumIndices;
   wgpu::IndexFormat IndexFormat;
@@ -17,7 +18,9 @@ struct SolidAnimatedGeo {
       const wgpu::Device& device,
       const indigo::core::PodVector<indigo::asset::PositionNormalVertexData>&
           vertices,
-      const indigo::core::PodVector<uint32_t> indices);
+      const indigo::core::PodVector<indigo::asset::SkeletalAnimationVertexData>&
+          animation_data,
+      const indigo::core::PodVector<uint32_t>& indices);
 };
 
 struct MatWorldInstanceData {

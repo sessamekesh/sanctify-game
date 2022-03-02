@@ -29,9 +29,13 @@ SolidAnimatedGeo::SolidAnimatedGeo(
     const wgpu::Device& device,
     const indigo::core::PodVector<indigo::asset::PositionNormalVertexData>&
         vertices,
-    const indigo::core::PodVector<uint32_t> indices)
+    const indigo::core::PodVector<indigo::asset::SkeletalAnimationVertexData>&
+        animation_data,
+    const indigo::core::PodVector<uint32_t>& indices)
     : GeoVertexBuffer(
           iggpu::buffer_from_data(device, vertices, wgpu::BufferUsage::Vertex)),
+      AnimationVertexBuffer(iggpu::buffer_from_data(device, animation_data,
+                                                    wgpu::BufferUsage::Vertex)),
       IndexBuffer(
           iggpu::buffer_from_data(device, indices, wgpu::BufferUsage::Index)),
       NumIndices(indices.size()),

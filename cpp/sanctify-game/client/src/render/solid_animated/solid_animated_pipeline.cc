@@ -7,26 +7,20 @@ using namespace sanctify;
 using namespace solid_animated;
 
 FramePipelineInputs SolidAnimatedPipeline::create_frame_inputs(
-    const wgpu::Device& device) const {
+    const wgpu::Device& device, const render::CameraCommonVsUbo& camera_vs_ubo,
+    const render::CameraCommonFsUbo& camera_fs_ubo) const {
   wgpu::BindGroupLayout per_frame_layout = Pipeline.GetBindGroupLayout(0);
-
-  UboBase<CameraParamsUboData> camera_params_ubo(device);
-  UboBase<CameraFragmentParamsUboData> camera_fragment_params_ubo(device);
 
   core::Vector<wgpu::BindGroupEntry> bind_group_entries(2);
   bind_group_entries.push_back(::buffer_bind_group_entry(
-      0, camera_params_ubo.buffer(), camera_params_ubo.size()));
-  bind_group_entries.push_back(
-      ::buffer_bind_group_entry(1, camera_fragment_params_ubo.buffer(),
-                                camera_fragment_params_ubo.size()));
+      0, camera_vs_ubo.buffer(), camera_vs_ubo.size()));
+  bind_group_entries.push_back(::buffer_bind_group_entry(
+      1, camera_fs_ubo.buffer(), camera_fs_ubo.size()));
   auto bind_group_desc =
       ::bind_group_desc(bind_group_entries, per_frame_layout,
                         "solid-animated-pipeline-frame-inputs");
 
-  wgpu::BindGroup bind_group = device.CreateBindGroup(&bind_group_desc);
-
-  return FramePipelineInputs{bind_group, std::move(camera_params_ubo),
-                             std::move(camera_fragment_params_ubo)};
+  return FramePipelineInputs{device.CreateBindGroup(&bind_group_desc)};
 }
 
 ScenePipelineInputs SolidAnimatedPipeline::create_scene_inputs(
@@ -75,12 +69,31 @@ MaterialPipelineInputs SolidAnimatedPipeline::create_material_inputs(
   return MaterialPipelineInputs{bind_group, std::move(material_params_ubo)};
 }
 
+AnimationPipelineInputs SolidAnimatedPipeline::create_animation_inputs(
+    const wgpu::Device& device) const {
+  wgpu::BindGroupLayout per_skin_layout = Pipeline.GetBindGroupLayout(3);
+
+  ThinUbo skin_matrices_ubo(sizeof(glm::mat4) * 80, device);
+
+  core::Vector<wgpu::BindGroupEntry> bind_group_entries(1);
+  bind_group_entries.push_back(::buffer_bind_group_entry(
+      0, skin_matrices_ubo.buffer(), skin_matrices_ubo.size()));
+  auto bind_group_desc =
+      ::bind_group_desc(bind_group_entries, per_skin_layout,
+                        "solid-animated-pipeline-animation-inputs");
+
+  wgpu::BindGroup bind_group = device.CreateBindGroup(&bind_group_desc);
+
+  return AnimationPipelineInputs{bind_group, std::move(skin_matrices_ubo)};
+}
+
 RenderUtil::RenderUtil(const wgpu::RenderPassEncoder& pass,
                        const SolidAnimatedPipeline& pipeline)
     : pass_(pass),
       pipeline_(pipeline),
       frame_inputs_set_(false),
       scene_inputs_set_(false),
+      animation_inputs_set_(false),
       material_inputs_set_(false),
       num_indices_(-1),
       num_instances_(-1) {
@@ -106,8 +119,16 @@ RenderUtil& RenderUtil::set_material_inputs(
   return *this;
 }
 
+RenderUtil& RenderUtil::set_animation_inputs(
+    const AnimationPipelineInputs& inputs) {
+  pass_.SetBindGroup(3, inputs.AnimationBindGroup);
+  animation_inputs_set_ = true;
+  return *this;
+}
+
 RenderUtil& RenderUtil::set_geometry(const SolidAnimatedGeo& geo) {
   pass_.SetVertexBuffer(0, geo.GeoVertexBuffer);
+  pass_.SetVertexBuffer(2, geo.AnimationVertexBuffer);
   pass_.SetIndexBuffer(geo.IndexBuffer, geo.IndexFormat);
   num_indices_ = geo.NumIndices;
   return *this;
@@ -122,7 +143,7 @@ RenderUtil& RenderUtil::set_instances(
 
 RenderUtil& RenderUtil::draw() {
   if (frame_inputs_set_ && scene_inputs_set_ && material_inputs_set_ &&
-      num_indices_ > 0 && num_instances_ > 0) {
+      animation_inputs_set_ && num_indices_ > 0 && num_instances_ > 0) {
     pass_.DrawIndexed(num_indices_, num_instances_);
   }
 
@@ -160,6 +181,7 @@ SolidAnimatedPipeline SolidAnimatedPipelineBuilder::create_pipeline(
   fragment_state.targets = &color_target_state;
 
   core::PodVector<wgpu::VertexAttribute> geo_attributes(2);
+  core::PodVector<wgpu::VertexAttribute> anim_attributes(2);
   core::PodVector<wgpu::VertexAttribute> mat_world_instance_attributes(4);
 
   geo_attributes.push_back(
@@ -169,6 +191,14 @@ SolidAnimatedPipeline SolidAnimatedPipelineBuilder::create_pipeline(
 
   wgpu::VertexBufferLayout geo_layout =
       ::vertex_buffer_layout(geo_attributes, 28, wgpu::VertexStepMode::Vertex);
+
+  anim_attributes.push_back(
+      ::vertex_attribute(6, wgpu::VertexFormat::Float32x4, 0));
+  anim_attributes.push_back(
+      ::vertex_attribute(7, wgpu::VertexFormat::Uint32x4, 16));
+
+  wgpu::VertexBufferLayout anim_layout =
+      ::vertex_buffer_layout(anim_attributes, 32, wgpu::VertexStepMode::Vertex);
 
   mat_world_instance_attributes.push_back(
       ::vertex_attribute(2, wgpu::VertexFormat::Float32x4, 0));
@@ -182,7 +212,8 @@ SolidAnimatedPipeline SolidAnimatedPipelineBuilder::create_pipeline(
   wgpu::VertexBufferLayout mat_world_layout = ::vertex_buffer_layout(
       mat_world_instance_attributes, 64, wgpu::VertexStepMode::Instance);
 
-  wgpu::VertexBufferLayout vb_layouts[] = {geo_layout, mat_world_layout};
+  wgpu::VertexBufferLayout vb_layouts[] = {geo_layout, mat_world_layout,
+                                           anim_layout};
 
   wgpu::DepthStencilState depth_stencil_state =
       ::depth_stencil_state_standard();

@@ -1,9 +1,11 @@
 set(header_list
   "include/iggpu/texture.h"
+  "include/iggpu/thin_ubo.h"
   "include/iggpu/ubo_base.h"
   "include/iggpu/util.h")
 
 set(src_list
+  "src/thin_ubo.cc"
   "src/util.cc")
 
 add_library(iggpu STATIC ${header_list} ${src_list})

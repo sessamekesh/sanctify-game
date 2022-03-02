@@ -41,13 +41,21 @@ std::shared_ptr<GameScene> GameScene::Create(
     std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
     std::shared_ptr<IArenaCameraInput> camera_input_system,
     std::shared_ptr<ViewportClickInput> viewport_click_info,
-    TerrainShit terrain_shit, PlayerShit player_shit,
-    DebugGeoShit debug_geo_shit, std::shared_ptr<NetClient> net_client,
-    float camera_movement_speed, float fovy) {
+    TerrainShit terrain_shit,
+    solid_animated::SolidAnimatedPipelineBuilder
+        solid_animated_pipeline_builder,
+    GameGeometryKeySet game_geometry_key_set, DebugGeoShit debug_geo_shit,
+    SolidAnimatedGeoRegistry solid_animated_geo_registry,
+    OzzSkeletonRegistry ozz_skeleton_registry,
+    OzzAnimationRegistry ozz_animation_registry,
+    std::shared_ptr<NetClient> net_client, float camera_movement_speed,
+    float fovy) {
   auto game_scene = std::shared_ptr<GameScene>(new GameScene(
       base, arena_camera, camera_input_system, viewport_click_info,
-      std::move(terrain_shit), std::move(player_shit),
-      std::move(debug_geo_shit), net_client, camera_movement_speed, fovy));
+      std::move(terrain_shit), std::move(solid_animated_pipeline_builder),
+      game_geometry_key_set, std::move(debug_geo_shit),
+      solid_animated_geo_registry, ozz_skeleton_registry,
+      ozz_animation_registry, net_client, camera_movement_speed, fovy));
 
   game_scene->post_ctor_setup();
 
@@ -57,8 +65,14 @@ std::shared_ptr<GameScene> GameScene::Create(
 GameScene::GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
                      std::shared_ptr<IArenaCameraInput> camera_input_system,
                      std::shared_ptr<ViewportClickInput> viewport_click_info,
-                     TerrainShit terrain_shit, PlayerShit player_shit,
+                     TerrainShit terrain_shit,
+                     solid_animated::SolidAnimatedPipelineBuilder
+                         solid_animated_pipeline_builder,
+                     GameGeometryKeySet game_geometry_key_set,
                      DebugGeoShit debug_geo_shit,
+                     SolidAnimatedGeoRegistry solid_animated_geo_registry,
+                     OzzSkeletonRegistry ozz_skeleton_registry,
+                     OzzAnimationRegistry ozz_animation_registry,
                      std::shared_ptr<NetClient> net_client,
                      float camera_movement_speed, float fovy)
     : base_(base),
@@ -67,7 +81,14 @@ GameScene::GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
       viewport_click_info_(viewport_click_info),
       net_client_(net_client),
       terrain_shit_(std::move(terrain_shit)),
-      player_shit_(std::move(player_shit)),
+      camera_common_vs_ubo_(base_->Device),
+      camera_common_fs_ubo_(base_->Device),
+      solid_animated_pipeline_builder_(
+          std::move(solid_animated_pipeline_builder)),
+      game_geometry_key_set_(game_geometry_key_set),
+      solid_animated_geo_registry_(solid_animated_geo_registry),
+      ozz_animation_registry_(ozz_animation_registry),
+      ozz_skeleton_registry_(ozz_skeleton_registry),
       debug_geo_shit_(std::move(debug_geo_shit)),
       camera_movement_speed_(camera_movement_speed),
       fovy_(fovy),
@@ -84,6 +105,7 @@ void GameScene::post_ctor_setup() {
   viewport_click_info_->attach();
 
   setup_depth_texture(base_->Width, base_->Height);
+  setup_pipelines(base_->preferred_swap_chain_texture_format());
 
   auto that = weak_from_this();
   net_client_->set_connection_state_changed_listener(
@@ -207,19 +229,24 @@ void GameScene::render() {
   }
   {
     auto& camera_params =
-        player_shit_.FrameInputs.CameraParamsUbo.get_mutable();
-    camera_params.MatView = arena_camera_.mat_view();
-    camera_params.MatProj = glm::perspective(
-        fovy_, (float)base_->Width / base_->Height, 0.1f, 4000.f);
-    player_shit_.FrameInputs.CameraParamsUbo.sync(device);
-  }
-  {
-    auto& camera_params =
         debug_geo_shit_.frameInputs.cameraVertParams.get_mutable();
     camera_params.matView = arena_camera_.mat_view();
     camera_params.matProj = glm::perspective(
         fovy_, (float)base_->Width / base_->Height, 0.1f, 4000.f);
     debug_geo_shit_.frameInputs.cameraVertParams.sync(device);
+  }
+  // (this is the consolidated version that should be used for everybody)
+  {
+    auto& camera_vs_params = camera_common_vs_ubo_.get_mutable();
+    auto& camera_fs_params = camera_common_fs_ubo_.get_mutable();
+
+    camera_vs_params.matView = arena_camera_.mat_view();
+    camera_vs_params.matProj = glm::perspective(
+        fovy_, (float)base_->Width / base_->Height, 0.1f, 4000.f);
+    camera_fs_params.cameraPos = arena_camera_.position();
+
+    camera_common_vs_ubo_.sync(device);
+    camera_common_fs_ubo_.sync(device);
   }
 
   //
@@ -246,20 +273,6 @@ void GameScene::render() {
       .set_geometry(terrain_shit_.MidTowerGeo)
       .draw();
 
-  auto player_instance_data = player_render_system_.get_instance_data(world_);
-  player_shit_.InstanceBuffers.update_index_data(device, player_instance_data);
-
-  solid_animated::RenderUtil(static_geo_pass, player_shit_.Pipeline)
-      .set_frame_inputs(player_shit_.FrameInputs)
-      .set_scene_inputs(player_shit_.SceneInputs)
-      .set_instances(player_shit_.InstanceBuffers)
-      .set_geometry(player_shit_.BaseGeo)
-      .set_material_inputs(player_shit_.BaseMaterial)
-      .draw()
-      .set_geometry(player_shit_.JointsGeo)
-      .set_material_inputs(player_shit_.JointsMaterial)
-      .draw();
-
   const auto& debug_cube_instances = player_move_indicator_render_system_.get();
   debug_geo_shit_.cubeInstanceBuffer.update_index_data(device,
                                                        debug_cube_instances);
@@ -270,6 +283,8 @@ void GameScene::render() {
       .set_geometry(debug_geo_shit_.cubeGeo)
       .set_instances(debug_geo_shit_.cubeInstanceBuffer)
       .draw();
+
+  // TODO (sessamekesh): Run render systems for the player here!
 
   // TODO (sessamekesh): Update Emscripten library to support .End() method
 #ifdef __EMSCRIPTEN__
@@ -301,6 +316,31 @@ void GameScene::setup_depth_texture(uint32_t width, uint32_t height) {
   wgpu::TextureViewDescriptor depth_view_desc =
       iggpu::view_desc_of(depth_texture_);
   depth_view_ = depth_texture_.GpuTexture.CreateView(&depth_view_desc);
+}
+
+void GameScene::setup_pipelines(wgpu::TextureFormat swap_chain_format) {
+  const wgpu::Device& device = base_->Device;
+
+  solid_animated_gpu_.pipeline =
+      solid_animated_pipeline_builder_.create_pipeline(device,
+                                                       swap_chain_format);
+  solid_animated_gpu_.sceneInputs =
+      solid_animated_gpu_.pipeline.create_scene_inputs(
+          device, glm::normalize(glm::vec3(1.f, -3.f, 1.f)),
+          glm::vec3(1.f, 1.f, 1.f), 0.3f, 50.f);
+  solid_animated_gpu_.frameInputs =
+      solid_animated_gpu_.pipeline.create_frame_inputs(
+          device, camera_common_vs_ubo_, camera_common_fs_ubo_);
+
+  solid_animated_material_registry_ = std::make_shared<
+      ReadonlyResourceRegistry<solid_animated::MaterialPipelineInputs>>();
+  ybot_materials_keys_.base = solid_animated_material_registry_->add_resource(
+      solid_animated_gpu_.pipeline.create_material_inputs(
+          device, glm::vec3(0.628f, 0.628f, 1.f)));
+  ybot_materials_keys_.joint = solid_animated_material_registry_->add_resource(
+      solid_animated_gpu_.pipeline.create_material_inputs(
+          device, glm::vec3(0.1f, 0.1f, 0.2f)));
+  // TODO (sessamekesh): Invalidate all materials that are stored in ECS!
 }
 
 void GameScene::handle_server_events() {

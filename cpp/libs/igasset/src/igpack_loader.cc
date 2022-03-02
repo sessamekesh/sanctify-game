@@ -290,6 +290,8 @@ IgpackLoader::ExtractOzzSkeletonPromiseT IgpackLoader::extract_ozz_skeleton(
 
           return core::left(std::move(skeleton));
         }
+
+        return core::right(IgpackExtractError::ResourceNotFound);
       },
       extract_task_list);
 }
@@ -344,6 +346,8 @@ IgpackLoader::ExtractOzzAnimationPromiseT IgpackLoader::extract_ozz_animation(
 
           return core::left(std::move(raw_animation));
         }
+
+        return core::right(IgpackExtractError::ResourceNotFound);
       },
       extract_task_list);
 }

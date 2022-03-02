@@ -60,20 +60,32 @@ DracoDecoderResult DracoDecoder::decode(const core::RawBuffer& buffer) {
 
   mesh_ = std::move(mesh_rsl).value();
 
-  auto idx_attrib = mesh_->GetNamedAttributeByUniqueId(
-      draco::GeometryAttribute::Type::GENERIC, 2);
-  if (idx_attrib != nullptr &&
-      idx_attrib->data_type() == draco::DataType::DT_UINT8 &&
-      idx_attrib->num_components() == 4) {
+  // TODO (sessamekesh): Be a bit more scientific about this...
+  const draco::PointAttribute* idx_attrib = nullptr;
+  for (int i = 0; i < 8; i++) {
+    auto* test_attrib = mesh_->GetNamedAttributeByUniqueId(
+        draco::GeometryAttribute::Type::GENERIC, i);
+    if (test_attrib != nullptr &&
+        test_attrib->data_type() == draco::DataType::DT_UINT32 &&
+        test_attrib->num_components() == 4) {
+      idx_attrib = test_attrib;
+      break;
+    }
+  }
+  if (idx_attrib != nullptr) {
     for (draco::PointIndex vert_idx(0); vert_idx < mesh_->num_points();
          vert_idx++) {
-      glm::u8vec4 bone_indices{};
+      glm::u32vec4 bone_indices{};
       idx_attrib->ConvertValue(idx_attrib->mapped_index(vert_idx), 4,
                                &bone_indices.x);
       num_bones_ =
           std::max({(int)bone_indices.x, (int)bone_indices.y,
                     (int)bone_indices.z, (int)bone_indices.w, num_bones_});
     }
+  }
+
+  if (num_bones_ > 0) {
+    num_bones_++;
   }
 
   return DracoDecoderResult::Ok;
@@ -86,6 +98,7 @@ DracoDecoderResult DracoDecoder::add_bone_data(std::string bone_name,
   }
 
   bone_data_.push_back({bone_name, inv_bind_pos});
+  return DracoDecoderResult::Ok;
 }
 
 core::Either<core::PodVector<PositionNormalVertexData>, DracoDecoderResult>
@@ -217,13 +230,15 @@ DracoDecoder::get_skeletal_animation_vertices(
     return core::right(DracoDecoderResult::MeshDataMissing);
   }
 
+  // TODO (sessamekesh): Grab this from the Draco asset instead, because these
+  // values are WRONG!
   auto bone_weights_attrib =
       mesh_->GetNamedAttribute(draco::GeometryAttribute::Type::GENERIC, 1);
   auto bone_indices_attrib =
       mesh_->GetNamedAttribute(draco::GeometryAttribute::Type::GENERIC, 2);
 
   if (bone_weights_attrib->data_type() != draco::DataType::DT_FLOAT32 ||
-      bone_indices_attrib->data_type() != draco::DataType::DT_UINT8 ||
+      bone_indices_attrib->data_type() != draco::DataType::DT_UINT32 ||
       bone_weights_attrib->num_components() != 4 ||
       bone_indices_attrib->num_components() != 4) {
     return core::right(DracoDecoderResult::NoData);
@@ -264,46 +279,25 @@ DracoDecoder::get_skeletal_animation_vertices(
   return core::left(std::move(vertices));
 }
 
-core::Either<indigo::core::PodVector<glm::mat4>, DracoDecoderResult>
+core::Either<core::PodVector<glm::mat4>, DracoDecoderResult>
 DracoDecoder::get_inv_bind_poses(
     const ozz::animation::Skeleton& ozz_skeleton) const {
-  //
-  // Step 1: verify that skeleton data is loaded and correct
-  //
-  if (bone_data_.size() == 0) {
-    return core::right(DracoDecoderResult::BoneDataNotLoaded);
-  }
-
-  if (num_bones_ == 0 && bone_data_.size() == 0) {
-    return core::right(DracoDecoderResult::NoData);
-  }
-
-  if (num_bones_ != bone_data_.size()) {
+  if (num_bones_ == 0 || bone_data_.size() != num_bones_) {
     return core::right(DracoDecoderResult::BoneDataIncomplete);
   }
 
-  //
-  // Step 2: re-order the loaded bone data
-  //
-  core::PodVector<glm::mat4> inv_bind_poses(bone_data_.size());
-
   auto joint_names = ozz_skeleton.joint_names();
+
+  core::PodVector<glm::mat4> inv_bind_poses(joint_names.size());
   for (int i = 0; i < joint_names.size(); i++) {
-    bool is_found = false;
-    glm::mat4 inv_bind_pos{};
+    inv_bind_poses[i] = glm::mat4(1.f);
 
     for (int j = 0; j < bone_data_.size(); j++) {
       if (bone_data_[j].boneName == joint_names[i]) {
-        is_found = true;
-        inv_bind_pos = bone_data_[j].invBindPose;
+        inv_bind_poses[i] = bone_data_[j].invBindPose;
+        break;
       }
     }
-
-    if (!is_found) {
-      return core::right(DracoDecoderResult::BoneDataIncomplete);
-    }
-
-    inv_bind_poses.push_back(inv_bind_pos);
   }
 
   return core::left(std::move(inv_bind_poses));

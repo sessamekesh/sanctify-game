@@ -234,8 +234,8 @@ bool AssimpGeoProcessor::export_skinned_draco_geo(
   core::PodVector<asset::SkeletalAnimationVertexData> skinning_vertices(
       mesh->mNumVertices);
   for (int i = 0; i < mesh->mNumVertices; i++) {
-    skinning_vertices.push_back(
-        asset::SkeletalAnimationVertexData{glm::vec4(0.f), glm::u8vec4(0xFFu)});
+    skinning_vertices.push_back(asset::SkeletalAnimationVertexData{
+        glm::vec4(0.f), glm::u32vec4(0xFFFFu)});
   }
 
   core::Vector<std::string> bone_names(mesh->mNumBones);
@@ -260,16 +260,16 @@ bool AssimpGeoProcessor::export_skinned_draco_geo(
 
       asset::SkeletalAnimationVertexData& v =
           skinning_vertices[weight.mVertexId];
-      if (v.BoneIndices[0] == 0xFFu) {
+      if (v.BoneIndices[0] == 0xFFFFu) {
         v.BoneIndices[0] = bone_idx;
         v.BoneWeights[0] = weight.mWeight;
-      } else if (v.BoneIndices[1] == 0xFFu) {
+      } else if (v.BoneIndices[1] == 0xFFFFu) {
         v.BoneIndices[1] = bone_idx;
         v.BoneWeights[1] = weight.mWeight;
-      } else if (v.BoneIndices[2] == 0xFFu) {
+      } else if (v.BoneIndices[2] == 0xFFFFu) {
         v.BoneIndices[2] = bone_idx;
         v.BoneWeights[2] = weight.mWeight;
-      } else if (v.BoneIndices[3] == 0xFFu) {
+      } else if (v.BoneIndices[3] == 0xFFFFu) {
         v.BoneIndices[3] = bone_idx;
         v.BoneWeights[3] = weight.mWeight;
       } else {

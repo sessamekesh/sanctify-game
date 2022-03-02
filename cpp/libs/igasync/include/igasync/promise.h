@@ -212,6 +212,21 @@ class Promise : public std::enable_shared_from_this<Promise<ValT>> {
   }
 
   /**
+   * Utility wrapper that consumes the value of the previous promise, and then
+   *  passes the result value on to the invoked callback to build a new promise.
+   * Take extreme care and only run this in chaining cases!!
+   */
+  template <typename MT>
+  std::shared_ptr<Promise<MT>> then_consuming(
+      std::function<MT(ValT)> cb, std::shared_ptr<TaskList> task_list,
+      std::string op_label = "") {
+    auto tr = Promise<MT>::create(op_label);
+    consume([tr, cb = std::move(cb)](ValT v) { tr->resolve(cb(std::move(v))); },
+            task_list, op_label);
+    return tr;
+  }
+
+  /**
    * Utility wrapper that does the same thing as "then" (above), but with a
    * function that returns a promise instead of one that returns the value
    * synchronously.

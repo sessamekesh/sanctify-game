@@ -5,6 +5,8 @@ struct VertexInput {
   [[location(3)]] mat_world_1: vec4<f32>;
   [[location(4)]] mat_world_2: vec4<f32>;
   [[location(5)]] mat_world_3: vec4<f32>;
+  [[location(6)]] bone_weights: vec4<f32>;
+  [[location(7)]] bone_indices: vec4<u32>;
 };
 
 struct VertexOutput {
@@ -39,7 +41,13 @@ struct CameraParamsUbo {
   mat_proj: mat4x4<f32>;
 };
 
+[[block]]
+struct SkinMatricesUbo {
+  data: array<mat4x4<f32>, 80>;
+};
+
 [[group(0), binding(0)]] var<uniform> cameraParams: CameraParamsUbo;
+[[group(3), binding(0)]] var<uniform> skinMatrices: SkinMatricesUbo;
 
 [[stage(vertex)]]
 fn main(vertex: VertexInput) -> VertexOutput {
@@ -50,9 +58,16 @@ fn main(vertex: VertexInput) -> VertexOutput {
     vertex.mat_world_1,
     vertex.mat_world_2,
     vertex.mat_world_3);
+
+  let skin_transform: mat4x4<f32> =
+    vertex.bone_weights.x * skinMatrices.data[vertex.bone_indices.x] +
+    vertex.bone_weights.y * skinMatrices.data[vertex.bone_indices.y] +
+    vertex.bone_weights.z * skinMatrices.data[vertex.bone_indices.z] +
+    vertex.bone_weights.w * skinMatrices.data[vertex.bone_indices.w];
   
-  out.world_pos = (mat_world * vec4<f32>(vertex.position, 1.)).xyz;
-  out.world_normal = (mat_world * vec4<f32>(normal_from_quat(vertex.tbn_quat), 0.)).xyz;
+  out.world_pos = (skin_transform * mat_world * vec4<f32>(vertex.position, 1.)).xyz;
+  out.world_normal = (skin_transform * mat_world *
+    vec4<f32>(normal_from_quat(vertex.tbn_quat), 0.)).xyz;
   out.frag_coord = cameraParams.mat_proj * cameraParams.mat_view * vec4<f32>(out.world_pos, 1.);
 
   return out;
