@@ -17,6 +17,13 @@ void maybe_upsert(entt::entity entity, entt::registry& world,
   }
 }
 
+template <typename T>
+void maybe_tag(entt::entity entity, entt::registry& world, Maybe<T> tag) {
+  if (tag.has_value()) {
+    world.emplace_or_replace<T>(entity);
+  }
+}
+
 }  // namespace
 
 ReconcileNetStateSystem::ReconcileNetStateSystem() {}
@@ -143,10 +150,15 @@ void ReconcileNetStateSystem::reconcile_client_state(
           break;
         case GameSnapshotDiff::ComponentType::NavWaypointList:
           client_world.erase<component::NavWaypointList>(e);
-
           break;
         case GameSnapshotDiff::ComponentType::StandardNavigationParams:
           client_world.erase<component::StandardNavigationParams>(e);
+          break;
+        case GameSnapshotDiff::ComponentType::BasicPlayerComponent:
+          client_world.erase<component::BasicPlayerComponent>(e);
+          break;
+        case GameSnapshotDiff::ComponentType::Orientation:
+          client_world.erase<component::OrientationComponent>(e);
           break;
         default:
           Logger::err(kLogLabel)
@@ -158,10 +170,13 @@ void ReconcileNetStateSystem::reconcile_client_state(
     ::maybe_upsert(e, client_world, client_diff.map_location(net_client_id));
     ::maybe_upsert(e, client_world,
                    client_diff.standard_navigation_params(net_client_id));
+    ::maybe_tag(e, client_world,
+                client_diff.basic_player_component(net_client_id));
 
     // Step 4: apply smearing to components that need smearing
     // TODO (sessamekesh): apply smearing to map position
     ::maybe_upsert(e, client_world, client_diff.map_location(net_client_id));
+    ::maybe_upsert(e, client_world, client_diff.orientation(net_client_id));
   }
 }
 

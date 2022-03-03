@@ -73,7 +73,8 @@ AnimationPipelineInputs SolidAnimatedPipeline::create_animation_inputs(
     const wgpu::Device& device) const {
   wgpu::BindGroupLayout per_skin_layout = Pipeline.GetBindGroupLayout(3);
 
-  ThinUbo skin_matrices_ubo(sizeof(glm::mat4) * 80, device);
+  ThinUbo skin_matrices_ubo(
+      sizeof(glm::mat4) * SolidAnimatedPipeline::kMaxBonesCount, device);
 
   core::Vector<wgpu::BindGroupEntry> bind_group_entries(1);
   bind_group_entries.push_back(::buffer_bind_group_entry(

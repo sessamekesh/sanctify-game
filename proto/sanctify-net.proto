@@ -49,6 +49,10 @@ message MapLocation {
   Vec2 location = 1;
 }
 
+message Orientation {
+  float orientation = 1;
+}
+
 message NavWaypointList {
   repeated Vec2 nav_waypoints = 1;
 }
@@ -56,6 +60,8 @@ message NavWaypointList {
 message StandardNavigationParams {
   float movement_speed = 1;
 }
+
+message BasicPlayerComponent {}
 
 //
 // Gameplay messages (client events)
@@ -76,6 +82,10 @@ message ComponentData {
   MapLocation map_location = 1;
   NavWaypointList nav_waypoints = 2;
   StandardNavigationParams standard_navigation_params = 3;
+  BasicPlayerComponent basic_player_component = 4;
+  Orientation orientation = 5;
+
+  // Next token: 6
 }
 
 message GameEntity {
@@ -97,6 +107,8 @@ message GameEntityUpdateMask {
     MAP_LOCATION = 1;
     NAV_WAYPOINTS = 2;
     STANDARD_NAVIGATION_PARAMS = 3;
+    BASIC_PLAYER_COMPONENT = 4;
+    ORIENTATION = 5;
   }
 
   uint32 net_sync_id = 1;

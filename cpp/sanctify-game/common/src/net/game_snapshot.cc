@@ -28,6 +28,12 @@ pb::GameEntityUpdateMask::ComponentType to_proto(
     case GameSnapshotDiff::ComponentType::StandardNavigationParams:
       return pb::GameEntityUpdateMask::ComponentType::
           GameEntityUpdateMask_ComponentType_STANDARD_NAVIGATION_PARAMS;
+    case GameSnapshotDiff::ComponentType::BasicPlayerComponent:
+      return pb::GameEntityUpdateMask::ComponentType::
+          GameEntityUpdateMask_ComponentType_BASIC_PLAYER_COMPONENT;
+    case GameSnapshotDiff::ComponentType::Orientation:
+      return pb::GameEntityUpdateMask::ComponentType::
+          GameEntityUpdateMask_ComponentType_ORIENTATION;
 
     default:
       return pb::GameEntityUpdateMask::ComponentType::
@@ -47,6 +53,12 @@ GameSnapshotDiff::ComponentType from_proto(
     case pb::GameEntityUpdateMask::ComponentType::
         GameEntityUpdateMask_ComponentType_STANDARD_NAVIGATION_PARAMS:
       return GameSnapshotDiff::ComponentType::StandardNavigationParams;
+    case pb::GameEntityUpdateMask::ComponentType::
+        GameEntityUpdateMask_ComponentType_BASIC_PLAYER_COMPONENT:
+      return GameSnapshotDiff::ComponentType::BasicPlayerComponent;
+    case pb::GameEntityUpdateMask::ComponentType::
+        GameEntityUpdateMask_ComponentType_ORIENTATION:
+      return GameSnapshotDiff::ComponentType::Orientation;
 
     default:
       return GameSnapshotDiff::ComponentType::Invalid;
@@ -70,6 +82,9 @@ void set_vec2(pb::Vec2* mut_pb_vec, const glm::vec2& data) {
 
 glm::vec2 extract_vec2(const pb::Vec2& pb) { return glm::vec2{pb.x(), pb.y()}; }
 
+//
+// PB insertion
+//
 void maybe_add_to_proto(pb::ComponentData* mut_component_data,
                         Maybe<component::MapLocation> map_location) {
   if (map_location.is_empty() || !mut_component_data) {
@@ -106,6 +121,29 @@ void maybe_add_to_proto(pb::ComponentData* mut_component_data,
   }
 }
 
+void maybe_add_to_proto(pb::ComponentData* mut_component_data,
+                        Maybe<component::BasicPlayerComponent> component) {
+  if (component.is_empty() || !mut_component_data) {
+    return;
+  }
+
+  pb::BasicPlayerComponent* mut_player =
+      mut_component_data->mutable_basic_player_component();
+}
+
+void maybe_add_to_proto(pb::ComponentData* mut_component_data,
+                        Maybe<component::OrientationComponent> orientation) {
+  if (orientation.is_empty() || !mut_component_data) {
+    return;
+  }
+
+  pb::Orientation* pb = mut_component_data->mutable_orientation();
+  pb->set_orientation(orientation.get().orientation);
+}
+
+//
+// PB extraction
+//
 Maybe<component::MapLocation> extract_map_location(
     const pb::ComponentData& component_data) {
   if (!component_data.has_map_location() ||
@@ -143,6 +181,27 @@ Maybe<component::StandardNavigationParams> extract_nav_params(
       component_data.standard_navigation_params().movement_speed()};
 }
 
+Maybe<component::BasicPlayerComponent> extract_basic_player_component(
+    const pb::ComponentData& component_data) {
+  if (!component_data.has_basic_player_component()) {
+    return empty_maybe{};
+  }
+
+  return component::BasicPlayerComponent{};
+}
+
+Maybe<component::OrientationComponent> extract_orientation(
+    const pb::ComponentData& data) {
+  if (!data.has_orientation()) {
+    return empty_maybe{};
+  }
+
+  return component::OrientationComponent{data.orientation().orientation()};
+}
+
+//
+// Diff generation
+//
 Maybe<Either<component::MapLocation, GameSnapshotDiff::ComponentType>>
 generate_map_location_diff(uint32_t net_sync_id, const GameSnapshot& base,
                            const GameSnapshot& dest) {
@@ -260,6 +319,85 @@ void diff_nav_params(uint32_t net_sync_id, const GameSnapshot& base,
   }
 }
 
+Maybe<Either<component::BasicPlayerComponent, GameSnapshotDiff::ComponentType>>
+generate_basic_player_diff(uint32_t net_sync_id, const GameSnapshot& base,
+                           const GameSnapshot& dest) {
+  using EitherType =
+      Either<component::BasicPlayerComponent, GameSnapshotDiff::ComponentType>;
+
+  auto base_value = base.basic_player_component(net_sync_id);
+  auto dest_value = dest.basic_player_component(net_sync_id);
+
+  if (base_value.is_empty() && dest_value.is_empty()) {
+    return empty_maybe{};
+  }
+
+  if (base_value.has_value() && dest_value.is_empty()) {
+    return EitherType(
+        right(GameSnapshotDiff::ComponentType::BasicPlayerComponent));
+  }
+
+  if (base_value.get() == dest_value.get()) {
+    return empty_maybe{};
+  }
+
+  return EitherType(left(dest_value.move()));
+}
+
+void diff_basic_player_components(uint32_t net_sync_id,
+                                  const GameSnapshot& base,
+                                  const GameSnapshot& dest,
+                                  GameSnapshotDiff& mut_diff) {
+  auto maybe_basic_params_diff =
+      ::generate_basic_player_diff(net_sync_id, base, dest);
+  if (maybe_basic_params_diff.has_value()) {
+    auto basic_params_diff = maybe_basic_params_diff.move();
+    if (basic_params_diff.is_left()) {
+      mut_diff.upsert(net_sync_id, basic_params_diff.left_move());
+    } else {
+      mut_diff.delete_component(net_sync_id, basic_params_diff.get_right());
+    }
+  }
+}
+
+Maybe<Either<component::OrientationComponent, GameSnapshotDiff::ComponentType>>
+generate_orientation_diff(uint32_t net_sync_id, const GameSnapshot& base,
+                          const GameSnapshot& dest) {
+  using EitherType =
+      Either<component::OrientationComponent, GameSnapshotDiff::ComponentType>;
+
+  auto base_value = base.orientation(net_sync_id);
+  auto dest_value = dest.orientation(net_sync_id);
+
+  if (base_value.is_empty() && dest_value.is_empty()) {
+    return empty_maybe{};
+  }
+
+  if (base_value.has_value() && dest_value.is_empty()) {
+    return EitherType(right(GameSnapshotDiff::ComponentType::Orientation));
+  }
+
+  if (base_value.get() == dest_value.get()) {
+    return empty_maybe{};
+  }
+
+  return EitherType(left(dest_value.move()));
+}
+
+void diff_orientation(uint32_t net_sync_id, const GameSnapshot& base,
+                      const GameSnapshot& dest, GameSnapshotDiff& mut_diff) {
+  auto maybe_orientation_diff =
+      ::generate_orientation_diff(net_sync_id, base, dest);
+  if (maybe_orientation_diff.has_value()) {
+    auto orientation_diff = maybe_orientation_diff.move();
+    if (orientation_diff.is_left()) {
+      mut_diff.upsert(net_sync_id, orientation_diff.left_move());
+    } else {
+      mut_diff.delete_component(net_sync_id, orientation_diff.get_right());
+    }
+  }
+}
+
 }  // namespace
 
 ////////////////////////////////////////////////////
@@ -300,6 +438,28 @@ void GameSnapshotDiff::upsert(
 
   upsert_entities_.insert(net_sync_id);
   nav_waypoint_list_upserts_.emplace(net_sync_id, nav_waypoints_list.move());
+}
+
+void GameSnapshotDiff::upsert(
+    uint32_t net_sync_id,
+    Maybe<component::BasicPlayerComponent> basic_player_component) {
+  if (basic_player_component.is_empty()) {
+    return;
+  }
+
+  upsert_entities_.insert(net_sync_id);
+  basic_player_component_upserts_.emplace(net_sync_id,
+                                          basic_player_component.move());
+}
+
+void GameSnapshotDiff::upsert(
+    uint32_t net_sync_id, Maybe<component::OrientationComponent> orientation) {
+  if (orientation.is_empty()) {
+    return;
+  }
+
+  upsert_entities_.insert(net_sync_id);
+  orientation_upserts_.emplace(net_sync_id, orientation.move());
 }
 
 void GameSnapshotDiff::delete_entity(uint32_t net_sync_id) {
@@ -361,6 +521,16 @@ GameSnapshotDiff::standard_navigation_params(uint32_t net_sync_id) const {
   return ::extract(net_sync_id, nav_params_upserts_);
 }
 
+Maybe<component::BasicPlayerComponent> GameSnapshotDiff::basic_player_component(
+    uint32_t net_sync_id) const {
+  return ::extract(net_sync_id, basic_player_component_upserts_);
+}
+
+Maybe<component::OrientationComponent> GameSnapshotDiff::orientation(
+    uint32_t net_sync_id) const {
+  return ::extract(net_sync_id, orientation_upserts_);
+}
+
 PodVector<GameSnapshotDiff::ComponentType> GameSnapshotDiff::deleted_components(
     uint32_t net_sync_id) const {
   auto it = component_deletes_.find(net_sync_id);
@@ -394,6 +564,9 @@ pb::GameSnapshotDiff GameSnapshotDiff::serialize() const {
                          standard_navigation_params(upsert_net_sync_id));
     ::maybe_add_to_proto(mut_component_data,
                          nav_waypoint_list(upsert_net_sync_id));
+    ::maybe_add_to_proto(mut_component_data,
+                         basic_player_component(upsert_net_sync_id));
+    ::maybe_add_to_proto(mut_component_data, orientation(upsert_net_sync_id));
 
     // Delete dropped components
     PodVector<ComponentType> delete_components =
@@ -433,6 +606,9 @@ GameSnapshotDiff GameSnapshotDiff::Deserialize(
     diff_model.upsert(net_sync_id, ::extract_nav_params(upserted_components));
     diff_model.upsert(net_sync_id,
                       ::extract_waypoint_list(upserted_components));
+    diff_model.upsert(net_sync_id,
+                      ::extract_basic_player_component(upserted_components));
+    diff_model.upsert(net_sync_id, ::extract_orientation(upserted_components));
 
     // Deleted components
     for (int i = 0; i < upserted_entities.remove_components_size(); i++) {
@@ -455,7 +631,7 @@ GameSnapshotDiff GameSnapshotDiff::Deserialize(
 //
 ////////////////////////////////////////////////////
 
-GameSnapshot::GameSnapshot() : snapshot_id_(0u) {}
+GameSnapshot::GameSnapshot() : snapshot_id_(0u), snapshot_time_(0.f) {}
 
 GameSnapshotDiff GameSnapshot::CreateDiff(const GameSnapshot& base_snapshot,
                                           const GameSnapshot& dest_snapshot) {
@@ -470,6 +646,9 @@ GameSnapshotDiff GameSnapshot::CreateDiff(const GameSnapshot& base_snapshot,
     ::diff_map_location(dest_net_sync_id, base_snapshot, dest_snapshot, diff);
     ::diff_nav_params(dest_net_sync_id, base_snapshot, dest_snapshot, diff);
     ::diff_waypoints(dest_net_sync_id, base_snapshot, dest_snapshot, diff);
+    ::diff_basic_player_components(dest_net_sync_id, base_snapshot,
+                                   dest_snapshot, diff);
+    ::diff_orientation(dest_net_sync_id, base_snapshot, dest_snapshot, diff);
   }
 
   // Find all the entities in the base snapshot that do not exist in the
@@ -517,6 +696,8 @@ GameSnapshot GameSnapshot::ApplyDiff(const GameSnapshot& base_snapshot,
     dest.add(net_sync_id, diff.map_location(net_sync_id));
     dest.add(net_sync_id, diff.standard_navigation_params(net_sync_id));
     dest.add(net_sync_id, diff.nav_waypoint_list(net_sync_id));
+    dest.add(net_sync_id, diff.basic_player_component(net_sync_id));
+    dest.add(net_sync_id, diff.orientation(net_sync_id));
   }
 
   return dest;
@@ -552,6 +733,26 @@ void GameSnapshot::add(uint32_t net_sync_id,
   nav_waypoint_list_components_[net_sync_id] = nav_waypoints.move();
 }
 
+void GameSnapshot::add(uint32_t net_sync_id,
+                       Maybe<component::BasicPlayerComponent> component) {
+  if (component.is_empty()) {
+    return;
+  }
+
+  alive_entities_.insert(net_sync_id);
+  basic_player_components_[net_sync_id] = component.move();
+}
+
+void GameSnapshot::add(uint32_t net_sync_id,
+                       Maybe<component::OrientationComponent> component) {
+  if (component.is_empty()) {
+    return;
+  }
+
+  alive_entities_.insert(net_sync_id);
+  orientation_components_[net_sync_id] = component.move();
+}
+
 void GameSnapshot::snapshot_time(float time) { snapshot_time_ = time; }
 
 void GameSnapshot::snapshot_id(uint32_t id) { snapshot_id_ = id; }
@@ -561,6 +762,8 @@ void GameSnapshot::delete_entity(uint32_t net_sync_id) {
   map_location_components_.erase(net_sync_id);
   standard_nav_params_components_.erase(net_sync_id);
   nav_waypoint_list_components_.erase(net_sync_id);
+  basic_player_components_.erase(net_sync_id);
+  orientation_components_.erase(net_sync_id);
 }
 
 void GameSnapshot::delete_component(uint32_t net_sync_id,
@@ -574,6 +777,12 @@ void GameSnapshot::delete_component(uint32_t net_sync_id,
       return;
     case GameSnapshotDiff::ComponentType::StandardNavigationParams:
       standard_nav_params_components_.erase(net_sync_id);
+      return;
+    case GameSnapshotDiff::ComponentType::BasicPlayerComponent:
+      basic_player_components_.erase(net_sync_id);
+      return;
+    case GameSnapshotDiff::ComponentType::Orientation:
+      orientation_components_.erase(net_sync_id);
       return;
   }
 }
@@ -605,6 +814,24 @@ GameSnapshot::standard_navigation_params(uint32_t net_sync_id) const {
   return ::extract(net_sync_id, standard_nav_params_components_);
 }
 
+Maybe<component::BasicPlayerComponent> GameSnapshot::basic_player_component(
+    uint32_t net_sync_id) const {
+  if (alive_entities_.find(net_sync_id) == alive_entities_.end()) {
+    return empty_maybe{};
+  }
+
+  return ::extract(net_sync_id, basic_player_components_);
+}
+
+Maybe<component::OrientationComponent> GameSnapshot::orientation(
+    uint32_t net_sync_id) const {
+  if (alive_entities_.find(net_sync_id) == alive_entities_.end()) {
+    return empty_maybe{};
+  }
+
+  return ::extract(net_sync_id, orientation_components_);
+}
+
 float GameSnapshot::snapshot_time() const { return snapshot_time_; }
 
 uint32_t GameSnapshot::snapshot_id() const { return snapshot_id_; }
@@ -624,6 +851,9 @@ pb::GameSnapshotFull GameSnapshot::serialize() const {
     ::maybe_add_to_proto(mut_component_data, nav_waypoint_list(net_sync_id));
     ::maybe_add_to_proto(mut_component_data,
                          standard_navigation_params(net_sync_id));
+    ::maybe_add_to_proto(mut_component_data,
+                         basic_player_component(net_sync_id));
+    ::maybe_add_to_proto(mut_component_data, orientation(net_sync_id));
   }
 
   return proto;
@@ -641,6 +871,8 @@ GameSnapshot GameSnapshot::Deserialize(const pb::GameSnapshotFull& diff) {
     snapshot.add(net_sync_id, ::extract_map_location(component_data));
     snapshot.add(net_sync_id, ::extract_nav_params(component_data));
     snapshot.add(net_sync_id, ::extract_waypoint_list(component_data));
+    snapshot.add(net_sync_id, ::extract_basic_player_component(component_data));
+    snapshot.add(net_sync_id, ::extract_orientation(component_data));
   }
 
   return snapshot;

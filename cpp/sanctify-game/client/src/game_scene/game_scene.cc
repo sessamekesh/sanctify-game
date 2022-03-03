@@ -106,6 +106,7 @@ void GameScene::post_ctor_setup() {
 
   setup_depth_texture(base_->Width, base_->Height);
   setup_pipelines(base_->preferred_swap_chain_texture_format());
+  setup_render_systems();
 
   auto that = weak_from_this();
   net_client_->set_connection_state_changed_listener(
@@ -200,6 +201,12 @@ void GameScene::update(float dt) {
   // Render state (not part of core game logic)
   //
   player_move_indicator_render_system_.update(dt);
+  set_ozz_animation_keys_system_->update(world_, dt);
+
+  //
+  // Bookkeeping
+  //
+  destroy_children_system_.run(world_);
 
   //
   // Dispatch any queued up client messages
@@ -250,7 +257,15 @@ void GameScene::render() {
   }
 
   //
-  // Encode commands
+  // ECS render system execution (pre-pass buffer updates)
+  //
+  attach_player_renderables_system_->run(world_);
+  update_ozz_animation_buffers_system_->update_cpu_buffers(world_);
+  update_ozz_animation_buffers_system_->update_gpu_buffers(
+      world_, solid_animated_gpu_.pipeline, device);
+
+  //
+  // MAIN RENDER PASS execution
   //
   wgpu::CommandEncoder main_pass_command_encoder =
       device.CreateCommandEncoder();
@@ -283,6 +298,10 @@ void GameScene::render() {
       .set_geometry(debug_geo_shit_.cubeGeo)
       .set_instances(debug_geo_shit_.cubeInstanceBuffer)
       .draw();
+
+  render_solid_renderables_system_->render(
+      world_, device, static_geo_pass, solid_animated_gpu_.pipeline,
+      solid_animated_gpu_.sceneInputs, solid_animated_gpu_.frameInputs);
 
   // TODO (sessamekesh): Run render systems for the player here!
 
@@ -341,6 +360,26 @@ void GameScene::setup_pipelines(wgpu::TextureFormat swap_chain_format) {
       solid_animated_gpu_.pipeline.create_material_inputs(
           device, glm::vec3(0.1f, 0.1f, 0.2f)));
   // TODO (sessamekesh): Invalidate all materials that are stored in ECS!
+}
+
+void GameScene::setup_render_systems() {
+  attach_player_renderables_system_ =
+      std::make_shared<ecs::AttachPlayerRenderablesSystem>(
+          ybot_materials_keys_.joint, ybot_materials_keys_.base,
+          game_geometry_key_set_.ybotJointsGeoKey,
+          game_geometry_key_set_.ybotBaseGeoKey);
+  set_ozz_animation_keys_system_ =
+      std::make_shared<ecs::SetOzzAnimationKeysSystem>(
+          game_geometry_key_set_.ybotSkeletonKey,
+          game_geometry_key_set_.ybotIdleAnimationKey,
+          game_geometry_key_set_.ybotWalkAnimationKey);
+  update_ozz_animation_buffers_system_ =
+      std::make_shared<ecs::UpdateOzzAnimationBuffersSystem>(
+          ozz_skeleton_registry_, ozz_animation_registry_,
+          solid_animated_geo_registry_);
+  render_solid_renderables_system_ =
+      std::make_shared<ecs::RenderSolidRenderablesSystem>(
+          solid_animated_geo_registry_, solid_animated_material_registry_);
 }
 
 void GameScene::handle_server_events() {

@@ -16,6 +16,13 @@ void maybe_add_entity(entt::entity entity, entt::registry& world,
   }
 }
 
+template <typename T>
+void maybe_add_tag(entt::entity entity, entt::registry& world, Maybe<T> tag) {
+  if (tag.has_value()) {
+    world.emplace<T>(entity);
+  }
+}
+
 }  // namespace
 
 void EnttSnapshotTranslator::write_fresh_game_state(
@@ -31,6 +38,9 @@ void EnttSnapshotTranslator::write_fresh_game_state(
     ::maybe_add_entity(entity, world, snapshot.nav_waypoint_list(net_sync_id));
     ::maybe_add_entity(entity, world,
                        snapshot.standard_navigation_params(net_sync_id));
+    ::maybe_add_tag(entity, world,
+                    snapshot.basic_player_component(net_sync_id));
+    ::maybe_add_entity(entity, world, snapshot.orientation(net_sync_id));
   }
 }
 
@@ -53,10 +63,19 @@ EnttSnapshotTranslator::read_all_game_state(entt::registry& world,
         world.try_get<component::NavWaypointList>(entity);
     component::StandardNavigationParams* nav_params =
         world.try_get<component::StandardNavigationParams>(entity);
+    bool has_basic_player_component =
+        world.all_of<component::BasicPlayerComponent>(entity);
+    component::OrientationComponent* orientation =
+        world.try_get<component::OrientationComponent>(entity);
 
     snapshot.add(net_sync.Id, maybe_from_nullable_ptr(map_location));
     snapshot.add(net_sync.Id, maybe_from_nullable_ptr(nav_waypoint));
     snapshot.add(net_sync.Id, maybe_from_nullable_ptr(nav_params));
+    snapshot.add(net_sync.Id, has_basic_player_component
+                                  ? Maybe<component::BasicPlayerComponent>(
+                                        component::BasicPlayerComponent{})
+                                  : empty_maybe{});
+    snapshot.add(net_sync.Id, maybe_from_nullable_ptr(orientation));
 
     entityBimap.insert(net_sync.Id, entity);
   }

@@ -289,6 +289,7 @@ DracoDecoder::get_inv_bind_poses(
   auto joint_names = ozz_skeleton.joint_names();
 
   core::PodVector<glm::mat4> inv_bind_poses(joint_names.size());
+  inv_bind_poses.resize(joint_names.size());
   for (int i = 0; i < joint_names.size(); i++) {
     inv_bind_poses[i] = glm::mat4(1.f);
 

@@ -1,10 +1,12 @@
 #ifndef SANCTIFY_GAME_CLIENT_SRC_GAME_SCENE_GAME_SCENE_H
 #define SANCTIFY_GAME_CLIENT_SRC_GAME_SCENE_GAME_SCENE_H
 
+#include <ecs/systems/attach_player_renderables.h>
+#include <ecs/systems/destroy_children_system.h>
+#include <ecs/systems/solid_animation_systems.h>
 #include <game_scene/net/reconcile_net_state_system.h>
 #include <game_scene/net/snapshot_cache.h>
 #include <game_scene/systems/player_move_indicator_render_system.h>
-#include <game_scene/systems/player_render_system.h>
 #include <igcore/vector.h>
 #include <iggpu/texture.h>
 #include <io/arena_camera_controller/arena_camera_input.h>
@@ -118,6 +120,7 @@ class GameScene : public ISceneBase,
 
   void setup_depth_texture(uint32_t width, uint32_t height);
   void setup_pipelines(wgpu::TextureFormat swap_chain_format);
+  void setup_render_systems();
 
   void handle_server_events();
   void handle_single_message(const pb::GameServerSingleMessage& msg);
@@ -180,7 +183,6 @@ class GameScene : public ISceneBase,
 
   // Net state...
   float server_clock_;
-  system::PlayerRenderSystem player_render_system_;
   PlayerMoveIndicatorRenderSystem player_move_indicator_render_system_;
   SnapshotCache snapshot_cache_;
   ReconcileNetStateSystem reconcile_net_state_system_;
@@ -194,6 +196,15 @@ class GameScene : public ISceneBase,
       pending_client_message_queue_;
 
   // Simulation update helpers...
+  std::shared_ptr<ecs::AttachPlayerRenderablesSystem>
+      attach_player_renderables_system_;
+  ecs::DestroyChildrenSystem destroy_children_system_;
+  std::shared_ptr<ecs::SetOzzAnimationKeysSystem>
+      set_ozz_animation_keys_system_;
+  std::shared_ptr<ecs::UpdateOzzAnimationBuffersSystem>
+      update_ozz_animation_buffers_system_;
+  std::shared_ptr<ecs::RenderSolidRenderablesSystem>
+      render_solid_renderables_system_;
   system::LocomotionSystem locomotion_system_;
 };
 

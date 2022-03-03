@@ -88,11 +88,16 @@ TEST(GameSnapshotDiff, TestSerializeAndDeserialize) {
   diff.delete_component(3, GameSnapshotDiff::ComponentType::NavWaypointList);
   diff.delete_component(
       3, GameSnapshotDiff::ComponentType::StandardNavigationParams);
+  diff.delete_component(3,
+                        GameSnapshotDiff::ComponentType::BasicPlayerComponent);
+  diff.delete_component(3, GameSnapshotDiff::ComponentType::Orientation);
 
   // ADD COMPONENTS
   diff.upsert(4, component::MapLocation{glm::vec2(1.f, 2.f)});
   diff.upsert(4, component::NavWaypointList{::create_test_waypoints(2)});
   diff.upsert(4, component::StandardNavigationParams{5.f});
+  diff.upsert(4, component::BasicPlayerComponent{});
+  diff.upsert(4, component::OrientationComponent{1.f});
 
   // Serialize into a proto, and deserialize into a new GameSnapshotDiff object
   pb::GameSnapshotDiff proto = diff.serialize();
@@ -122,6 +127,10 @@ TEST(GameSnapshotDiff, TestSerializeAndDeserialize) {
       GameSnapshotDiff::ComponentType::NavWaypointList));
   EXPECT_TRUE(deleted_components.contains(
       GameSnapshotDiff::ComponentType::StandardNavigationParams));
+  EXPECT_TRUE(deleted_components.contains(
+      GameSnapshotDiff::ComponentType::BasicPlayerComponent));
+  EXPECT_TRUE(deleted_components.contains(
+      GameSnapshotDiff::ComponentType::Orientation));
 
   // VERIFY NEW COMPONENTS
   EXPECT_EQ(gen_diff.map_location(4),
@@ -130,6 +139,9 @@ TEST(GameSnapshotDiff, TestSerializeAndDeserialize) {
             component::NavWaypointList{::create_test_waypoints(2)});
   EXPECT_EQ(gen_diff.standard_navigation_params(4),
             component::StandardNavigationParams{5.f});
+  EXPECT_EQ(gen_diff.basic_player_component(4),
+            component::BasicPlayerComponent{});
+  EXPECT_EQ(gen_diff.orientation(4), component::OrientationComponent{1.f});
 }
 
 TEST(GameSnapshot, TestSerializeAndDeserialize) {
@@ -140,6 +152,8 @@ TEST(GameSnapshot, TestSerializeAndDeserialize) {
   snapshot.add(1, component::MapLocation{glm::vec2(1.f, 2.f)});
   snapshot.add(1, component::NavWaypointList{::create_test_waypoints(2)});
   snapshot.add(1, component::StandardNavigationParams{5.f});
+  snapshot.add(1, component::BasicPlayerComponent{});
+  snapshot.add(1, component::OrientationComponent{1.f});
 
   // Perform serialization -> deserialization...
   pb::GameSnapshotFull pb = snapshot.serialize();
@@ -155,12 +169,17 @@ TEST(GameSnapshot, TestSerializeAndDeserialize) {
             component::NavWaypointList{::create_test_waypoints(2)});
   EXPECT_EQ(gen_snapshot.standard_navigation_params(1),
             component::StandardNavigationParams{5.f});
+  EXPECT_EQ(gen_snapshot.basic_player_component(1),
+            component::BasicPlayerComponent{});
+  EXPECT_EQ(gen_snapshot.orientation(1), component::OrientationComponent{1.f});
 
   // VERIFY COMPONENT DELETIONS
   gen_snapshot.delete_entity(1);
   EXPECT_EQ(gen_snapshot.map_location(1), empty_maybe{});
   EXPECT_EQ(gen_snapshot.nav_waypoint_list(1), empty_maybe{});
   EXPECT_EQ(gen_snapshot.standard_navigation_params(1), empty_maybe{});
+  EXPECT_EQ(gen_snapshot.basic_player_component(1), empty_maybe{});
+  EXPECT_EQ(gen_snapshot.orientation(1), empty_maybe{});
 }
 
 TEST(GameSnapshot, ProducesCorrectDiff) {

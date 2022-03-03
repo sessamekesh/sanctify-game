@@ -185,6 +185,10 @@ class PodVector : public IVec<T> {
     return std::move(b);
   }
 
+  T *raw() { return typed_data_; }
+
+  const T *raw() const { return typed_data_; }
+
   /**
    * Resize this vector - basically allow operator[] at any point inside the
    * buffer, because this is a POD vector there isn't any construction that

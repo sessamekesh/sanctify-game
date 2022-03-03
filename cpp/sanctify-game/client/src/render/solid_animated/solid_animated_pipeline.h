@@ -52,6 +52,8 @@ struct AnimationPipelineInputs {
 };
 
 struct SolidAnimatedPipeline {
+  static constexpr int kMaxBonesCount = 80;
+
   wgpu::TextureFormat OutputFormat;
   wgpu::RenderPipeline Pipeline;
 

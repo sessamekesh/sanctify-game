@@ -1,3 +1,6 @@
+#ifndef LIBS_IGGPU_INCLUDE_IGGPU_THIN_UBO_H
+#define LIBS_IGGPU_INCLUDE_IGGPU_THIN_UBO_H
+
 #include <igcore/log.h>
 #include <igcore/pod_vector.h>
 #include <iggpu/util.h>
@@ -48,3 +51,5 @@ class ThinUbo {
 };
 
 }  // namespace indigo::iggpu
+
+#endif

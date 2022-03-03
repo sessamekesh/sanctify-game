@@ -14,6 +14,12 @@ struct MapLocation {
   bool operator==(const MapLocation& o) const;
 };
 
+struct OrientationComponent {
+  float orientation;
+
+  bool operator==(const OrientationComponent& o) const;
+};
+
 struct NavWaypointList {
   indigo::core::PodVector<glm::vec2> Targets;
 

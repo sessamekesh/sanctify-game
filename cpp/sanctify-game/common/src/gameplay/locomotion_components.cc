@@ -13,6 +13,10 @@ bool NavWaypointList::operator==(const NavWaypointList& o) const {
   return memcmp(&Targets[0], &o.Targets[0], Targets.raw_size()) == 0;
 }
 
+bool OrientationComponent::operator==(const OrientationComponent& o) const {
+  return orientation == o.orientation;
+}
+
 bool StandardNavigationParams::operator==(
     const StandardNavigationParams& o) const {
   return MovementSpeed == o.MovementSpeed;

@@ -74,9 +74,11 @@ snapshots, apply a diff _to_ a snapshot, and read/write their state to/from a ga
 
 BE VERY CAREFUL as this is something that can be highly error prone!
 
+TODO (sessamekesh): work on a less error prone verison of this (unholy macros might be better than this shit)
+
 The following places need to be updated if there is any new net sync components added:
 
-1) sanctify-net.proto :: ComponentData needs a new field for the new component
+1) sanctify-net.proto :: ComponentData+GameEntityUpdateMask::ComponentType needs a new field for the new component
 2) game_snapshot.cc :: GameSnapshotDiff::serialize needs to add diff vals to proto
 3) game_snapshot.cc :: GameSnapshotDiff::deserialize needs to extract diff values from proto
 4) game_snapshot.cc :: GameSnapshot::serialize needs to add diff vals to proto
@@ -87,9 +89,10 @@ The following places need to be updated if there is any new net sync components 
 7) game_snapshot_test.cc :: GameSnapshot TestSerializeAndDeserialize test
     * Under section "ADD COMPONENTS" and "VERIFY COMPONENTS"
     * Under section "VERIFY COMPONENT DELETIONS"
-8) snapshot_writer.cc :: write_fresh_game_state (write a component if it's found in the snapshot)
-9) snapshot_writer.cc :: read_game_state (read a component if it's found in the world)
-10) reconcile_net_state_system.h :: reconcile_client_state (removing components from a world state)
+8) entt_snapshot_translator.cc :: write_fresh_game_state (write a component if it's found in the snapshot)
+9) entt_snapshot_translator.cc :: read_all_game_state (read a component if it's found in the world)
+10) reconcile_net_state_system.cc :: reconcile_client_state (removing components from a world state)
+11) net_serialize.cc :: gen_snapshot_for_players
 
 Also make sure that the following are true:
 1) The new component type has the equality operator overloaded

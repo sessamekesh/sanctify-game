@@ -20,6 +20,7 @@ const uint8_t kNoPos = 0x02;
 const uint8_t kNoAnim = 0x04;
 const uint8_t kNoIndices = 0x08;
 const uint8_t kNoSkeleton = 0x10;
+const uint8_t kNoInvBindPoses = 0x20;
 
 void log_animated_draco_extract_errors(uint8_t errs) {
   auto log = Logger::err(kLogLabel);
@@ -38,6 +39,9 @@ void log_animated_draco_extract_errors(uint8_t errs) {
   }
   if (errs & kNoSkeleton) {
     log << "\n-- No skeleton data found in registry";
+  }
+  if (errs & kNoInvBindPoses) {
+    log << "\n-- No inverse bind poses found in registry";
   }
 }
 
@@ -137,6 +141,7 @@ LoadResourceToRegistryRsl<solid_animated::SolidAnimatedGeo> util::load_geo(
   struct FullAnimatedVertexData {
     PodVector<asset::PositionNormalVertexData> posNormData;
     PodVector<asset::SkeletalAnimationVertexData> animationData;
+    PodVector<glm::mat4> invBindPoseData;
     PodVector<uint32_t> indices;
   };
 
@@ -176,6 +181,8 @@ LoadResourceToRegistryRsl<solid_animated::SolidAnimatedGeo> util::load_geo(
                   auto anim_verts_rsl =
                       draco_decoder->get_skeletal_animation_vertices(*skeleton);
                   auto indices_rsl = draco_decoder->get_index_data();
+                  auto inv_bind_poses_rsl =
+                      draco_decoder->get_inv_bind_poses(*skeleton);
 
                   if (pos_norm_verts_rsl.is_right()) {
                     Logger::err(kLogLabel)
@@ -199,6 +206,14 @@ LoadResourceToRegistryRsl<solid_animated::SolidAnimatedGeo> util::load_geo(
                     errs |= kNoIndices;
                   }
 
+                  if (inv_bind_poses_rsl.is_right()) {
+                    Logger::err(kLogLabel)
+                        << "Failed to extract inverse bind poses from "
+                        << debug_name << ": "
+                        << ::to_string(inv_bind_poses_rsl.get_right());
+                    errs |= kNoInvBindPoses;
+                  }
+
                   if (errs > 0) {
                     log_animated_draco_extract_errors(errs);
                     return right<uint8_t>(errs);
@@ -206,7 +221,8 @@ LoadResourceToRegistryRsl<solid_animated::SolidAnimatedGeo> util::load_geo(
 
                   return left(FullAnimatedVertexData{
                       pos_norm_verts_rsl.left_move(),
-                      anim_verts_rsl.left_move(), indices_rsl.left_move()});
+                      anim_verts_rsl.left_move(),
+                      inv_bind_poses_rsl.left_move(), indices_rsl.left_move()});
                 },
                 async_task_list)
             ->then_consuming<bool>(
@@ -221,7 +237,8 @@ LoadResourceToRegistryRsl<solid_animated::SolidAnimatedGeo> util::load_geo(
                   return geo_registry->set_reserved_resource(
                       key, solid_animated::SolidAnimatedGeo(
                                device, geo_data.posNormData,
-                               geo_data.animationData, geo_data.indices));
+                               geo_data.animationData, geo_data.indices,
+                               std::move(geo_data.invBindPoseData)));
                 },
                 main_thread_task_list);
       },

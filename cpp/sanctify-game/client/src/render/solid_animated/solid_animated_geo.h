@@ -14,13 +14,16 @@ struct SolidAnimatedGeo {
   int32_t NumIndices;
   wgpu::IndexFormat IndexFormat;
 
+  indigo::core::PodVector<glm::mat4> invBindPoses;
+
   SolidAnimatedGeo(
       const wgpu::Device& device,
       const indigo::core::PodVector<indigo::asset::PositionNormalVertexData>&
           vertices,
       const indigo::core::PodVector<indigo::asset::SkeletalAnimationVertexData>&
           animation_data,
-      const indigo::core::PodVector<uint32_t>& indices);
+      const indigo::core::PodVector<uint32_t>& indices,
+      indigo::core::PodVector<glm::mat4> inv_bind_poses);
 };
 
 struct MatWorldInstanceData {
@@ -39,6 +42,7 @@ struct MatWorldInstanceBuffer {
   MatWorldInstanceBuffer(
       const wgpu::Device& device,
       const indigo::core::PodVector<MatWorldInstanceData>& instance_data);
+  MatWorldInstanceBuffer(const wgpu::Device& device, uint32_t size = 1);
 };
 
 }  // namespace sanctify::solid_animated

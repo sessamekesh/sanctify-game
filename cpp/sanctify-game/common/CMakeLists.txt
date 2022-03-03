@@ -8,6 +8,7 @@ set (header_list
   "include/sanctify-game-common/gameplay/locomotion.h"
   "include/sanctify-game-common/gameplay/locomotion_components.h"
   "include/sanctify-game-common/gameplay/net_sync_components.h"
+  "include/sanctify-game-common/gameplay/player_definition_components.h"
   "include/sanctify-game-common/net/entt_snapshot_translator.h"
   "include/sanctify-game-common/net/game_snapshot.h"
   "include/sanctify-game-common/net/net_config.h"

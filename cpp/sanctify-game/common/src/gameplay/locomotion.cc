@@ -11,15 +11,17 @@ void LocomotionSystem::attach_basic_locomotion_components(
     float movement_speed) {
   world.emplace<component::MapLocation>(entity, map_position);
   world.emplace<component::StandardNavigationParams>(entity, movement_speed);
+  world.emplace<component::OrientationComponent>(entity, 0.f);
 }
 
 void LocomotionSystem::apply_standard_locomotion(entt::registry& world,
                                                  float dt) {
   auto view = world.view<component::MapLocation, component::NavWaypointList,
+                         component::OrientationComponent,
                          const component::StandardNavigationParams>();
 
-  for (auto [entity, map_location, nav_waypoints, standard_nav_params] :
-       view.each()) {
+  for (auto [entity, map_location, nav_waypoints, orientation,
+             standard_nav_params] : view.each()) {
     float remaining_distance = dt * standard_nav_params.MovementSpeed;
 
     while (remaining_distance > 0.f) {
@@ -44,6 +46,11 @@ void LocomotionSystem::apply_standard_locomotion(entt::registry& world,
 
     if (nav_waypoints.Targets.size() == 0) {
       world.remove<component::NavWaypointList>(entity);
+    } else {
+      // TODO (sessamekesh): Is this correct?
+      orientation.orientation =
+          glm::atan(nav_waypoints.Targets[0].r - map_location.XZ.x,
+                    nav_waypoints.Targets[0].g - map_location.XZ.g);
     }
   }
 }

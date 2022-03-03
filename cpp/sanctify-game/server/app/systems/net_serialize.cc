@@ -1,6 +1,7 @@
 #include <app/systems/net_serialize.h>
 #include <igcore/log.h>
 #include <sanctify-game-common/gameplay/net_sync_components.h>
+#include <sanctify-game-common/gameplay/player_definition_components.h>
 
 using namespace sanctify;
 using namespace system;
@@ -160,10 +161,19 @@ GameSnapshot NetSerializeSystem::gen_snapshot_for_player(
         world.try_get<component::NavWaypointList>(entity);
     component::StandardNavigationParams* nav_params =
         world.try_get<component::StandardNavigationParams>(entity);
+    bool has_basic_player =
+        world.all_of<component::BasicPlayerComponent>(entity);
+    component::OrientationComponent* orientation =
+        world.try_get<component::OrientationComponent>(entity);
 
     snapshot.add(net_sync.Id, maybe_from_nullable_ptr(map_location));
     snapshot.add(net_sync.Id, maybe_from_nullable_ptr(nav_waypoint));
     snapshot.add(net_sync.Id, maybe_from_nullable_ptr(nav_params));
+    snapshot.add(net_sync.Id, maybe_from_nullable_ptr(orientation));
+
+    if (has_basic_player) {
+      snapshot.add(net_sync.Id, component::BasicPlayerComponent{});
+    }
   }
 
   return snapshot;

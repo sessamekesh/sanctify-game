@@ -31,7 +31,8 @@ SolidAnimatedGeo::SolidAnimatedGeo(
         vertices,
     const indigo::core::PodVector<indigo::asset::SkeletalAnimationVertexData>&
         animation_data,
-    const indigo::core::PodVector<uint32_t>& indices)
+    const indigo::core::PodVector<uint32_t>& indices,
+    indigo::core::PodVector<glm::mat4> inv_bind_poses)
     : GeoVertexBuffer(
           iggpu::buffer_from_data(device, vertices, wgpu::BufferUsage::Vertex)),
       AnimationVertexBuffer(iggpu::buffer_from_data(device, animation_data,
@@ -39,7 +40,8 @@ SolidAnimatedGeo::SolidAnimatedGeo(
       IndexBuffer(
           iggpu::buffer_from_data(device, indices, wgpu::BufferUsage::Index)),
       NumIndices(indices.size()),
-      IndexFormat(wgpu::IndexFormat::Uint32) {}
+      IndexFormat(wgpu::IndexFormat::Uint32),
+      invBindPoses(std::move(inv_bind_poses)) {}
 
 void MatWorldInstanceBuffer::update_index_data(
     const wgpu::Device& device,
@@ -69,3 +71,11 @@ MatWorldInstanceBuffer::MatWorldInstanceBuffer(
           iggpu::buffer_from_data(device, data, wgpu::BufferUsage::Vertex)),
       NumInstances(data.size()),
       Capacity(data.size()) {}
+
+MatWorldInstanceBuffer::MatWorldInstanceBuffer(const wgpu::Device& device,
+                                               uint32_t size)
+    : InstanceBuffer(iggpu::create_empty_buffer(
+          device, size * sizeof(MatWorldInstanceData),
+          wgpu::BufferUsage::Vertex)),
+      NumInstances(0),
+      Capacity(size) {}

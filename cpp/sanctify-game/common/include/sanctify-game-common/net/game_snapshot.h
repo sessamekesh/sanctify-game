@@ -4,6 +4,7 @@
 #include <igcore/maybe.h>
 #include <igcore/vector.h>
 #include <sanctify-game-common/gameplay/locomotion_components.h>
+#include <sanctify-game-common/gameplay/player_definition_components.h>
 
 #include <entt/entt.hpp>
 #include <map>
@@ -21,6 +22,8 @@ class GameSnapshotDiff {
     MapLocation,
     StandardNavigationParams,
     NavWaypointList,
+    BasicPlayerComponent,
+    Orientation,
   };
 
  public:
@@ -35,6 +38,11 @@ class GameSnapshotDiff {
   void upsert(
       uint32_t net_sync_id,
       indigo::core::Maybe<component::NavWaypointList> nav_waypoint_list);
+  void upsert(uint32_t net_sync_id,
+              indigo::core::Maybe<component::BasicPlayerComponent>
+                  basic_player_component);
+  void upsert(uint32_t net_sync_id,
+              indigo::core::Maybe<component::OrientationComponent> orientation);
 
   void delete_entity(uint32_t net_sync_id);
   void delete_component(uint32_t net_sync_id, ComponentType component_type);
@@ -60,6 +68,10 @@ class GameSnapshotDiff {
       uint32_t net_sync_id) const;
   indigo::core::Maybe<component::StandardNavigationParams>
   standard_navigation_params(uint32_t net_sync_id) const;
+  indigo::core::Maybe<component::BasicPlayerComponent> basic_player_component(
+      uint32_t net_sync_id) const;
+  indigo::core::Maybe<component::OrientationComponent> orientation(
+      uint32_t net_sync_id) const;
 
   // Serialization
   pb::GameSnapshotDiff serialize() const;
@@ -78,6 +90,10 @@ class GameSnapshotDiff {
       nav_params_upserts_;
   std::unordered_map<uint32_t, component::NavWaypointList>
       nav_waypoint_list_upserts_;
+  std::unordered_map<uint32_t, component::BasicPlayerComponent>
+      basic_player_component_upserts_;
+  std::unordered_map<uint32_t, component::OrientationComponent>
+      orientation_upserts_;
 
   std::unordered_map<uint32_t, indigo::core::PodVector<ComponentType>>
       component_deletes_;
@@ -104,6 +120,11 @@ class GameSnapshot {
            indigo::core::Maybe<component::StandardNavigationParams> nav_params);
   void add(uint32_t net_sync_id,
            indigo::core::Maybe<component::NavWaypointList> nav_waypoint_list);
+  void add(uint32_t net_sync_id,
+           indigo::core::Maybe<component::BasicPlayerComponent>
+               basic_player_component);
+  void add(uint32_t net_sync_id,
+           indigo::core::Maybe<component::OrientationComponent> orientation);
   void snapshot_time(float time);
   void snapshot_id(uint32_t id);
   void delete_entity(uint32_t net_sync_id);
@@ -117,6 +138,11 @@ class GameSnapshot {
       uint32_t net_sync_id) const;
   indigo::core::Maybe<component::StandardNavigationParams>
   standard_navigation_params(uint32_t net_sync_id) const;
+  indigo::core::Maybe<component::BasicPlayerComponent> basic_player_component(
+      uint32_t net_sync_id) const;
+  indigo::core::Maybe<component::OrientationComponent> orientation(
+      uint32_t net_sync_id) const;
+
   float snapshot_time() const;
   uint32_t snapshot_id() const;
   const std::set<uint32_t>& alive_entities() const;
@@ -135,6 +161,10 @@ class GameSnapshot {
       standard_nav_params_components_;
   std::unordered_map<uint32_t, component::NavWaypointList>
       nav_waypoint_list_components_;
+  std::unordered_map<uint32_t, component::BasicPlayerComponent>
+      basic_player_components_;
+  std::unordered_map<uint32_t, component::OrientationComponent>
+      orientation_components_;
 };
 
 }  // namespace sanctify

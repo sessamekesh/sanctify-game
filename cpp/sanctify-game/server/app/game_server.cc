@@ -307,6 +307,7 @@ void GameServer::handle_connect_player_event(ConnectPlayerEvent& evt) {
   }
 
   entt::entity player_entity = world_.create();
+  world_.emplace<component::BasicPlayerComponent>(player_entity);
   locomotion_system_.attach_basic_locomotion_components(
       world_, player_entity,
       /* map_position */ glm::vec2(0.f, 0.f),
