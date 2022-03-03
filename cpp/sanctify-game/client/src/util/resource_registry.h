@@ -34,7 +34,7 @@ class ReadonlyResourceRegistry {
     Key& operator=(Key&&) = default;
     ~Key() = default;
 
-    bool operator==(const Key& o) { return ~key_ && key_ == o.key_; }
+    bool operator==(const Key& o) { return ~key_ && (key_ == o.key_); }
 
     friend class ReadonlyResourceRegistry;
 

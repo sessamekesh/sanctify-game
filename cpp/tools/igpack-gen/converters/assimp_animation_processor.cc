@@ -202,7 +202,7 @@ bool AssimpAnimationProcessor::export_skeleton(
   raw_skeleton.roots.resize(1);
 
   std::queue<ConstructionNode> remaining_nodes;
-  remaining_nodes.push({root_node, raw_skeleton.roots[0], aiMatrix4x4{}});
+  remaining_nodes.push({root_node, raw_skeleton.roots[0], root_transform});
 
   while (!remaining_nodes.empty()) {
     ConstructionNode next = remaining_nodes.front();
@@ -378,9 +378,7 @@ bool AssimpAnimationProcessor::export_animation(
     for (int pos_key_idx = 0; pos_key_idx < channel->mNumPositionKeys;
          pos_key_idx++) {
       const aiVectorKey& pos_key = channel->mPositionKeys[pos_key_idx];
-      // TODO (sessamekesh): Is this correct? Should be on scale 0-1
-      double t =
-          pos_key.mTime / (animation->mDuration * animation->mTicksPerSecond);
+      double t = pos_key.mTime / animation->mTicksPerSecond;
       const aiVector3D& v = pos_key.mValue;
 
       raw_animation.tracks[bone_idx].translations.push_back(
@@ -390,9 +388,7 @@ bool AssimpAnimationProcessor::export_animation(
     for (int rot_key_idx = 0; rot_key_idx < channel->mNumRotationKeys;
          rot_key_idx++) {
       const aiQuatKey& rot_key = channel->mRotationKeys[rot_key_idx];
-      // TODO (sessamekesh): Is this correct? Should be on a scale 0-1
-      double t =
-          rot_key.mTime / (animation->mDuration * animation->mTicksPerSecond);
+      double t = rot_key.mTime / animation->mTicksPerSecond;
       const aiQuaternion& q = rot_key.mValue;
 
       raw_animation.tracks[bone_idx].rotations.push_back(
@@ -402,9 +398,7 @@ bool AssimpAnimationProcessor::export_animation(
     for (int scl_key_idx = 0; scl_key_idx < channel->mNumScalingKeys;
          scl_key_idx++) {
       const aiVectorKey& scl_key = channel->mScalingKeys[scl_key_idx];
-      // TODO (sessamekesh): Is this correct? Should be on a scale 0-1
-      double t =
-          scl_key.mTime / (animation->mDuration * animation->mTicksPerSecond);
+      double t = scl_key.mTime / animation->mTicksPerSecond;
       const aiVector3D& s = scl_key.mValue;
 
       raw_animation.tracks[bone_idx].scales.push_back(

@@ -65,8 +65,8 @@ fn main(vertex: VertexInput) -> VertexOutput {
     vertex.bone_weights.z * skinMatrices.data[vertex.bone_indices.z] +
     vertex.bone_weights.w * skinMatrices.data[vertex.bone_indices.w];
   
-  out.world_pos = (skin_transform * mat_world * vec4<f32>(vertex.position, 1.)).xyz;
-  out.world_normal = (skin_transform * mat_world *
+  out.world_pos = (mat_world * skin_transform * vec4<f32>(vertex.position, 1.)).xyz;
+  out.world_normal = (mat_world * skin_transform *
     vec4<f32>(normal_from_quat(vertex.tbn_quat), 0.)).xyz;
   out.frag_coord = cameraParams.mat_proj * cameraParams.mat_view * vec4<f32>(out.world_pos, 1.);
 

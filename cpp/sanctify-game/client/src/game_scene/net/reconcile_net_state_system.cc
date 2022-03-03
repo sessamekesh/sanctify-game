@@ -167,7 +167,8 @@ void ReconcileNetStateSystem::reconcile_client_state(
     }
 
     // Step 3: wholesale update any components that can be drop-replaced
-    ::maybe_upsert(e, client_world, client_diff.map_location(net_client_id));
+    ::maybe_upsert(e, client_world,
+                   client_diff.nav_waypoint_list(net_client_id));
     ::maybe_upsert(e, client_world,
                    client_diff.standard_navigation_params(net_client_id));
     ::maybe_tag(e, client_world,

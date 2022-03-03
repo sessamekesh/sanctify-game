@@ -19,16 +19,17 @@ SetOzzAnimationKeysSystem::SetOzzAnimationKeysSystem(
 
 void SetOzzAnimationKeysSystem::update(entt::registry& world, float dt) const {
   auto view = world.view<const component::MapLocation,
-                         const component::BasicPlayerComponent>();
+                         component::BasicPlayerComponent>();
 
-  for (auto&& [e, map_location] : view.each()) {
-    bool has_nav = world.all_of<component::NavWaypointList>(e);
+  for (auto [entity, map_location] : view.each()) {
+    component::NavWaypointList* waypoints =
+        world.try_get<component::NavWaypointList>(entity);
 
     auto& animation_state_component =
         world.get_or_emplace<OzzAnimationStateComponent>(
-            e, ybot_skeleton_key_, ybot_idle_key_, 0.f, 1.f);
+            entity, ybot_skeleton_key_, ybot_idle_key_, 0.f, 1.f);
 
-    if (has_nav) {
+    if (waypoints != nullptr) {
       if (animation_state_component.animationKey == ybot_idle_key_) {
         animation_state_component.animationTime = 0.f;
       } else {
@@ -61,9 +62,9 @@ UpdateOzzAnimationBuffersSystem::UpdateOzzAnimationBuffersSystem(
 
 void UpdateOzzAnimationBuffersSystem::update_cpu_buffers(
     entt::registry& world) const {
-  auto view = world.view<const OzzAnimationStateComponent>();
+  auto view = world.view<OzzAnimationStateComponent>();
 
-  for (auto&& [e, animation_state] : view.each()) {
+  for (auto [e, animation_state] : view.each()) {
     // TODO (sessamekesh): Early out if this entity is not visible in the scene
 
     OzzAnimationCpuBuffersComponent& buffers =
@@ -77,6 +78,10 @@ void UpdateOzzAnimationBuffersSystem::update_cpu_buffers(
       // TODO (sessamekesh): propagate errors to an accumulator, or return from
       // this method (also do this for job run methods below)
       continue;
+    }
+
+    while (animation_state.animationTime > animation->duration()) {
+      animation_state.animationTime -= animation->duration();
     }
 
     ozz::animation::SamplingJob sampling_job;

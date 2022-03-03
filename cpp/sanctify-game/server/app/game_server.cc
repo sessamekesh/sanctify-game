@@ -311,7 +311,7 @@ void GameServer::handle_connect_player_event(ConnectPlayerEvent& evt) {
   locomotion_system_.attach_basic_locomotion_components(
       world_, player_entity,
       /* map_position */ glm::vec2(0.f, 0.f),
-      /* movement_speed */ 8.f);
+      /* movement_speed */ 30.f);
   world_.emplace<component::NetSyncId>(player_entity, next_net_sync_id_++);
 
   // TODO (sessamekesh): Remove this hack!!!
