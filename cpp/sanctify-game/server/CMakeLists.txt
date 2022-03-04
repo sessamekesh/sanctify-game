@@ -55,6 +55,16 @@ build_ig_asset_pack_plan(
     "resources/terrain-navmesh.igpack"
 )
 
+build_ig_asset_pack_plan(
+  TARGET_NAME pve-terrain-igpack
+  PLAN "${PROJECT_SOURCE_DIR}/sanctify-game/common/resources/pve-terrain-navmesh.igpack-plan"
+  INDIR "${asset_root}"
+  INFILES
+    "sanctify_arena/sanctify-pve.fbx"
+  TARGET_OUTPUT_FILES
+    "resources/pve-terrain.igpack"
+)
+
 add_executable(sanctify-game-server ${header_list} ${src_list})
 
 # LEGAL NOTE - use libdatachannel and not libdatachannel-static. This is because
@@ -77,4 +87,4 @@ if (MSVC)
   )
 endif ()
 
-add_dependencies(sanctify-game-server terrain-navmesh-server-pack)
+add_dependencies(sanctify-game-server terrain-navmesh-server-pack pve-terrain-igpack)

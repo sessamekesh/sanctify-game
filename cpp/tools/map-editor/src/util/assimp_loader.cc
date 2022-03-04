@@ -45,7 +45,7 @@ std::shared_ptr<Promise<const aiScene*>> AssimpLoader::load_file(
             auto scene_data = std::make_shared<AssimpSceneData>();
             scene_data->importer = std::make_shared<Assimp::Importer>();
             const uint32_t import_flags =
-                aiProcessPreset_TargetRealtime_Quality;
+                aiProcessPreset_TargetRealtime_Quality | aiProcess_Triangulate;
 
             scene_data->scene = scene_data->importer->ReadFileFromMemory(
                 raw_data->get(), raw_data->size(), import_flags);
@@ -124,6 +124,10 @@ std::vector<std::string> AssimpLoader::mesh_names_in_loaded_file(
   }
 
   for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
+    // Evil hack - not sure why I'm doing this...
+    if (scene->mMeshes[i]->mPrimitiveTypes != aiPrimitiveType_TRIANGLE) {
+      continue;
+    }
     mesh_names.push_back(scene->mMeshes[i]->mName.C_Str());
   }
 
@@ -139,6 +143,10 @@ const aiMesh* AssimpLoader::get_loaded_mesh(std::string file_name,
 
   const auto* scene = it->second->scene;
   for (int i = 0; i < scene->mNumMeshes; i++) {
+    // Evil hack - not sure why I'm doing this...
+    if (scene->mMeshes[i]->mPrimitiveTypes != aiPrimitiveType_TRIANGLE) {
+      continue;
+    }
     if (scene->mMeshes[i]->mName.C_Str() == mesh_name) {
       return scene->mMeshes[i];
     }

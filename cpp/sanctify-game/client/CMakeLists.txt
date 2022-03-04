@@ -84,10 +84,13 @@ build_ig_asset_pack_plan(
   INDIR "${asset_root}"
   INFILES
     "sanctify_arena/practice-arena.fbx"
+    "sanctify_arena/sanctify-pve.fbx"
     "engine/solid_3d.vert.wgsl"
     "engine/solid_3d.frag.wgsl"
   TARGET_OUTPUT_FILES
     "resources/terrain-geo.igpack"
+    "resources/pve-terrain-geo.igpack"
+    "resources/terrain-shaders.igpack"
 )
 
 build_ig_asset_pack_plan(

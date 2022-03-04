@@ -87,6 +87,12 @@ core::Maybe<aiMesh*> AssimpSceneCache::load_mesh(FileCache& file_cache,
   for (int i = 0; i < scene->mNumMeshes; i++) {
     aiMesh* mesh = scene->mMeshes[i];
 
+    // Discard any non-triangular meshes (Assimp may split out LINES which comes
+    // before TRIANGLES)
+    if (mesh->mPrimitiveTypes != aiPrimitiveType_TRIANGLE) {
+      continue;
+    }
+
     if (mesh->mName.C_Str() == mesh_name) {
       return core::Maybe<aiMesh*>(mesh);
     }
