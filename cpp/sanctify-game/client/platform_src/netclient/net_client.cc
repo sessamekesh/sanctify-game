@@ -89,4 +89,6 @@ std::string sanctify::to_string(NetClient::ConnectionState state) {
     case NetClient::ConnectionState::Unhealthy:
       return "Unhealthy";
   }
+
+  return "<<NetClient::ConnectionState>> UNKNOWN";
 }

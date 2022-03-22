@@ -34,8 +34,8 @@ class Bimap {
 
     iterator_t(const Bimap* m, uint32_t idx) : m_(m), idx_(idx) {}
 
-    entry_t& operator*() const { return m_->entries_[idx_]; }
-    entry_t* operator->() const { return &m_->entries_[idx_]; }
+    const entry_t& operator*() const { return m_->entries_[idx_]; }
+    const entry_t* operator->() const { return &m_->entries_[idx_]; }
     iterator_t& operator++() {
       idx_++;
       return *this;

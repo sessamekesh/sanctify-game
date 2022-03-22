@@ -12,13 +12,12 @@ set(header_list
   "src/ecs/components/solid_animated_components.h"
   "src/ecs/systems/attach_player_renderables.h"
   "src/ecs/systems/destroy_children_system.h"
+  "src/ecs/systems/locomotion_blend_system.h"
   "src/ecs/systems/solid_animation_systems.h"
   "src/game_scene/factory_util/build_debug_geo_shit.h"
   "src/game_scene/factory_util/build_net_client.h"
   "src/game_scene/factory_util/build_terrain_shit.h"
   "src/game_scene/systems/player_move_indicator_render_system.h"
-  "src/game_scene/net/reconcile_net_state_system.h"
-  "src/game_scene/net/snapshot_cache.h"
   "src/game_scene/game_scene.h"
   "src/game_scene/game_scene_factory.h"
   "src/io/arena_camera_controller/arena_camera_input.h"
@@ -26,6 +25,13 @@ set(header_list
   "src/io/viewport_click/viewport_click_controller_input.h"
   "src/io/viewport_click/viewport_click_mouse_impl.h"
   "src/io/glfw_event_emitter.h"
+  "src/net/reconcile_net_state_system.h"
+  "src/net/snapshot_cache.h"
+  "src/pve_game_scene/ecs/client_config.h"
+  "src/pve_game_scene/ecs/netsync_components.h"
+  "src/pve_game_scene/ecs/sim_time_sync_system.h"
+  "src/pve_game_scene/ecs/utils.h"
+  "src/pve_game_scene/pve_game_scene.h"
   "src/render/camera/arena_camera.h"
   "src/render/common/camera_ubo.h"
   "src/render/debug_geo/debug_geo.h"
@@ -36,6 +42,7 @@ set(header_list
   "src/render/terrain/terrain_pipeline.h"
   "src/util/camera_util.h"
   "src/util/logical_to_render_utils.h"
+  "src/util/registry_types.h"
   "src/util/resource_registry.h"
   "src/util/scene_setup_util.h"
   "src/sanctify_client_app.h")
@@ -50,16 +57,20 @@ set(src_list
   "src/app_startup_scene/app_startup_scene.cc"
   "src/ecs/systems/attach_player_renderables.cc"
   "src/ecs/systems/destroy_children_system.cc"
+  "src/ecs/systems/locomotion_blend_system.cc"
   "src/ecs/systems/solid_animation_systems.cc"
   "src/game_scene/systems/player_move_indicator_render_system.cc"
-  "src/game_scene/net/reconcile_net_state_system.cc"
-  "src/game_scene/net/snapshot_cache.cc"
   "src/game_scene/game_scene.cc"
   "src/game_scene/game_scene_factory.cc"
   "src/io/arena_camera_controller/arena_camera_mouse_input_listener.cc"
   "src/io/viewport_click/viewport_click_controller_input.cc"
   "src/io/viewport_click/viewport_click_mouse_impl.cc"
   "src/io/glfw_event_emitter.cc"
+  "src/net/reconcile_net_state_system.cc"
+  "src/net/snapshot_cache.cc"
+  "src/pve_game_scene/ecs/sim_time_sync_system.cc"
+  "src/pve_game_scene/ecs/utils.cc"
+  "src/pve_game_scene/pve_game_scene.cc"
   "src/render/camera/arena_camera.cc"
   "src/render/debug_geo/debug_geo.cc"
   "src/render/debug_geo/debug_geo_pipeline.cc"
@@ -118,6 +129,16 @@ build_ig_asset_pack_plan(
     "resources/base-shader-sources.igpack"
 )
 
+build_ig_asset_pack_plan(
+  TARGET_NAME pve-terrain-igpack-client
+  PLAN "${PROJECT_SOURCE_DIR}/sanctify-game/common/resources/pve-terrain-navmesh.igpack-plan"
+  INDIR "${asset_root}"
+  INFILES
+    "sanctify_arena/sanctify-pve.fbx"
+  TARGET_OUTPUT_FILES
+    "resources/terrain-pve.igpack"
+)
+
 #
 # Protocol buffers (for communicating with Sanctify web services)
 #
@@ -159,7 +180,8 @@ target_include_directories(sanctify-game-client PRIVATE platform_src src)
 add_dependencies(sanctify-game-client
   base-shader-igpack
   terrain-geo-igpack
-  ybot-igpack)
+  ybot-igpack
+  pve-terrain-igpack-client)
 
 if (EMSCRIPTEN)
   set_wasm_target_properties(TARGET_NAME sanctify-game-client EXPORT_NAME SanctifyGameClient)

@@ -165,6 +165,9 @@ GameSnapshot NetSerializeSystem::gen_snapshot_for_player(
         world.all_of<component::BasicPlayerComponent>(entity);
     component::OrientationComponent* orientation =
         world.try_get<component::OrientationComponent>(entity);
+    // TODO (sessamekesh): Move these common components into a serialization
+    //  util instead, so that games can only concern themselves with what is
+    //  unique to them instead!
 
     snapshot.add(net_sync.Id, maybe_from_nullable_ptr(map_location));
     snapshot.add(net_sync.Id, maybe_from_nullable_ptr(nav_waypoint));

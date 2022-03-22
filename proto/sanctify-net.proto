@@ -74,6 +74,18 @@ message SnapshotReceived {
   uint32 snapshot_id = 1;
 }
 
+// Client initiated ping-pong - client sends ping, server sends pong immediately
+message ClientPing {
+  bool is_ready = 1;
+  uint32 ping_id = 2;
+  float local_time = 3;
+}
+
+message ServerPong {
+  uint32 ping_id = 1;
+  float sim_time = 2;
+}
+
 //
 // Gameplay State Updates (server events)
 //
@@ -133,6 +145,9 @@ message GameServerSingleMessage {
     //  player movement location (the actual target, taking terrain/collision
     //  into account) back to the client.
     PlayerMovement player_movement = 3;
+
+    // Respond to a ping with the appropriate pong
+    ServerPong pong = 4;
   }
 }
 
@@ -169,6 +184,11 @@ message GameClientSingleMessage {
     //  may now accept diffs that are based against any snapshot at
     //  least as recent as this one.
     SnapshotReceived snapshot_received = 2;
+
+    // Ping: occasionally send the server one of these just to let it
+    //  know that the client is active, and how much delay the client
+    //  is operating under (what time it thinks it is)
+    ClientPing client_ping = 3;
   }
 }
 

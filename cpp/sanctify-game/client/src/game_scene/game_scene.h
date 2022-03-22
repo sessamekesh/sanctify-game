@@ -4,13 +4,13 @@
 #include <ecs/systems/attach_player_renderables.h>
 #include <ecs/systems/destroy_children_system.h>
 #include <ecs/systems/solid_animation_systems.h>
-#include <game_scene/net/reconcile_net_state_system.h>
-#include <game_scene/net/snapshot_cache.h>
 #include <game_scene/systems/player_move_indicator_render_system.h>
 #include <igcore/vector.h>
 #include <iggpu/texture.h>
 #include <io/arena_camera_controller/arena_camera_input.h>
 #include <io/viewport_click/viewport_click_controller_input.h>
+#include <net/reconcile_net_state_system.h>
+#include <net/snapshot_cache.h>
 #include <netclient/net_client.h>
 #include <ozz/animation/runtime/animation.h>
 #include <ozz/animation/runtime/skeleton.h>
@@ -23,6 +23,7 @@
 #include <render/terrain/terrain_pipeline.h>
 #include <sanctify-game-common/gameplay/locomotion.h>
 #include <scene_base.h>
+#include <util/registry_types.h>
 #include <util/resource_registry.h>
 #include <webgpu/webgpu_cpp.h>
 
@@ -33,15 +34,6 @@ namespace sanctify {
 class GameScene : public ISceneBase,
                   public std::enable_shared_from_this<GameScene> {
  public:
-  using OzzSkeletonRegistry =
-      std::shared_ptr<ReadonlyResourceRegistry<ozz::animation::Skeleton>>;
-  using OzzAnimationRegistry =
-      std::shared_ptr<ReadonlyResourceRegistry<ozz::animation::Animation>>;
-  using SolidAnimatedGeoRegistry = std::shared_ptr<
-      ReadonlyResourceRegistry<solid_animated::SolidAnimatedGeo>>;
-  using SolidAnimatedMaterialRegistry = std::shared_ptr<
-      ReadonlyResourceRegistry<solid_animated::MaterialPipelineInputs>>;
-
   struct TerrainShit {
     terrain_pipeline::TerrainPipelineBuilder PipelineBuilder;
     terrain_pipeline::TerrainPipeline Pipeline;

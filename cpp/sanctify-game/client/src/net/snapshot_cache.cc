@@ -1,4 +1,4 @@
-#include <game_scene/net/snapshot_cache.h>
+#include <net/snapshot_cache.h>
 
 using namespace sanctify;
 using namespace indigo;
@@ -61,8 +61,7 @@ Maybe<GameSnapshot> SnapshotCache::assemble_diff_and_store_snapshot(
   if (it == stored_snapshots_.end()) {
     Logger::err(kLogLabel)
         << "Received snapshot against a base that's been deleted - "
-        << diff.base_snapshot_id() << " - increasing snapshot buffer size to "
-        << ++snapshot_buffer_count_ << " to prevent this in the future";
+        << diff.base_snapshot_id();
     return empty_maybe{};
   }
 

@@ -2,6 +2,7 @@ plan {
   asset_pack_file_path: "resources/terrain-pve.igpack"
   actions {
     assemble_navmesh {
+      igasset_name: "pve-arena-navmesh"
       cell_size: 0.1
       bb_override {
         min_x: -172.062302

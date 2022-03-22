@@ -1,5 +1,5 @@
-#include <game_scene/net/reconcile_net_state_system.h>
 #include <igcore/maybe.h>
+#include <net/reconcile_net_state_system.h>
 
 using namespace sanctify;
 using namespace indigo;

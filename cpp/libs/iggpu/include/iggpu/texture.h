@@ -11,6 +11,8 @@ struct Texture {
   uint32_t MipLevels;
   wgpu::TextureFormat Format;
   wgpu::Texture GpuTexture;
+
+  wgpu::TextureView create_default_view() const;
 };
 
 struct Texture3D {

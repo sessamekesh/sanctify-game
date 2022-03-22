@@ -5,6 +5,7 @@ set(header_list
   "include/iggpu/util.h")
 
 set(src_list
+  "src/texture.cc"
   "src/thin_ubo.cc"
   "src/util.cc")
 

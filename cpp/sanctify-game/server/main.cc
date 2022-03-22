@@ -1,4 +1,5 @@
 #include <app/game_server.h>
+#include <app/pve_game_server/pve_game_server.h>
 #include <google/protobuf/util/json_util.h>
 #include <igasset/igpack_loader.h>
 #include <igasync/promise_combiner.h>
@@ -28,6 +29,7 @@ int main(int argc, const char** argv) {
 
   TokenExchangerType token_exchanger_type = TokenExchangerType::Dummy;
   bool allow_json_messages = false;
+  bool use_fixed_timestamp = false;
 
   app.add_option("-g,--game_token_exchanger", token_exchanger_type,
                  "Game token exchanger type")
@@ -35,6 +37,10 @@ int main(int argc, const char** argv) {
                                           CLI::ignore_case));
   app.add_option("--allow_json_encoding", allow_json_messages,
                  "Allow JSON encoding for protocol buffer messages");
+  app.add_option(
+         "--use_fixed_timestamp", use_fixed_timestamp,
+         "Use a fixed 8ms tick timestamp for this simulation (defaults true)")
+      ->default_val(true);
 
   CLI11_PARSE(app, argc, argv);
 
@@ -58,59 +64,32 @@ int main(int argc, const char** argv) {
       NetServer::Create(async_task_list, game_token_exchanger, event_scheduler,
                         35000u, ws_port, allow_json_messages);
 
-  std::shared_ptr<GameServer> game_server = nullptr;
-  {
-    // TODO (sessamekesh): Get rid of this evil hack by loading the game server
-    // asynchronously
-    auto evil_task_list = std::make_shared<core::TaskList>();
-    asset::IgpackLoader loader("resources/terrain-navmesh.igpack",
-                               evil_task_list);
-    loader.extract_detour_navmesh("practiceArenaNavmesh", evil_task_list)
-        ->consume(
-            [&game_server](asset::IgpackLoader::ExtractDetourNavmeshDataT rsl) {
-              if (rsl.is_right()) {
-                core::Logger::err(kLogLabel)
-                    << "Well, navmesh failed to load, shit.";
-                return;
-              }
-
-              game_server = std::make_shared<GameServer>(rsl.left_move());
-            },
-            evil_task_list);
-    while (evil_task_list->execute_next()) {
-    }
-    if (!game_server) {
-      Logger::err(kLogLabel) << "Failed to create game server, exiting";
-      return -1;
-    }
-  }
+  auto pve_game_server =
+      PveGameServer::Create(async_task_list, use_fixed_timestamp);
 
   //
   // Wire everything together...
   //
   net_server->set_on_message_callback(
-      [game_server, allow_json_messages](const PlayerId& player,
-                                         pb::GameClientMessage data) {
-        game_server->receive_message_for_player(player, std::move(data));
+      [pve_game_server, allow_json_messages](const PlayerId& player,
+                                             pb::GameClientMessage data) {
+        pve_game_server->receive_message_for_player(player, std::move(data));
       });
   net_server->set_player_connection_verify_fn(
-      [game_server](
+      [pve_game_server](
           const GameId& game_id,
           const PlayerId& player_id) -> std::shared_ptr<Promise<bool>> {
-        return game_server->try_connect_player(player_id);
+        return pve_game_server->try_connect_player(player_id);
       });
-  game_server->set_player_message_receiver(
+  pve_game_server->set_player_message_receiver(
       [net_server, async_task_list](PlayerId player_id,
                                     pb::GameServerMessage message) {
         net_server->send_message(player_id, std::move(message));
       });
   net_server->set_on_state_change_callback(
-      [game_server](const PlayerId& player_id,
-                    NetServer::PlayerConnectionState state) {
-        if (state == NetServer::PlayerConnectionState::Disconnected) {
-          game_server->notify_player_dropped_connection(player_id);
-        }
-        game_server->set_player_connection_state(player_id, state);
+      [pve_game_server](const PlayerId& player_id,
+                        NetServer::PlayerConnectionState state) {
+        pve_game_server->set_netstate(player_id, state);
       });
 
   //
@@ -120,7 +99,6 @@ int main(int argc, const char** argv) {
   auto combiner = PromiseCombiner::Create();
   auto net_server_start_key =
       combiner->add(net_server->configure_and_start(), async_task_list);
-  combiner->add(game_server->start_game(), async_task_list);
 
   combiner->combine()->on_success(
       [&run_plz, net_server_start_key](
@@ -158,7 +136,7 @@ int main(int argc, const char** argv) {
       << "App shutdown condition fired - terminating systems...";
 
   net_server->shutdown();
-  game_server->shutdown();
+  pve_game_server->shutdown();
 
   return 0;
 }

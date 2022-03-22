@@ -9,6 +9,12 @@ find_package(Boost 1.67 REQUIRED COMPONENTS system thread)
 # Sources (most often modified, keep near top)
 #
 set(header_list
+  "app/pve_game_server/ecs/net_state_update_system.h"
+  "app/pve_game_server/ecs/player_connect_state.h"
+  "app/pve_game_server/ecs/send_client_messages_system.h"
+  "app/pve_game_server/net_event_organizer.h"
+  "app/pve_game_server/pve_game_server.h"
+  "app/ecs/player_nav_system.h"
   "app/systems/locomotion.h"
   "app/systems/net_serialize.h"
   "app/game_server.h"
@@ -27,6 +33,11 @@ set(header_list
   "util/visit.h")
 
 set(src_list
+  "app/pve_game_server/ecs/net_state_update_system.cc"
+  "app/pve_game_server/ecs/send_client_messages_system.cc"
+  "app/pve_game_server/net_event_organizer.cc"
+  "app/pve_game_server/pve_game_server.cc"
+  "app/ecs/player_nav_system.cc"
   "app/systems/locomotion.cc"
   "app/systems/net_serialize.cc"
   "app/game_server.cc"
@@ -56,13 +67,13 @@ build_ig_asset_pack_plan(
 )
 
 build_ig_asset_pack_plan(
-  TARGET_NAME pve-terrain-igpack
+  TARGET_NAME pve-terrain-igpack-server
   PLAN "${PROJECT_SOURCE_DIR}/sanctify-game/common/resources/pve-terrain-navmesh.igpack-plan"
   INDIR "${asset_root}"
   INFILES
     "sanctify_arena/sanctify-pve.fbx"
   TARGET_OUTPUT_FILES
-    "resources/pve-terrain.igpack"
+    "resources/terrain-pve.igpack"
 )
 
 add_executable(sanctify-game-server ${header_list} ${src_list})
@@ -87,4 +98,4 @@ if (MSVC)
   )
 endif ()
 
-add_dependencies(sanctify-game-server terrain-navmesh-server-pack pve-terrain-igpack)
+add_dependencies(sanctify-game-server terrain-navmesh-server-pack pve-terrain-igpack-server)
