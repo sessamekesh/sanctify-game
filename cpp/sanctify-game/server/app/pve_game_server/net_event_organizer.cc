@@ -139,8 +139,15 @@ void NetEventOrganizer::set_net_server_state(
     return;
   }
 
-  std::lock_guard<std::mutex> l(m_netserver_state_[idx.get()]);
-  netserver_states_[idx.get()] = state;
+  {
+    std::lock_guard<std::mutex> l(m_netserver_state_[idx.get()]);
+    netserver_states_[idx.get()] = state;
+  }
+
+  if (state == NetServer::PlayerConnectionState::Disconnected) {
+    std::lock_guard<std::mutex> l(m_ready_state_[idx.get()]);
+    ready_states_[idx.get()] = false;
+  }
 }
 
 Maybe<uint32_t> NetEventOrganizer::row_idx(const PlayerId& player_id) const {

@@ -112,6 +112,7 @@ class Maybe {
   bool is_empty() const { return !has_value(); }
 
   // DANGEROUS - should not be called without first checking has_value
+  T& get() { return value_; }
   const T& get() const { return value_; }
 
   // DANGEROUS - should not be called without first checking has_value

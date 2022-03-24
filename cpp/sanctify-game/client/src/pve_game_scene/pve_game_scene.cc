@@ -1,6 +1,7 @@
 #include <igasset/igpack_loader.h>
 #include <igasync/promise_combiner.h>
 #include <igcore/log.h>
+#include <pve_game_scene/ecs/client_config.h>
 #include <pve_game_scene/ecs/utils.h>
 #include <pve_game_scene/pve_game_scene.h>
 
@@ -82,7 +83,15 @@ PveGameScene::get_preload_finish_promise() const {
 }
 
 void PveGameScene::kick_off_preload() {
+  // Set resources on client_state_entity_...
+  world_.emplace<ClientConfigComponent>(client_state_entity_);
+
   // TODO (sessamekesh): load loading state resources
+  on_preload_finish_->on_success(
+      [this](const auto&) { client_stage_ = ClientStage::Loading; },
+      main_thread_task_list_);
+
+  on_preload_finish_->resolve({});
 }
 
 void PveGameScene::kick_off_load() {
@@ -167,6 +176,7 @@ void PveGameScene::loading_update(float dt) {
   ecs::sim_clock_time(world_, client_state_entity_) += dt;
 
   // Netsync state...
+  handle_update_netsync(dt);
   if (net_client_.has_value()) {
     sim_time_sync_system_.loading_update(world_, client_state_entity_, dt);
   }
@@ -177,7 +187,13 @@ void PveGameScene::loading_update(float dt) {
     running_update(dt);
     return;
   }
+
   // Loading...
+
+  // Close out the frame with netcode stuff
+  if (net_client_.has_value()) {
+    ecs::flush_message_queue(world_, client_state_entity_, net_client_.get());
+  }
 }
 
 void PveGameScene::loading_render() {
@@ -187,6 +203,11 @@ void PveGameScene::loading_render() {
 void PveGameScene::running_update(float dt) {
   handle_update_netsync(dt);
   // Running...
+
+  // Close out the frame with netcode stuff
+  if (net_client_.has_value()) {
+    ecs::flush_message_queue(world_, client_state_entity_, net_client_.get());
+  }
 }
 
 void PveGameScene::running_render() {
@@ -206,8 +227,14 @@ void PveGameScene::handle_update_netsync(float dt) {
     return;
   }
 
-  for (int i = 0; i < net_message_queue_.size(); i++) {
-    const auto& msg = net_message_queue_[i];
+  Vector<pb::GameServerSingleMessage> queue;
+  {
+    std::lock_guard<std::mutex> l(m_net_message_queue_);
+    queue = std::move(net_message_queue_);
+  }
+
+  for (int i = 0; i < queue.size(); i++) {
+    const auto& msg = queue[i];
 
     if (msg.has_game_snapshot_diff()) {
       ecs::cache_snapshot_diff(world_, client_state_entity_,
@@ -241,7 +268,7 @@ void PveGameScene::update_server_ping(float dt) {
       auto* ping = msg.mutable_game_client_actions_list()
                        ->add_actions()
                        ->mutable_client_ping();
-      ping->set_is_ready(is_self_loaded_);
+      ping->set_is_ready(is_self_done_loading());
       ping->set_local_time(ecs::sim_clock_time(world_, client_state_entity_));
 
       net_client_.get()->send_message(std::move(msg));

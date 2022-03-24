@@ -38,15 +38,16 @@ std::string to_string(PveGameServer::ServerStage stage) {
 void attach_player_connect_state(entt::registry& world, entt::entity e,
                                  PlayerId player_id) {
   world.emplace<PlayerConnectStateComponent>(
-      e, player_id, PlayerConnectState::Disconnected,
-      PlayerConnectionType::None, PlayerReadyState::NotReady);
+      e, player_id, PlayerConnectState::Healthy, PlayerConnectionType::None,
+      PlayerReadyState::NotReady);
+  world.emplace<PlayerNetStateComponent>(e, 0.f, 0.f, 0.f, 0u);
   world.emplace<QueuedMessagesComponent>(e);
 }
 
 void attach_message(entt::registry& world, entt::entity e,
                     pb::GameServerSingleMessage msg,
                     bool attach_if_unhealthy = false) {
-  if (!world.valid(e)) return;
+  assert(world.valid(e));
   auto& queued_messages = world.get<QueuedMessagesComponent>(e);
 
   // Do not queue messages if the connection is not present...
@@ -159,6 +160,7 @@ void PveGameServer::initialize() {
 
         navmesh_ = navmesh.left_move();
 
+        Logger::log(kLogLabel) << "Waiting for players...";
         server_stage_ = ServerStage::WaitingForPlayers;
       },
       main_thread_task_list_);
@@ -214,6 +216,11 @@ void PveGameServer::set_netstate(
     case ServerStage::WaitingForPlayers:
     case ServerStage::Running:
     case ServerStage::GameOver:
+      if (connection_state == NetServer::PlayerConnectionState::Disconnected) {
+        // Remove the player
+        std::lock_guard<std::mutex> l(m_unhandled_disconnects_);
+        unhandled_disconnects_.push_back(player_id);
+      }
       net_event_organizer_.set_net_server_state(player_id, connection_state);
       return;
   }
@@ -274,6 +281,16 @@ void PveGameServer::update(float dt) {
 void PveGameServer::update_waiting_for_players(float dt) {
   sim_clock_ += dt;
 
+  auto new_players = get_new_players();
+  for (const auto& player : new_players) {
+    Logger::log(kLogLabel) << "Player " << player.first.Id << " joined";
+  }
+
+  for (const auto& player : get_disconnected_players()) {
+    Logger::log(kLogLabel) << "Player " << player.first.Id
+                           << " disconnected in waiting phase";
+  }
+
   for (const auto& player : connected_player_entities_) {
     PlayerId pid = std::get<PlayerId>(player);
     entt::entity e = std::get<entt::entity>(player);
@@ -283,6 +300,10 @@ void PveGameServer::update_waiting_for_players(float dt) {
 
     maybe_queue_pong(pid, e);
   }
+
+  // Run netsync code...
+  net_state_update_system_.update(world_, net_event_organizer_);
+  queue_client_messages_system_.update(world_, sim_clock_);
 
   bool all_ready = true;
   for (const auto& expected_player : expected_players_) {
@@ -298,6 +319,18 @@ void PveGameServer::update_waiting_for_players(float dt) {
 
 void PveGameServer::update_running(float dt) {
   sim_clock_ += dt;
+
+  auto new_players = get_new_players();
+  for (const auto& player : new_players) {
+    Logger::log(kLogLabel) << "Player  " << player.first.Id << " re-joined";
+    // TODO (sessamekesh): re-attach this player to an existing entity?
+  }
+
+  for (const auto& player : get_disconnected_players()) {
+    Logger::log(kLogLabel) << "Player " << player.first.Id
+                           << " disconnected while simulation was running";
+    // TODO (sessamekesh): Trigger disconnect behavior for this player
+  }
 
   // Handle player input events...
   for (auto& player : connected_player_entities_) {
@@ -365,17 +398,44 @@ PveGameServer::get_new_players() {
     for (auto& unhandled_connect : unhandled_connects_) {
       if (connected_player_entities_.find_l(unhandled_connect.first) ==
           connected_player_entities_.end()) {
-        auto e = world_.create();
-        ::attach_player_connect_state(world_, e, unhandled_connect.first);
+        auto e = create_player_entity(unhandled_connect.first);
 
         connected_player_entities_.insert(unhandled_connect.first, e);
         unhandled_connect.second->resolve(true);
         new_players.push_back({unhandled_connect.first, e});
       }
     }
+    unhandled_connects_.clear();
   }
 
   return new_players;
+}
+
+std::vector<std::pair<PlayerId, entt::entity>>
+PveGameServer::get_disconnected_players() {
+  std::vector<std::pair<PlayerId, entt::entity>> disconnected_players;
+  {
+    std::lock_guard<std::mutex> l(m_unhandled_disconnects_);
+    for (auto& unhandled_disconnect : unhandled_disconnects_) {
+      auto it = connected_player_entities_.find_l(unhandled_disconnect);
+      if (it == connected_player_entities_.end()) {
+        Logger::err(kLogLabel)
+            << "Player " << unhandled_disconnect.Id
+            << " was disconnected, but without an associated game entity";
+        continue;
+      }
+      disconnected_players.push_back(std::make_pair(unhandled_disconnect, *it));
+    }
+    unhandled_disconnects_.clear();
+  }
+  return disconnected_players;
+}
+
+entt::entity PveGameServer::create_player_entity(PlayerId player_id) {
+  auto e = world_.create();
+  ::attach_player_connect_state(world_, e, player_id);
+
+  return e;
 }
 
 void PveGameServer::create_initial_game_scene() {

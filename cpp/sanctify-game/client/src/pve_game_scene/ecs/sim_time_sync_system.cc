@@ -27,8 +27,11 @@ void SimTimeSyncSystem::loading_update(entt::registry& world, entt::entity e,
 
   auto sim_time = ecs::sim_clock_time(world, e);
 
-  if (ltd_component.loadTimeLeft <= 0.f) {
+  if (ltd_component.loadTimeLeft <= 0.f &&
+      ltd_component.timeDeltas.size() > 10) {
     if (ltd_component.hasPerformedReconcile) return;
+
+    // TODO (sessamekesh): Server is currently not responding to pings
 
     // Perform reconcile
     // TODO (sessamekesh): Throw out any outliers before averaging
@@ -57,6 +60,7 @@ void SimTimeSyncSystem::loading_update(entt::registry& world, entt::entity e,
     ping->set_is_ready(false);
     ping->set_local_time(sim_time);
     ping->set_ping_id(ltd_component.nextPingId++);
+    ltd_component.expectedPingIds.push_back(ping->ping_id());
     ecs::queue_client_message(world, e, msg);
   }
 }
@@ -71,6 +75,7 @@ void SimTimeSyncSystem::handle_pong(entt::registry& world, entt::entity e,
   if (ltd_component.expectedPingIds.contains(msg.ping_id())) {
     ltd_component.expectedPingIds.erase(msg.ping_id());
     ltd_component.timeDeltas.push_back(msg.sim_time() - sim_time);
+    ltd_component.expectedPingIds.erase(msg.ping_id(), false);
   }
 }
 

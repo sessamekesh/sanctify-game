@@ -9,7 +9,8 @@ using namespace core;
 
 namespace {
 const float kMaxSnapshotCacheSize = 15;
-}
+uint32_t kMaxMessageQueueLength = 256;
+}  // namespace
 
 float& ecs::sim_clock_time(entt::registry& world, entt::entity e) {
   return world.get_or_emplace<SimClockComponent>(e, 0.f).simClock;
@@ -17,8 +18,29 @@ float& ecs::sim_clock_time(entt::registry& world, entt::entity e) {
 
 void ecs::queue_client_message(entt::registry& world, entt::entity e,
                                pb::GameClientSingleMessage msg) {
-  world.get_or_emplace<OutgoingClientMessagesComponent>(e).messages.push_back(
-      msg);
+  auto& msg_queue =
+      world.get_or_emplace<OutgoingClientMessagesComponent>(e).messages;
+  if (msg_queue.size() < kMaxMessageQueueLength) {
+    msg_queue.push_back(msg);
+  } else {
+    Logger::log("ecs::queue_client_message")
+        << "Message buffer full! Cannot queue new message";
+  }
+}
+
+void ecs::flush_message_queue(entt::registry& world, entt::entity e,
+                              std::shared_ptr<NetClient> net_client,
+                              uint32_t max_message_count) {
+  auto& messages =
+      world.get_or_emplace<OutgoingClientMessagesComponent>(e).messages;
+
+  pb::GameClientMessage msg{};
+  auto* actions_list = msg.mutable_game_client_actions_list();
+  for (int i = 0; i < messages.size() && i < max_message_count; i++) {
+    *actions_list->add_actions() = messages[i];
+  }
+  messages.trim_front(max_message_count);
+  net_client->send_message(std::move(msg));
 }
 
 void ecs::cache_snapshot_diff(entt::registry& world, entt::entity e,

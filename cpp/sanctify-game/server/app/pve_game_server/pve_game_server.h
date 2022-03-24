@@ -81,6 +81,8 @@ class PveGameServer : public std::enable_shared_from_this<PveGameServer> {
   void maybe_queue_pong(const PlayerId& pid, entt::entity e);
 
   std::vector<std::pair<PlayerId, entt::entity>> get_new_players();
+  std::vector<std::pair<PlayerId, entt::entity>> get_disconnected_players();
+  entt::entity create_player_entity(PlayerId player_id);
 
   void create_initial_game_scene();
 
@@ -103,6 +105,8 @@ class PveGameServer : public std::enable_shared_from_this<PveGameServer> {
   std::mutex m_unhandled_connects_;
   std::vector<std::pair<PlayerId, std::shared_ptr<indigo::core::Promise<bool>>>>
       unhandled_connects_;
+  std::mutex m_unhandled_disconnects_;
+  std::vector<PlayerId> unhandled_disconnects_;
   uint32_t next_net_sync_id_;
 
   // Simulation internals

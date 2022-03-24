@@ -31,6 +31,7 @@ set(header_list
   "src/pve_game_scene/ecs/netsync_components.h"
   "src/pve_game_scene/ecs/sim_time_sync_system.h"
   "src/pve_game_scene/ecs/utils.h"
+  "src/pve_game_scene/build.h"
   "src/pve_game_scene/pve_game_scene.h"
   "src/render/camera/arena_camera.h"
   "src/render/common/camera_ubo.h"
@@ -70,6 +71,7 @@ set(src_list
   "src/net/snapshot_cache.cc"
   "src/pve_game_scene/ecs/sim_time_sync_system.cc"
   "src/pve_game_scene/ecs/utils.cc"
+  "src/pve_game_scene/build.cc"
   "src/pve_game_scene/pve_game_scene.cc"
   "src/render/camera/arena_camera.cc"
   "src/render/debug_geo/debug_geo.cc"
@@ -186,6 +188,10 @@ add_dependencies(sanctify-game-client
 if (EMSCRIPTEN)
   set_wasm_target_properties(TARGET_NAME sanctify-game-client EXPORT_NAME SanctifyGameClient)
 else ()
+  find_package(Boost 1.67 REQUIRED COMPONENTS system thread random)
+  target_include_directories(sanctify-game-client PRIVATE
+    . "${websocketpp_SOURCE_DIR}")
+
   # LEGAL NOTE - use libdatachannel and not libdatachannel-static. This is because
   #  libdatachannel uses the LGPLv2 license and requires that a user be able to
   #  freely link in their own build of the library in its place.
@@ -194,7 +200,7 @@ else ()
   target_link_libraries(sanctify-game-client
     PUBLIC dawncpp glfw dawn_native dawn_wire
     dawn_utils dawn_proc dawn_common LibDataChannel::LibDataChannel
-    http-request)
+    http-request Boost::boost ${Boost_LIBRARIES})
 endif ()
 
 if (WIN32)

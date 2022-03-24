@@ -95,6 +95,7 @@ bool RawBuffer::detach(uint8_t** o_data, size_t* o_size) {
   *o_size = size_;
 
   owns_data_ = false;
+  return true;
 }
 
 }  // namespace core

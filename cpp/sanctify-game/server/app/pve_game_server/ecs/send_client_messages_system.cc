@@ -172,14 +172,22 @@ void SendClientMessagesSystem::update(
       world.view<QueuedMessagesComponent, PlayerConnectStateComponent>();
 
   for (auto [e, qmc, ps] : view.each()) {
+    if (ps.connectState == PlayerConnectState::Disconnected ||
+        ps.connectState == PlayerConnectState::Unhealthy) {
+      qmc.unsentMessages.clear();
+      continue;
+    }
+
     if (qmc.unsentMessages.size() == 0) {
       continue;
     }
 
     pb::GameServerMessage msg{};
+    auto* actions_list = msg.mutable_actions_list();
     for (auto& single_msg : qmc.unsentMessages) {
-      *msg.mutable_actions_list()->add_messages() = single_msg;
+      *actions_list->add_messages() = single_msg;
     }
     cb(ps.playerId, std::move(msg));
+    qmc.unsentMessages.clear();
   }
 }

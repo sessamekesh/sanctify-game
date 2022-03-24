@@ -12,56 +12,120 @@ const char* kLogLabel = "WsClientNative";
 WsClientNative::WsClientNative(
     std::shared_ptr<indigo::core::TaskList> message_parse_task_list,
     float healthy_time)
-    : WsClient(message_parse_task_list, healthy_time) {}
+    : WsClient(message_parse_task_list, healthy_time),
+      ws_(empty_maybe{}),
+      is_running_(false) {}
 
 std::shared_ptr<Promise<bool>> WsClientNative::inner_connect(std::string url) {
   auto that = shared_from_this();
 
   auto rsl_promise = Promise<bool>::create();
 
-  ws_.onOpen([that, rsl_promise]() { that->on_connect(); });
-  ws_.onClosed([that]() { that->on_disconnect(); });
-  ws_.onError([that](std::string err) { that->on_error(err); });
-  ws_.onMessage(
-      [that](rtc::message_variant data) {
-        if (std::holds_alternative<rtc::string>(data)) {
-          // This is a weird and unexpected case! But pass along the data
-          // anyways...
-          that->recv_raw_msg(std::get<rtc::string>(std::move(data)));
-          return;
-        }
+  ws_ = WsInternal{};
 
-        if (std::holds_alternative<rtc::binary>(data)) {
-          // This is the more expected case - unfortunately it does involve a
-          // data copy, but there really isn't any avoiding that.
-          const rtc::binary& vdata = std::get<rtc::binary>(data);
-          std::string raw_data(vdata.size(), '\0');
-          memcpy(&raw_data[0], &vdata[0], vdata.size());
-          that->recv_raw_msg(std::move(raw_data));
-          return;
-        }
+  auto& client = client_;
 
-        Logger::err(kLogLabel)
-            << "WS message was neither string nor binary - which is nonsense!";
-      });
+  client.clear_access_channels(websocketpp::log::alevel::frame_header);
+  client.clear_access_channels(websocketpp::log::alevel::frame_payload);
+  client.set_error_channels(websocketpp::log::elevel::rerror);
 
-  ws_.open(url);
+  client.init_asio();
+
+  client.set_open_handler(
+      std::bind(WsClientNative::_on_open, that, std::placeholders::_1));
+  client.set_fail_handler(
+      std::bind(WsClientNative::_on_fail, that, std::placeholders::_1));
+  client.set_close_handler(
+      std::bind(WsClientNative::_on_close, that, std::placeholders::_1));
+  client.set_message_handler(std::bind(WsClientNative::_on_message, that,
+                                       std::placeholders::_1,
+                                       std::placeholders::_2));
+
+  std::error_code ec;
+  ec.clear();
+  auto conn = client.get_connection(url, ec);
+  if (ec) {
+    Logger::err(kLogLabel) << "Error getting connection for websocket: "
+                           << ec.message();
+    rsl_promise->resolve(false);
+  }
+
+  client.connect(conn);
+
+  std::thread([l = that, &client]() {
+    Logger::log("ws_thread") << "Starting WS thread...";
+    client.run();
+    Logger::log("ws_thread") << "Ending WS thread...";
+  }).detach();
 
   return rsl_promise;
 }
 
+void WsClientNative::_on_open(std::shared_ptr<WsClientNative> client,
+                              websocketpp::connection_hdl hdl) {
+  client->on_open(hdl);
+}
+
+void WsClientNative::on_open(websocketpp::connection_hdl hdl) {
+  if (ws_.has_value()) {
+    ws_.get().connection = hdl;
+  }
+  on_connect();
+}
+
+void WsClientNative::_on_fail(std::shared_ptr<WsClientNative> client,
+                              websocketpp::connection_hdl hdl) {
+  client->on_fail(hdl);
+}
+
+void WsClientNative::on_fail(websocketpp::connection_hdl hdl) {
+  on_error("Fail");
+}
+
+void WsClientNative::_on_close(std::shared_ptr<WsClientNative> client,
+                               websocketpp::connection_hdl hdl) {
+  client->on_close(hdl);
+}
+
+void WsClientNative::on_close(websocketpp::connection_hdl) {
+  on_disconnect();
+  destroy_connection();
+}
+
+void WsClientNative::_on_message(std::shared_ptr<WsClientNative> client,
+                                 websocketpp::connection_hdl hdl,
+                                 WsClientNative::WSMsgPtr msg_ptr) {
+  client->on_message(hdl, msg_ptr);
+}
+
+void WsClientNative::on_message(websocketpp::connection_hdl,
+                                WsClientNative::WSMsgPtr msg_ptr) {
+  recv_raw_msg(msg_ptr->get_payload());
+}
+
 void WsClientNative::send_raw_msg(std::string raw_msg) {
+  pb::GameClientMessage msg{};
+  if (!msg.ParseFromString(raw_msg)) {
+    Logger::err(kLogLabel) << "Somehow our own message fails?";
+  }
+
   // This is also shitty, we have to convert to binary because this data is
   // binary...
-  rtc::binary bin_msg;
-  bin_msg.resize(raw_msg.size());
-  memcpy(&bin_msg[0], &raw_msg[0], raw_msg.size());
-  if (ws_.isOpen()) {
-    ws_.send(std::move(bin_msg));
+  if (ws_.has_value()) {
+    std::error_code ec;
+    ec.clear();
+    client_.send(ws_.get().connection, raw_msg,
+                 websocketpp::frame::opcode::binary, ec);
+    if (ec) {
+      Logger::err(kLogLabel) << "Failed to send WS message: " << ec.message();
+    }
   }
 }
 
 void WsClientNative::destroy_connection() {
-  ws_.close();
-  ::new (&ws_) rtc::WebSocket();
+  if (ws_.has_value()) {
+    client_.close(ws_.get().connection, websocketpp::close::status::normal, "");
+  }
+  ws_ = empty_maybe{};
+  is_running_ = false;
 }

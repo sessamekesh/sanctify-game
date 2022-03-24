@@ -70,9 +70,24 @@ class Vector : public IVec<T> {
     return true;
   }
 
+  /** Trim the first n elements from this vector */
+  void trim_front(uint32_t i) {
+    if (this->size_ <= i) {
+      this->size_ = 0;
+      return;
+    }
+
+    auto* old_data = this->data_;
+    this->size_ -= i;
+    this->capacity_ -= i;
+    this->data_ = new T[this->capacity_];
+    memcpy(this->data_, old_data, sizeof(T) * this->size_);
+    delete[] old_data;
+  }
+
   void clear() {
     for (size_t i = 0; i < this->size_; i++) {
-      this->operator[](i) = T{};
+      this->data_[i] = T{};
     }
     this->size_ = 0;
   }
@@ -133,9 +148,8 @@ class Vector : public IVec<T> {
     }
 
     if (this->capacity_ == 0) {
-      core::Logger::log("Vector") << "INFINITE LOOP CASE - capacity_ == 0";
-      this->data_ = new T[2];
-      this->capacity_ = 2;
+      this->data_ = new T[size];
+      this->capacity_ = size;
     }
 
     size_t old_size = this->capacity_;

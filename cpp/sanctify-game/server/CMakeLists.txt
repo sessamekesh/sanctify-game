@@ -98,4 +98,6 @@ if (MSVC)
   )
 endif ()
 
-add_dependencies(sanctify-game-server terrain-navmesh-server-pack pve-terrain-igpack-server)
+add_dependencies(sanctify-game-server
+  pve-terrain-igpack-server
+  terrain-navmesh-server-pack)

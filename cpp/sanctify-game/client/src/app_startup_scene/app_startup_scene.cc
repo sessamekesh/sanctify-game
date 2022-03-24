@@ -1,8 +1,10 @@
 #include <app_startup_scene/app_startup_scene.h>
 #include <app_startup_scene/startup_shader_src.h>
-#include <game_scene/game_scene_factory.h>
+#include <igasync/promise_combiner.h>
 #include <igcore/log.h>
 #include <iggpu/util.h>
+#include <pve_game_scene/build.h>
+#include <pve_game_scene/pve_game_scene.h>
 
 using namespace indigo;
 using namespace sanctify;
@@ -24,28 +26,36 @@ AppStartupScene::AppStartupScene(
       ubo_(base->Device) {
   setup_render_state(*base);
 
-  GameSceneFactory factory(base);
-  factory.set_task_lists(main_thread_task_list, async_task_list)
-      .build()
-      ->on_success(
-          [scene_consumer](const GamePromiseRsl& rsl) {
-            if (rsl.is_right()) {
-              auto log = Logger::err(kLogLabel);
+  // TODO (sessamekesh): Remove this hardcoded URL base
+#ifdef __EMSCRIPTEN__
+  std::string game_api_url = "http://localhost:3000";
+#else
+  std::string game_api_url = "http://localhost:8080";
+#endif
+  auto deps = PromiseCombiner::Create();
+  auto netclient_key = deps->add(
+      pve::build_net_client(game_api_url, async_task_list), async_task_list);
 
-              log << "Error(s) creating game scene:\n";
-              for (int i = 0; i < rsl.get_right().size(); i++) {
-                log << "--" << to_string(rsl.get_right()[i]);
-              }
+  deps->combine()->on_success(
+      [netclient_key, scene_consumer, base, main_thread_task_list,
+       async_task_list](const PromiseCombiner::PromiseCombinerResult& rsl) {
+        const auto& netclient_rsl = rsl.get(netclient_key);
+        if (netclient_rsl.is_empty()) {
+          Logger::err(kLogLabel)
+              << "Error creating netclient, cannot create PvE game";
+          return;
+        }
 
-              // TODO (sessamekesh): Show this message to the user too, if
-              // possible
+        auto next_scene = PveGameScene::Create(
+            base, netclient_rsl.get(), main_thread_task_list, async_task_list);
 
-              return;
-            }
-
-            scene_consumer->set_scene(rsl.get_left());
-          },
-          main_thread_task_list);
+        next_scene->get_preload_finish_promise()->on_success(
+            [next_scene, scene_consumer](const auto&) {
+              scene_consumer->set_scene(next_scene);
+            },
+            main_thread_task_list);
+      },
+      async_task_list);
 }
 
 void AppStartupScene::setup_render_state(const AppBase& base) {
