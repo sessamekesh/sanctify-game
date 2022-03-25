@@ -9,8 +9,10 @@ find_package(Boost 1.67 REQUIRED COMPONENTS system thread)
 # Sources (most often modified, keep near top)
 #
 set(header_list
+  "app/pve_game_server/ecs/context_components.h"
   "app/pve_game_server/ecs/net_state_update_system.h"
-  "app/pve_game_server/ecs/player_connect_state.h"
+  "app/pve_game_server/ecs/netstate_components.h"
+  "app/pve_game_server/ecs/player_context_components.h"
   "app/pve_game_server/ecs/send_client_messages_system.h"
   "app/pve_game_server/net_event_organizer.h"
   "app/pve_game_server/pve_game_server.h"
@@ -33,7 +35,10 @@ set(header_list
   "util/visit.h")
 
 set(src_list
+  "app/pve_game_server/ecs/context_components.cc"
   "app/pve_game_server/ecs/net_state_update_system.cc"
+  "app/pve_game_server/ecs/netstate_components.cc"
+  "app/pve_game_server/ecs/player_context_components.cc"
   "app/pve_game_server/ecs/send_client_messages_system.cc"
   "app/pve_game_server/net_event_organizer.cc"
   "app/pve_game_server/pve_game_server.cc"

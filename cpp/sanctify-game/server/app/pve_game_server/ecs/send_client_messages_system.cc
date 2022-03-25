@@ -1,5 +1,6 @@
 #include <app/pve_game_server/ecs/net_state_update_system.h>
-#include <app/pve_game_server/ecs/player_connect_state.h>
+#include <app/pve_game_server/ecs/netstate_components.h>
+#include <app/pve_game_server/ecs/player_context_components.h>
 #include <app/pve_game_server/ecs/send_client_messages_system.h>
 #include <sanctify-game-common/gameplay/net_sync_components.h>
 #include <sanctify-game-common/net/game_snapshot.h>
@@ -7,7 +8,7 @@
 #include <map>
 
 using namespace sanctify;
-using namespace system;
+using namespace ecs;
 using namespace indigo;
 using namespace core;
 
@@ -57,7 +58,7 @@ GameSnapshot gen_snapshot(entt::registry& world, entt::entity e, float sim_time,
 }
 
 void send_full_snapshot(entt::registry& world, entt::entity e, float sim_time,
-                        const PlayerId& pid, QueuedMessagesComponent& queue) {
+                        const PlayerId& pid) {
   auto& sc = world.get<SentClientSnapshotsComponent>(e);
   uint32_t snapshot_id = sc.nextSnapshotId++;
 
@@ -69,7 +70,7 @@ void send_full_snapshot(entt::registry& world, entt::entity e, float sim_time,
 
   sc.sentSnapshots.emplace(snapshot_id, std::move(snapshot));
 
-  queue.unsentMessages.push_back(std::move(msg));
+  ecs::net::queue_single_message(world, e, std::move(msg));
 }
 
 void cleanup_stored_snapshots(entt::registry& world, entt::entity e,
@@ -105,8 +106,7 @@ Maybe<GameSnapshot> get_base_snapshot(entt::registry& world, entt::entity e) {
 }
 
 void send_diff(entt::registry& world, entt::entity e, const PlayerId& pid,
-               const GameSnapshot& base, float sim_time,
-               QueuedMessagesComponent& queue) {
+               const GameSnapshot& base, float sim_time) {
   auto& sc = world.get<SentClientSnapshotsComponent>(e);
   uint32_t snapshot_id = sc.nextSnapshotId++;
   GameSnapshot current_snapshot =
@@ -119,32 +119,33 @@ void send_diff(entt::registry& world, entt::entity e, const PlayerId& pid,
   pb::GameServerSingleMessage msg{};
   *msg.mutable_game_snapshot_diff() = diff.serialize();
 
-  queue.unsentMessages.push_back(std::move(msg));
+  ecs::net::queue_single_message(world, e, std::move(msg));
 }
 
 }  // namespace
 
 void QueueClientMessagesSystem::update(entt::registry& world, float sim_time) {
-  auto view = world.view<const PlayerConnectStateComponent,
-                         PlayerNetStateComponent, QueuedMessagesComponent>();
+  auto view =
+      world.view<const ecs::PlayerConnectionState,
+                 const ecs::PlayerSystemAttributes, PlayerNetStateComponent>();
 
-  for (auto [e, player_connect_state, net_state, queued_messages] :
+  for (auto [e, player_connect_state, player_attribs, net_state] :
        view.each()) {
     // Early out - do not queue any messages for non-receptive client
-    if (player_connect_state.connectState != PlayerConnectState::Healthy ||
-        player_connect_state.connectionType == PlayerConnectionType::None ||
-        player_connect_state.readyState != PlayerReadyState::Ready) {
+    if (player_connect_state.netState !=
+            ecs::PlayerConnectionState::NetState::Healthy ||
+        !player_connect_state.isReady) {
       world.remove<SentClientSnapshotsComponent>(e);
       continue;
     }
 
-    const auto& player_id = player_connect_state.playerId;
+    const auto& player_id = player_attribs.playerId;
 
     ::cleanup_stored_snapshots(world, e, net_state.lastAckedSnapshotId);
 
     if (net_state.lastAckedSnapshotId == 0u ||
         (net_state.lastSnapshotSentTime + ::kTimeBetweenSnapshots) < sim_time) {
-      ::send_full_snapshot(world, e, sim_time, player_id, queued_messages);
+      ::send_full_snapshot(world, e, sim_time, player_id);
       net_state.lastSnapshotSentTime = sim_time;
       continue;
     }
@@ -152,42 +153,14 @@ void QueueClientMessagesSystem::update(entt::registry& world, float sim_time) {
     if ((net_state.lastDiffSentTime + ::kTimeBetweenDiffs) < sim_time) {
       auto maybe_base_snapshot = ::get_base_snapshot(world, e);
       if (maybe_base_snapshot.is_empty()) {
-        ::send_full_snapshot(world, e, sim_time, player_id, queued_messages);
+        ::send_full_snapshot(world, e, sim_time, player_id);
         net_state.lastSnapshotSentTime = sim_time;
         net_state.lastDiffSentTime = sim_time;
         continue;
       }
 
-      ::send_diff(world, e, player_id, maybe_base_snapshot.get(), sim_time,
-                  queued_messages);
+      ::send_diff(world, e, player_id, maybe_base_snapshot.get(), sim_time);
       net_state.lastDiffSentTime = sim_time;
     }
-  }
-}
-
-void SendClientMessagesSystem::update(
-    entt::registry& world,
-    const std::function<void(PlayerId, pb::GameServerMessage)>& cb) {
-  auto view =
-      world.view<QueuedMessagesComponent, PlayerConnectStateComponent>();
-
-  for (auto [e, qmc, ps] : view.each()) {
-    if (ps.connectState == PlayerConnectState::Disconnected ||
-        ps.connectState == PlayerConnectState::Unhealthy) {
-      qmc.unsentMessages.clear();
-      continue;
-    }
-
-    if (qmc.unsentMessages.size() == 0) {
-      continue;
-    }
-
-    pb::GameServerMessage msg{};
-    auto* actions_list = msg.mutable_actions_list();
-    for (auto& single_msg : qmc.unsentMessages) {
-      *actions_list->add_messages() = single_msg;
-    }
-    cb(ps.playerId, std::move(msg));
-    qmc.unsentMessages.clear();
   }
 }

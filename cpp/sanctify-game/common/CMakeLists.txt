@@ -2,6 +2,7 @@ add_proto_lib(
   TARGET_NAME sanctify_net_proto
   OUTDIR "sanctify-game-common/proto"
   PROTO_INFILES "${PROJECT_SOURCE_DIR}/../proto/sanctify-net.proto"
+                "${PROJECT_SOURCE_DIR}/../proto/api-objects.proto"
 )
 
 set (header_list

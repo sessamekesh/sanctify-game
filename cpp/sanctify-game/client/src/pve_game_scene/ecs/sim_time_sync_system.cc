@@ -31,10 +31,6 @@ void SimTimeSyncSystem::loading_update(entt::registry& world, entt::entity e,
       ltd_component.timeDeltas.size() > 10) {
     if (ltd_component.hasPerformedReconcile) return;
 
-    // TODO (sessamekesh): Server is currently not responding to pings
-
-    // Perform reconcile
-    // TODO (sessamekesh): Throw out any outliers before averaging
     float sum = 0.f;
     for (int i = 0; i < ltd_component.timeDeltas.size(); i++) {
       sum += ltd_component.timeDeltas[i];

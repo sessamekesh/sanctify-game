@@ -27,3 +27,6 @@ You can either...
 - `/sanctify-game/common`: Common code shared between the sanctify game server and client (main game logic)
 - `/sanctify-game/server`: Source code for sanctify game server executable
 - `/sanctify-game/client`: Source code for Sanctify game client library (including entry point for native executable and EMBINDs for web module)
+
+# General Development Rules
+* ECS code is assumed to be thread safe. Either do stuff on the main thread, or in an order where you know systems will not be stepping on each others toes

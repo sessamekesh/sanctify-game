@@ -11,7 +11,6 @@
 
 #include <app/ecs/player_nav_system.h>
 #include <app/pve_game_server/ecs/net_state_update_system.h>
-#include <app/pve_game_server/ecs/player_connect_state.h>
 #include <app/pve_game_server/ecs/send_client_messages_system.h>
 #include <app/pve_game_server/net_event_organizer.h>
 #include <app/systems/locomotion.h>
@@ -74,15 +73,11 @@ class PveGameServer : public std::enable_shared_from_this<PveGameServer> {
   void initialize();
 
   void update(float dt);
-  void update_waiting_for_players(float dt);
-  void update_running(float dt);
-  void update_game_over(float dt);
+  void update_waiting_for_players();
+  void update_running();
+  void update_game_over();
 
   void maybe_queue_pong(const PlayerId& pid, entt::entity e);
-
-  std::vector<std::pair<PlayerId, entt::entity>> get_new_players();
-  std::vector<std::pair<PlayerId, entt::entity>> get_disconnected_players();
-  entt::entity create_player_entity(PlayerId player_id);
 
   void create_initial_game_scene();
 
@@ -90,7 +85,6 @@ class PveGameServer : public std::enable_shared_from_this<PveGameServer> {
   // Bookkeeping
   bool use_fixed_timestamp_;
   ServerStage server_stage_;
-  std::vector<PlayerId> expected_players_;
   std::shared_ptr<indigo::core::TaskList> main_thread_task_list_;
   std::shared_ptr<indigo::core::TaskList> async_task_list_;
   std::shared_ptr<indigo::core::Promise<indigo::core::EmptyPromiseRsl>>
@@ -101,26 +95,18 @@ class PveGameServer : public std::enable_shared_from_this<PveGameServer> {
   // Netcode stuff
   PlayerMessageCb player_message_cb_;
   NetEventOrganizer net_event_organizer_;
-  indigo::core::Bimap<PlayerId, entt::entity> connected_player_entities_;
-  std::mutex m_unhandled_connects_;
-  std::vector<std::pair<PlayerId, std::shared_ptr<indigo::core::Promise<bool>>>>
-      unhandled_connects_;
-  std::mutex m_unhandled_disconnects_;
-  std::vector<PlayerId> unhandled_disconnects_;
   uint32_t next_net_sync_id_;
 
   // Simulation internals
   std::thread game_thread_;
   bool is_running_;  // Not guarded - set once to end game, no races (careful!)
-  float sim_clock_;
   entt::registry world_;
 
   // Systems
-  system::NetStateUpdateSystem net_state_update_system_;
+  ecs::NetStateUpdateSystem net_state_update_system_;
   system::PlayerNavSystem player_nav_system_;
   system::LocomotionSystem locomotion_system_;
-  system::QueueClientMessagesSystem queue_client_messages_system_;
-  system::SendClientMessagesSystem send_client_messages_system_;
+  ecs::QueueClientMessagesSystem queue_client_messages_system_;
 
   // Game server resources (logic helpers)
   indigo::core::Maybe<indigo::nav::DetourNavmesh> navmesh_;

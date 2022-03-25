@@ -6,19 +6,21 @@
 
 #include <entt/entt.hpp>
 
-namespace sanctify::system {
+namespace sanctify::ecs {
+
+struct PlayerNetStateComponent {
+  float lastMessageReceivedTime;
+  float lastSnapshotSentTime;
+  float lastDiffSentTime;
+
+  uint32_t lastAckedSnapshotId;
+};
 
 class QueueClientMessagesSystem {
  public:
   void update(entt::registry& world, float sim_time);
 };
 
-class SendClientMessagesSystem {
- public:
-  void update(entt::registry& world,
-              const std::function<void(PlayerId, pb::GameServerMessage)>& cb);
-};
-
-}  // namespace sanctify::system
+}  // namespace sanctify::ecs
 
 #endif

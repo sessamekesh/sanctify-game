@@ -8,12 +8,11 @@
  * player (time between snapshots, reconnection to re-send messages, etc)
  */
 
-#include <app/pve_game_server/ecs/player_connect_state.h>
 #include <app/pve_game_server/net_event_organizer.h>
 
 #include <entt/entt.hpp>
 
-namespace sanctify::system {
+namespace sanctify::ecs {
 
 class NetStateUpdateSystem {
  public:

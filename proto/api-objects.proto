@@ -1,0 +1,19 @@
+syntax = "proto3";
+package sanctify.pb;
+
+option go_package = "github.com/sessamekesh/sanctify-game/go/sanctify-api-service/model";
+
+/** Description of a player needed */
+message GameServerPlayerDescription {
+  /** What is the ID of this player that should be used with backend services? */
+  uint64 player_id = 1;
+
+  /** What is the token that this player will use to authenticate themselves? */
+  string player_token = 2;
+
+  /** Display name that can appear in-game for other players */
+  string display_name = 3;
+
+  /** Tagline that can appear in-game for other players */
+  string tagline = 4;
+}

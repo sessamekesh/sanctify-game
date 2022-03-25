@@ -1,4 +1,5 @@
-#include <app/pve_game_server/ecs/player_connect_state.h>
+#include <app/pve_game_server/ecs/context_components.h>
+#include <app/pve_game_server/ecs/netstate_components.h>
 #include <app/pve_game_server/pve_game_server.h>
 #include <igasset/igpack_loader.h>
 #include <igasync/promise_combiner.h>
@@ -35,37 +36,6 @@ std::string to_string(PveGameServer::ServerStage stage) {
   }
 }
 
-void attach_player_connect_state(entt::registry& world, entt::entity e,
-                                 PlayerId player_id) {
-  world.emplace<PlayerConnectStateComponent>(
-      e, player_id, PlayerConnectState::Healthy, PlayerConnectionType::None,
-      PlayerReadyState::NotReady);
-  world.emplace<PlayerNetStateComponent>(e, 0.f, 0.f, 0.f, 0u);
-  world.emplace<QueuedMessagesComponent>(e);
-}
-
-void attach_message(entt::registry& world, entt::entity e,
-                    pb::GameServerSingleMessage msg,
-                    bool attach_if_unhealthy = false) {
-  assert(world.valid(e));
-  auto& queued_messages = world.get<QueuedMessagesComponent>(e);
-
-  // Do not queue messages if the connection is not present...
-  auto& conn_state = world.get<PlayerConnectStateComponent>(e);
-  if (conn_state.connectState == PlayerConnectState::Disconnected) {
-    return;
-  }
-
-  // ... or if its unhealthy, and we don't explicitly specify that we want
-  //  to send the message anyways...
-  if (conn_state.connectState == PlayerConnectState::Unhealthy &&
-      !attach_if_unhealthy) {
-    return;
-  }
-
-  queued_messages.unsentMessages.push_back(msg);
-}
-
 }  // namespace
 
 std::shared_ptr<PveGameServer> PveGameServer::Create(
@@ -87,7 +57,6 @@ PveGameServer::PveGameServer(std::shared_ptr<TaskList> async_task_list,
       player_message_cb_(nullptr),
       net_event_organizer_(::kMaxPlayers),
       is_running_(false),
-      sim_clock_(0.f),
       next_net_sync_id_(1u),
       game_thread_([this]() {
         Logger::log(kLogLabel)
@@ -126,8 +95,13 @@ void PveGameServer::initialize() {
 
   // TODO (sessamekesh): Get the list of actual players that are expected from
   //  API or initialization or whatever. This will do for now.
-  uint64_t str_hash = (uint64_t)std::hash<std::string>{}("test-token");
-  expected_players_.push_back(PlayerId{str_hash});
+  pb::GameServerPlayerDescription player_desc{};
+  player_desc.set_display_name("sessamekesh");
+  player_desc.set_tagline("I am a test player");
+  player_desc.set_player_id((uint64_t)std::hash<std::string>{}("test-token"));
+  player_desc.set_player_token("test-token");
+  ecs::add_expected_player(world_, player_desc);
+  auto& expected_players = world_.ctx<ecs::GExpectedPlayers>().entityMap;
 
   combiner->add(player_cb_set_, async_task_list_);
 
@@ -162,6 +136,12 @@ void PveGameServer::initialize() {
 
         Logger::log(kLogLabel) << "Waiting for players...";
         server_stage_ = ServerStage::WaitingForPlayers;
+
+        // Bootstrap the game server world state...
+        ecs::bootstrap_game_engine_callbacks(world_, player_message_cb_);
+        ecs::bootstrap_server_config(world_, /** max_actions_per_message= */ 32,
+                                     /** max_queued_client_messages= */ 16,
+                                     /** max_queued_server_actions= */ 256);
       },
       main_thread_task_list_);
 }
@@ -216,16 +196,13 @@ void PveGameServer::set_netstate(
     case ServerStage::WaitingForPlayers:
     case ServerStage::Running:
     case ServerStage::GameOver:
-      if (connection_state == NetServer::PlayerConnectionState::Disconnected) {
-        // Remove the player
-        std::lock_guard<std::mutex> l(m_unhandled_disconnects_);
-        unhandled_disconnects_.push_back(player_id);
-      }
       net_event_organizer_.set_net_server_state(player_id, connection_state);
       return;
   }
 }
 
+// TODO (sessamekesh): This should use direct tokens since player tokens AND
+//  player IDs are known by the server at startup!
 std::shared_ptr<Promise<bool>> PveGameServer::try_connect_player(
     const PlayerId& pid) {
   switch (server_stage_) {
@@ -240,14 +217,17 @@ std::shared_ptr<Promise<bool>> PveGameServer::try_connect_player(
       break;
   }
 
+  if (ecs::get_player_entity(world_, pid).is_empty()) {
+    Logger::log(kLogLabel)
+        << "Attempted to have a world join by player with bad ID " << pid.Id;
+    return Promise<bool>::immediate(false);
+  }
+
   if (!net_event_organizer_.add_player(pid)) {
     return Promise<bool>::immediate(false);
   }
 
-  std::lock_guard<std::mutex> l(m_unhandled_connects_);
-  auto promise = Promise<bool>::create();
-  unhandled_connects_.push_back({pid, promise});
-  return promise;
+  return Promise<bool>::immediate(true);
 }
 
 std::shared_ptr<Promise<EmptyPromiseRsl>> PveGameServer::shutdown() {
@@ -255,45 +235,37 @@ std::shared_ptr<Promise<EmptyPromiseRsl>> PveGameServer::shutdown() {
 }
 
 void PveGameServer::update(float dt) {
+  ecs::tick(world_, dt);
+
   switch (server_stage_) {
     case ServerStage::Initializing:
     case ServerStage::Terminated:
       return;
 
     case ServerStage::WaitingForPlayers:
-      update_waiting_for_players(dt);
+      update_waiting_for_players();
       break;
 
     case ServerStage::Running:
-      update_running(dt);
+      update_running();
       break;
 
     case ServerStage::GameOver:
-      update_game_over(dt);
+      update_game_over();
       break;
   }
 
-  if (player_message_cb_ != nullptr) {
-    send_client_messages_system_.update(world_, player_message_cb_);
+  auto& players = world_.ctx<ecs::GExpectedPlayers>();
+  for (const auto& entity_pair : players.entityMap) {
+    ecs::net::flush_messages(world_, entity_pair.second);
   }
 }
 
-void PveGameServer::update_waiting_for_players(float dt) {
-  sim_clock_ += dt;
-
-  auto new_players = get_new_players();
-  for (const auto& player : new_players) {
-    Logger::log(kLogLabel) << "Player " << player.first.Id << " joined";
-  }
-
-  for (const auto& player : get_disconnected_players()) {
-    Logger::log(kLogLabel) << "Player " << player.first.Id
-                           << " disconnected in waiting phase";
-  }
-
-  for (const auto& player : connected_player_entities_) {
-    PlayerId pid = std::get<PlayerId>(player);
-    entt::entity e = std::get<entt::entity>(player);
+void PveGameServer::update_waiting_for_players() {
+  const auto& entity_map = world_.ctx<ecs::GExpectedPlayers>().entityMap;
+  for (const auto& player_pair : entity_map) {
+    PlayerId pid = player_pair.first;
+    entt::entity e = player_pair.second;
     if (!world_.valid(e)) {
       continue;
     }
@@ -303,59 +275,45 @@ void PveGameServer::update_waiting_for_players(float dt) {
 
   // Run netsync code...
   net_state_update_system_.update(world_, net_event_organizer_);
-  queue_client_messages_system_.update(world_, sim_clock_);
+  queue_client_messages_system_.update(world_, ecs::sim_time(world_));
 
   bool all_ready = true;
-  for (const auto& expected_player : expected_players_) {
-    all_ready = all_ready && net_event_organizer_.ready_state(expected_player);
+  for (const auto& player_pair :
+       world_.ctx<ecs::GExpectedPlayers>().entityMap) {
+    all_ready =
+        all_ready && net_event_organizer_.ready_state(player_pair.first);
   }
 
   if (all_ready) {
+    Logger::log(kLogLabel) << "All players ready - starting the simulation!";
     create_initial_game_scene();
     server_stage_ = ServerStage::Running;
     return;
   }
 }
 
-void PveGameServer::update_running(float dt) {
-  sim_clock_ += dt;
-
-  auto new_players = get_new_players();
-  for (const auto& player : new_players) {
-    Logger::log(kLogLabel) << "Player  " << player.first.Id << " re-joined";
-    // TODO (sessamekesh): re-attach this player to an existing entity?
-  }
-
-  for (const auto& player : get_disconnected_players()) {
-    Logger::log(kLogLabel) << "Player " << player.first.Id
-                           << " disconnected while simulation was running";
-    // TODO (sessamekesh): Trigger disconnect behavior for this player
-  }
-
+void PveGameServer::update_running() {
   // Handle player input events...
-  for (auto& player : connected_player_entities_) {
-    PlayerId pid = std::get<PlayerId>(player);
-    entt::entity e = std::get<entt::entity>(player);
+  for (const auto& player_pair :
+       world_.ctx<ecs::GExpectedPlayers>().entityMap) {
+    PlayerId pid = player_pair.first;
+    entt::entity e = player_pair.second;
     if (!world_.valid(e)) {
       continue;
     }
 
     maybe_queue_pong(pid, e);
 
-    auto movement_evt =
-        net_event_organizer_.get_move_command(std::get<PlayerId>(player));
+    auto movement_evt = net_event_organizer_.get_move_command(pid);
     if (movement_evt.has_value()) {
       component::PlayerNavRequestComponent::attach_on(world_, e,
                                                       movement_evt.get());
     }
 
-    auto last_snapshot_recvd =
-        net_event_organizer_.last_acked_snapshot_id(std::get<PlayerId>(player));
+    auto last_snapshot_recvd = net_event_organizer_.last_acked_snapshot_id(pid);
     if (last_snapshot_recvd.has_value()) {
-      auto* net_state = world_.try_get<PlayerNetStateComponent>(e);
-      auto* conn_state = world_.try_get<PlayerConnectStateComponent>(e);
-      if (conn_state != nullptr && net_state != nullptr &&
-          conn_state->connectState == PlayerConnectState::Healthy &&
+      auto* net_state = world_.try_get<ecs::PlayerNetStateComponent>(e);
+      if (net_state != nullptr &&
           net_state->lastAckedSnapshotId < last_snapshot_recvd.get()) {
         net_state->lastAckedSnapshotId = last_snapshot_recvd.get();
       }
@@ -365,11 +323,13 @@ void PveGameServer::update_running(float dt) {
   // Handle server logic (including sending out messages to clients!)
   net_state_update_system_.update(world_, net_event_organizer_);
   player_nav_system_.update(world_, navmesh_.get());
-  locomotion_system_.apply_standard_locomotion(world_, dt);
-  queue_client_messages_system_.update(world_, sim_clock_);
+  locomotion_system_.apply_standard_locomotion(world_, ecs::frame_time(world_));
+  queue_client_messages_system_.update(world_, ecs::sim_time(world_));
 }
 
-void PveGameServer::update_game_over(float dt) { sim_clock_ += dt; }
+void PveGameServer::update_game_over() {
+  // ha
+}
 
 void PveGameServer::maybe_queue_pong(const PlayerId& pid, entt::entity e) {
   auto ping_record_opt = net_event_organizer_.ping_record(pid);
@@ -382,73 +342,20 @@ void PveGameServer::maybe_queue_pong(const PlayerId& pid, entt::entity e) {
 
   pb::GameServerSingleMessage msg;
   auto* pong_msg = msg.mutable_pong();
-  pong_msg->set_sim_time(sim_clock_);
+  pong_msg->set_sim_time(ecs::sim_time(world_));
   if (ping_record.pingId.has_value()) {
     pong_msg->set_ping_id(ping_record.pingId.get());
   }
-  ::attach_message(world_, e, std::move(msg));
-}
-
-std::vector<std::pair<PlayerId, entt::entity>>
-PveGameServer::get_new_players() {
-  // Handle new player joins...
-  std::vector<std::pair<PlayerId, entt::entity>> new_players;
-  {
-    std::lock_guard<std::mutex> l(m_unhandled_connects_);
-    for (auto& unhandled_connect : unhandled_connects_) {
-      if (connected_player_entities_.find_l(unhandled_connect.first) ==
-          connected_player_entities_.end()) {
-        auto e = create_player_entity(unhandled_connect.first);
-
-        connected_player_entities_.insert(unhandled_connect.first, e);
-        unhandled_connect.second->resolve(true);
-        new_players.push_back({unhandled_connect.first, e});
-      }
-    }
-    unhandled_connects_.clear();
-  }
-
-  return new_players;
-}
-
-std::vector<std::pair<PlayerId, entt::entity>>
-PveGameServer::get_disconnected_players() {
-  std::vector<std::pair<PlayerId, entt::entity>> disconnected_players;
-  {
-    std::lock_guard<std::mutex> l(m_unhandled_disconnects_);
-    for (auto& unhandled_disconnect : unhandled_disconnects_) {
-      auto it = connected_player_entities_.find_l(unhandled_disconnect);
-      if (it == connected_player_entities_.end()) {
-        Logger::err(kLogLabel)
-            << "Player " << unhandled_disconnect.Id
-            << " was disconnected, but without an associated game entity";
-        continue;
-      }
-      disconnected_players.push_back(std::make_pair(unhandled_disconnect, *it));
-    }
-    unhandled_disconnects_.clear();
-  }
-  return disconnected_players;
-}
-
-entt::entity PveGameServer::create_player_entity(PlayerId player_id) {
-  auto e = world_.create();
-  ::attach_player_connect_state(world_, e, player_id);
-
-  return e;
+  ecs::net::queue_single_message(world_, e, std::move(msg));
 }
 
 void PveGameServer::create_initial_game_scene() {
+  // TODO (sessamekesh): Move this to a utility function outside of the game
+  //  server class
   float angle = 0.f;
-  for (auto& player : expected_players_) {
-    auto e_id = connected_player_entities_.find_l(player);
-    if (e_id == connected_player_entities_.end()) {
-      Logger::err(kLogLabel)
-          << "create_initial_game_state could not find player " << player.Id;
-      continue;
-    }
-
-    entt::entity e = *e_id;
+  for (const auto& player_pair :
+       world_.ctx<ecs::GExpectedPlayers>().entityMap) {
+    entt::entity e = player_pair.second;
     world_.emplace<component::NetSyncId>(e, next_net_sync_id_++);
     world_.emplace<component::BasicPlayerComponent>(e);
     locomotion_system_.attach_basic_locomotion_components(
