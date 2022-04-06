@@ -4,6 +4,8 @@
 #include <igcore/ivec.h>
 #include <igcore/log.h>
 
+#include <cassert>
+
 namespace indigo::core {
 
 /**
@@ -49,7 +51,10 @@ class Vector : public IVec<T> {
   }
 
   T& operator[](size_t i) override { return data_[i]; }
-  const T& operator[](size_t i) const override { return data_[i]; }
+  const T& operator[](size_t i) const override {
+    assert(i < size_);
+    return data_[i];
+  }
 
   T& last() { return data_[this->size_ - 1]; }
 

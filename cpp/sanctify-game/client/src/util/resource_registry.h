@@ -34,6 +34,9 @@ class ReadonlyResourceRegistry {
     Key& operator=(Key&&) = default;
     ~Key() = default;
 
+    // Careful using this directly
+    uint32_t get_raw_key() const { return key_; }
+
     bool operator==(const Key& o) { return ~key_ && (key_ == o.key_); }
 
     friend class ReadonlyResourceRegistry;
@@ -45,6 +48,11 @@ class ReadonlyResourceRegistry {
   };
 
   ReadonlyResourceRegistry() : next_key_(1ull) {}
+  ReadonlyResourceRegistry(const ReadonlyResourceRegistry<T>&) = delete;
+  ReadonlyResourceRegistry& operator=(const ReadonlyResourceRegistry<T>&) =
+      delete;
+  ReadonlyResourceRegistry(ReadonlyResourceRegistry<T>&&) = default;
+  ReadonlyResourceRegistry& operator=(ReadonlyResourceRegistry<T>&&) = default;
 
   Key reserve_resource() {
     uint32_t next_key = next_key_++;

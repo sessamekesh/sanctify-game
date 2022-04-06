@@ -56,6 +56,15 @@ class Maybe {
     is_initialized_ = true;
   }
 
+  Maybe& operator=(T&& o) {
+    static_assert(
+        std::is_move_assignable<T>::value,
+        "Cannot create move assignment operator for a non-movable Maybe<T>");
+    ::new (&value_) T(std::move(o));
+    is_initialized_ = true;
+    return *this;
+  }
+
   Maybe(const Maybe<T>& o) : dummy_(0x00), is_initialized_(false) {
     static_assert(std::is_copy_constructible<T>::value,
                   "Cannot create copy constructor for a non-copyable Maybe<T>");
@@ -131,6 +140,13 @@ class Maybe {
     }
 
     return fn(value_);
+  }
+
+  /** Invoke a callback with the held value if and only if a value is present */
+  void if_present(std::function<void(const T&)> cb) const {
+    if (is_initialized_) {
+      cb(value_);
+    }
   }
 
   void map(std::function<void(T)> fn) {

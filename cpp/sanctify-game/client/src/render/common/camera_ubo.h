@@ -16,6 +16,13 @@ struct CameraCommonFsBufferData {
   glm::vec3 cameraPos;
 };
 
+struct CommonLightingParamsData {
+  glm::vec3 lightDirection;
+  float ambientCoefficient;
+  glm::vec3 lightColor;
+  float specularPower;
+};
+
 typedef indigo::iggpu::UboBase<CameraCommonVsBufferData> CameraCommonVsUbo;
 typedef indigo::iggpu::UboBase<CameraCommonFsBufferData> CameraCommonFsUbo;
 

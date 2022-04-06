@@ -25,12 +25,9 @@ class SimTimeSyncSystem {
   };
 
  public:
-  void loading_update(entt::registry& world, entt::entity client_config_entity,
-                      float dt);
-  void handle_pong(entt::registry& world, entt::entity client_config_entity,
-                   const pb::ServerPong& msg);
-  bool is_done_loading(entt::registry& world,
-                       entt::entity client_config_entity);
+  void loading_update(entt::registry& world, float dt);
+  void handle_pong(entt::registry& world, const pb::ServerPong& msg);
+  bool is_done_loading(entt::registry& world);
 };
 
 }  // namespace sanctify

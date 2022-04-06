@@ -124,7 +124,14 @@ void WsClientNative::send_raw_msg(std::string raw_msg) {
 
 void WsClientNative::destroy_connection() {
   if (ws_.has_value()) {
-    client_.close(ws_.get().connection, websocketpp::close::status::normal, "");
+    std::error_code ec;
+    ec.clear();
+    client_.close(ws_.get().connection, websocketpp::close::status::normal, "",
+                  ec);
+    if (ec) {
+      Logger::err(kLogLabel)
+          << "Failed to close WS connection: " << ec.message();
+    }
   }
   ws_ = empty_maybe{};
   is_running_ = false;

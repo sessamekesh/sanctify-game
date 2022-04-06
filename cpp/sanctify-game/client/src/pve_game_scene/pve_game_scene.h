@@ -105,10 +105,6 @@ class PveGameScene : public ISceneBase,
 
   // Simulation internals
   entt::registry world_;
-  entt::entity client_state_entity_;
-
-  // Non-ECS logical resources (navmeshes, spatial partitions, etc)
-  indigo::core::Maybe<indigo::nav::DetourNavmesh> arena_navmesh_;
 
   // Targets
   indigo::iggpu::Texture depth_texture_;

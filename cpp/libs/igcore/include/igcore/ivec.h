@@ -110,6 +110,12 @@ class IVec {
     operator[](size_ - 1) = std::move(data);
   }
 
+  /** Get the last element in the group */
+  T& last() { return operator[](size_ - 1); }
+
+  /** Get the last element in the group */
+  const T& last() const { return operator[](size_ - 1); }
+
   /**
    * Append the contents of another vector onto this one. Elements are copied by
    * value.

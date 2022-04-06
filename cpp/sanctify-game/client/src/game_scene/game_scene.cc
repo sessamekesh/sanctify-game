@@ -277,10 +277,12 @@ void GameScene::render() {
 
   terrain_pipeline::RenderUtil(device, static_geo_pass, terrain_shit_.Pipeline)
       .set_frame_inputs(terrain_shit_.FrameInputs)
-      .set_material_inputs(terrain_shit_.MaterialInputs)
       .set_scene_inputs(terrain_shit_.SceneInputs)
+
+      .set_material_inputs(terrain_shit_.MaterialInputs)
       .set_instances(terrain_shit_.IdentityBuffer.InstanceBuffer,
                      terrain_shit_.IdentityBuffer.NumInstances)
+
       .set_geometry(terrain_shit_.BaseGeo)
       .draw()
       .set_geometry(terrain_shit_.DecorationGeo)

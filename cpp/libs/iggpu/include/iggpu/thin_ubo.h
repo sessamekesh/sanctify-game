@@ -33,6 +33,19 @@ class ThinUbo {
   const wgpu::Buffer& buffer() const { return buffer_; }
 
   template <typename T>
+  void update_raw(const wgpu::Device& device, const T& data) {
+    if (sizeof(T) == 0) return;
+
+    if (sizeof(T) > size_) {
+      indigo::core::Logger::err("ThinUbo")
+          << "Cannot update ThinUbo with data exceeding original size";
+      return;
+    }
+
+    device.GetQueue().WriteBuffer(buffer_, 0, &data, sizeof(T));
+  }
+
+  template <typename T>
   void update(const wgpu::Device& device, const core::PodVector<T>& data) {
     if (data.size() == 0) return;
 

@@ -18,14 +18,13 @@ SimTimeSyncSystem::LoadTimeDeltaComponent::LoadTimeDeltaComponent(
       nextPingId(0xFF0000DD),
       hasPerformedReconcile(false) {}
 
-void SimTimeSyncSystem::loading_update(entt::registry& world, entt::entity e,
-                                       float dt) {
-  auto& client_config = world.get<ClientConfigComponent>(e);
+void SimTimeSyncSystem::loading_update(entt::registry& world, float dt) {
+  auto& client_config = world.ctx<ClientConfigComponent>();
 
-  auto& ltd_component = world.get_or_emplace<LoadTimeDeltaComponent>(
-      e, client_config.simClockSyncTime);
+  auto& ltd_component =
+      world.ctx_or_set<LoadTimeDeltaComponent>(client_config.simClockSyncTime);
 
-  auto sim_time = ecs::sim_clock_time(world, e);
+  auto sim_time = ecs::sim_clock_time(world);
 
   if (ltd_component.loadTimeLeft <= 0.f &&
       ltd_component.timeDeltas.size() > 10) {
@@ -39,7 +38,7 @@ void SimTimeSyncSystem::loading_update(entt::registry& world, entt::entity e,
 
     Logger::log(kLogLabel) << "Adjusting server clock by " << adjust_time;
 
-    ecs::sim_clock_time(world, e) += adjust_time;
+    ecs::sim_clock_time(world) += adjust_time;
     ltd_component.timeDeltas = PodVector<float>(1);
     ltd_component.hasPerformedReconcile = true;
     return;
@@ -57,16 +56,16 @@ void SimTimeSyncSystem::loading_update(entt::registry& world, entt::entity e,
     ping->set_local_time(sim_time);
     ping->set_ping_id(ltd_component.nextPingId++);
     ltd_component.expectedPingIds.push_back(ping->ping_id());
-    ecs::queue_client_message(world, e, msg);
+    ecs::queue_client_message(world, msg);
   }
 }
 
-void SimTimeSyncSystem::handle_pong(entt::registry& world, entt::entity e,
+void SimTimeSyncSystem::handle_pong(entt::registry& world,
                                     const pb::ServerPong& msg) {
-  auto& client_config = world.get<ClientConfigComponent>(e);
-  auto& ltd_component = world.get_or_emplace<LoadTimeDeltaComponent>(
-      e, client_config.simClockSyncTime);
-  float sim_time = ecs::sim_clock_time(world, e);
+  auto& client_config = world.ctx<ClientConfigComponent>();
+  auto& ltd_component =
+      world.ctx_or_set<LoadTimeDeltaComponent>(client_config.simClockSyncTime);
+  float sim_time = ecs::sim_clock_time(world);
 
   if (ltd_component.expectedPingIds.contains(msg.ping_id())) {
     ltd_component.expectedPingIds.erase(msg.ping_id());
@@ -75,11 +74,11 @@ void SimTimeSyncSystem::handle_pong(entt::registry& world, entt::entity e,
   }
 }
 
-bool SimTimeSyncSystem::is_done_loading(entt::registry& world, entt::entity e) {
-  auto& client_config = world.get<ClientConfigComponent>(e);
+bool SimTimeSyncSystem::is_done_loading(entt::registry& world) {
+  auto& client_config = world.ctx<ClientConfigComponent>();
 
-  auto& ltd_component = world.get_or_emplace<LoadTimeDeltaComponent>(
-      e, client_config.simClockSyncTime);
+  auto& ltd_component =
+      world.ctx_or_set<LoadTimeDeltaComponent>(client_config.simClockSyncTime);
 
   return ltd_component.hasPerformedReconcile;
 }

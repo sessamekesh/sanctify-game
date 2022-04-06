@@ -82,6 +82,8 @@ namespace indigo::core {
  * All of these functions are thread-safe.
  */
 
+struct EmptyPromiseRsl {};
+
 template <class ValT>
 class Promise : public std::enable_shared_from_this<Promise<ValT>> {
  public:
@@ -246,6 +248,20 @@ class Promise : public std::enable_shared_from_this<Promise<ValT>> {
     return tr;
   }
 
+  /**
+   * Utility method to return an empty promise after a promise has resolved.
+   * Useful for creating gating promises without having to pass around huge type
+   * signatures everywhere.
+   */
+  std::shared_ptr<Promise<EmptyPromiseRsl>> then_return_void(
+      std::shared_ptr<TaskList> task_list, std::string op_label = "") {
+    auto tr = Promise<EmptyPromiseRsl>::create(op_label);
+
+    on_success([tr](const ValT&) { tr->resolve({}); }, task_list, op_label);
+
+    return tr;
+  }
+
   /** Create a promise that is immediately resolved with the given value */
   static std::shared_ptr<Promise<ValT>> immediate(ValT&& v) {
     auto tr = create();
@@ -348,8 +364,6 @@ class Promise : public std::enable_shared_from_this<Promise<ValT>> {
 
   inline const static std::string kLogLabel = "Promise";
 };
-
-struct EmptyPromiseRsl {};
 
 }  // namespace indigo::core
 
