@@ -8,7 +8,11 @@
 #include <pve_game_scene/render/loading_screen.h>
 #include <pve_game_scene/render/terrain_resources.h>
 
+#include "ecs/camera.h";
+#include "io/glfw_io_system.h"
+#include "io/io_system.h"
 #include "pve_scene_load.h"
+#include "render/render_game.h"
 
 using namespace sanctify;
 using namespace indigo;
@@ -104,6 +108,9 @@ void PveGameScene::kick_off_preload() {
 }
 
 void PveGameScene::kick_off_load() {
+  // TODO (sessamekesh): attach camera input controller! Use ecs/camera.h
+  //  for the actual logic
+
   pve::load_pve_scene(world_, main_thread_task_list_, async_task_list_,
                       app_base_)
       ->on_success(
@@ -184,6 +191,9 @@ void PveGameScene::loading_update(float dt) {
     Logger::log(kLogLabel)
         << "Loading finished - transitioning stage to 'Running'";
     client_stage_ = ClientStage::Running;
+
+    pve::GlfwIoSystem::attach_glfw_io(world_, app_base_);
+
     running_update(dt);
     return;
   }
@@ -211,8 +221,11 @@ void PveGameScene::loading_render() {
 }
 
 void PveGameScene::running_update(float dt) {
-  handle_update_netsync(dt);
   // Running...
+  handle_update_netsync(dt);
+  pve::IoSystem::update_io(world_);
+  pve::CameraUtils::update_camera(
+      world_, dt, (float)app_base_->Width / (float)app_base_->Height);
 
   // Close out the frame with netcode stuff
   if (net_client_.has_value()) {
@@ -221,11 +234,26 @@ void PveGameScene::running_update(float dt) {
 }
 
 void PveGameScene::running_render() {
-  // Running...
+  // Set render targets...
+  pve::set_frame_render_targets(
+      world_, app_base_->SwapChain.GetCurrentTextureView(),
+      app_base_->preferred_swap_chain_texture_format(), depth_view_);
+
+  // Run the GameRenderSystem logic
+  pve::GameRenderSystem::render(
+      app_base_->Device, world_,
+      app_base_->preferred_swap_chain_texture_format());
+
+// Finally, present to the screen (done automatically in web targets)
+#ifndef __EMSCRIPTEN__
+  app_base_->SwapChain.Present();
+#endif
 }
 
 void PveGameScene::game_over_update(float dt) {
   // Game over...
+
+  // TODO (sessamekesh): don't forget to detach GlfwIoSystem here
 }
 
 void PveGameScene::game_over_render() {

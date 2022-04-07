@@ -37,8 +37,6 @@ class GameScene : public ISceneBase,
   struct TerrainShit {
     terrain_pipeline::TerrainPipelineBuilder PipelineBuilder;
     terrain_pipeline::TerrainPipeline Pipeline;
-    terrain_pipeline::FramePipelineInputs FrameInputs;
-    terrain_pipeline::ScenePipelineInputs SceneInputs;
     terrain_pipeline::MaterialPipelineInputs MaterialInputs;
     terrain_pipeline::TerrainGeo BaseGeo;
     terrain_pipeline::TerrainGeo DecorationGeo;
@@ -143,6 +141,7 @@ class GameScene : public ISceneBase,
   // Hey, here's some better, more fleshed-out systems...
   render::CameraCommonVsUbo camera_common_vs_ubo_;
   render::CameraCommonFsUbo camera_common_fs_ubo_;
+  render::CommonLightingUbo common_lighting_ubo_;
   solid_animated::SolidAnimatedPipelineBuilder solid_animated_pipeline_builder_;
   SolidAnimatedGeoRegistry solid_animated_geo_registry_;
   SolidAnimatedMaterialRegistry solid_animated_material_registry_;
@@ -162,6 +161,10 @@ class GameScene : public ISceneBase,
     solid_animated::ScenePipelineInputs sceneInputs;
     solid_animated::FramePipelineInputs frameInputs;
   } solid_animated_gpu_;
+  struct {
+    terrain_pipeline::ScenePipelineInputs sceneInputs;
+    terrain_pipeline::FramePipelineInputs frameInputs;
+  } terrain_gpu_;
 
   // Net client (communicate with server)
   // TODO (sessamekesh): The game should be able to run with or without a net

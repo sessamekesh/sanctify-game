@@ -157,17 +157,9 @@ sanctify::load_terrain_shit(
         terrain_pipeline::TerrainPipeline pipeline =
             pipeline_builder.create_pipeline(device, swap_chain_format);
 
-        terrain_pipeline::ScenePipelineInputs scene_inputs =
-            pipeline.create_scene_inputs(
-                device, glm::normalize(glm::vec3(1.f, -3.f, 1.f)),
-                glm::vec3(1.f, 1.f, 1.f), 0.3f, 50.f);
-
         terrain_pipeline::MaterialPipelineInputs material_inputs =
             pipeline.create_material_inputs(device,
                                             glm::vec3(0.828f, 0.828f, 0.85f));
-
-        terrain_pipeline::FramePipelineInputs frame_inputs =
-            pipeline.create_frame_inputs(device);
 
         terrain_pipeline::TerrainGeo base_geo(device, base_verts, base_indices);
         terrain_pipeline::TerrainGeo decoration_geo(device, decoration_verts,
@@ -183,7 +175,6 @@ sanctify::load_terrain_shit(
 
         return GameScene::TerrainShit{
             std::move(pipeline_builder), std::move(pipeline),
-            std::move(frame_inputs),     std::move(scene_inputs),
             std::move(material_inputs),  std::move(base_geo),
             std::move(decoration_geo),   std::move(mid_tower_geo),
             std::move(identity_buffer)};

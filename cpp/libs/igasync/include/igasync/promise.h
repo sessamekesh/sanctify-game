@@ -110,6 +110,14 @@ class Promise : public std::enable_shared_from_this<Promise<ValT>> {
     return std::shared_ptr<Promise<ValT>>(new Promise<ValT>(label));
   }
 
+  inline static std::shared_ptr<Promise<ValT>> schedule(
+      std::shared_ptr<indigo::core::TaskList> task_list,
+      std::function<ValT()> ctor, std::string label = "") {
+    auto p = Promise<ValT>::create(label);
+    task_list->add_task(Task::of([ctor, p]() { p->resolve(ctor()); }));
+    return p;
+  }
+
   Promise(const Promise<ValT>&) = delete;
   Promise(Promise<ValT>&&) = delete;
   Promise<ValT>& operator=(const Promise<ValT>&) = delete;

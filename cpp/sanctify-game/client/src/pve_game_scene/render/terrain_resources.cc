@@ -1,6 +1,7 @@
 #include <ecs/components/terrain_render_components.h>
 #include <ecs/utils/terrain_render_utils.h>
 #include <igasync/promise_combiner.h>
+#include <pve_game_scene/render/common_resources.h>
 #include <pve_game_scene/render/terrain_resources.h>
 
 using namespace sanctify;
@@ -36,7 +37,7 @@ pve::load_ctx_terrain_base_geo_resources(
         auto& res = world.ctx_or_set<ecs::CtxTerrainRenderableResources>();
         auto mat_key =
             res.materialRegistry.add_resource(pipeline.create_material_inputs(
-                device, glm::vec3{0.2f, 0.2f, 0.2f}));
+                device, glm::vec3{0.828f, 0.828f, 0.88f}));
 
         world.set<CtxTerrainBaseGeoResources>(arena_base_geo_key_rsl.get_left(),
                                               mat_key);
@@ -44,4 +45,16 @@ pve::load_ctx_terrain_base_geo_resources(
         return empty_maybe{};
       },
       main_thread_task_list);
+}
+
+void pve::create_terrain_common_bind_groups(
+    entt::registry& world, const wgpu::Device& device,
+    wgpu::TextureFormat swap_chain_format) {
+  auto& pipeline = ecs::get_terrain_pipeline(world, device, swap_chain_format);
+  auto& common_resources = world.ctx<pve::Common3dGpuBuffers>();
+
+  world.set<CtxTerrainCommonBindGroups>(
+      pipeline.create_scene_inputs(device, common_resources.commonLightingUbo),
+      pipeline.create_frame_inputs(device, common_resources.cameraCommonVsUbo,
+                                   common_resources.cameraCommonFsUbo));
 }

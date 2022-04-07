@@ -15,6 +15,8 @@ const char* kLogLabel = "PlayerNavSystem";
 void component::PlayerNavRequestComponent::attach_on(entt::registry& world,
                                                      entt::entity e,
                                                      glm::vec2 pos) {
+  // TODO (sessamekesh): pid util
+  Logger::log(kLogLabel) << "Attaching nav waypoint for player (pid)";
   world.emplace_or_replace<component::PlayerNavRequestComponent>(e, pos);
 }
 

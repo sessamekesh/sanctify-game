@@ -83,6 +83,7 @@ GameScene::GameScene(std::shared_ptr<AppBase> base, ArenaCamera arena_camera,
       terrain_shit_(std::move(terrain_shit)),
       camera_common_vs_ubo_(base_->Device),
       camera_common_fs_ubo_(base_->Device),
+      common_lighting_ubo_(base_->Device),
       solid_animated_pipeline_builder_(
           std::move(solid_animated_pipeline_builder)),
       game_geometry_key_set_(game_geometry_key_set),
@@ -217,23 +218,11 @@ void GameScene::update(float dt) {
 void GameScene::render() {
   const wgpu::Device& device = base_->Device;
 
-  terrain_shit_.FrameInputs.CameraFragmentParamsUbo.get_mutable().CameraPos =
-      arena_camera_.position();
-  terrain_shit_.FrameInputs.CameraFragmentParamsUbo.sync(device);
-
   debug_geo_shit_.frameInputs.cameraFragParams.get_mutable().cameraPos =
       arena_camera_.position();
   debug_geo_shit_.frameInputs.cameraFragParams.sync(device);
 
   // TODO (sessamekesh): Consolidate
-  {
-    auto& camera_params =
-        terrain_shit_.FrameInputs.CameraParamsUbo.get_mutable();
-    camera_params.MatView = arena_camera_.mat_view();
-    camera_params.MatProj = glm::perspective(
-        fovy_, (float)base_->Width / base_->Height, 0.1f, 4000.f);
-    terrain_shit_.FrameInputs.CameraParamsUbo.sync(device);
-  }
   {
     auto& camera_params =
         debug_geo_shit_.frameInputs.cameraVertParams.get_mutable();
@@ -276,9 +265,8 @@ void GameScene::render() {
                         base_->preferred_swap_chain_texture_format());
 
   terrain_pipeline::RenderUtil(device, static_geo_pass, terrain_shit_.Pipeline)
-      .set_frame_inputs(terrain_shit_.FrameInputs)
-      .set_scene_inputs(terrain_shit_.SceneInputs)
-
+      .set_frame_inputs(terrain_gpu_.frameInputs)
+      .set_scene_inputs(terrain_gpu_.sceneInputs)
       .set_material_inputs(terrain_shit_.MaterialInputs)
       .set_instances(terrain_shit_.IdentityBuffer.InstanceBuffer,
                      terrain_shit_.IdentityBuffer.NumInstances)
@@ -342,6 +330,9 @@ void GameScene::setup_depth_texture(uint32_t width, uint32_t height) {
 void GameScene::setup_pipelines(wgpu::TextureFormat swap_chain_format) {
   const wgpu::Device& device = base_->Device;
 
+  //
+  // Solid animated
+  //
   solid_animated_gpu_.pipeline =
       solid_animated_pipeline_builder_.create_pipeline(device,
                                                        swap_chain_format);
@@ -361,6 +352,22 @@ void GameScene::setup_pipelines(wgpu::TextureFormat swap_chain_format) {
   ybot_materials_keys_.joint = solid_animated_material_registry_->add_resource(
       solid_animated_gpu_.pipeline.create_material_inputs(
           device, glm::vec3(0.1f, 0.1f, 0.2f)));
+
+  //
+  // Common
+  //
+  common_lighting_ubo_ = render::CommonLightingUbo(
+      device, render::CommonLightingParamsData{
+                  glm::normalize(glm::vec3(1.f, -3.f, 1.f)), 0.3f,
+                  glm::vec3(1.f, 1.f, 1.f), 50.f});
+
+  //
+  // Terrain
+  //
+  terrain_gpu_.sceneInputs =
+      terrain_shit_.Pipeline.create_scene_inputs(device, common_lighting_ubo_);
+  terrain_gpu_.frameInputs = terrain_shit_.Pipeline.create_frame_inputs(
+      device, camera_common_vs_ubo_, camera_common_fs_ubo_);
   // TODO (sessamekesh): Invalidate all materials that are stored in ECS!
 }
 

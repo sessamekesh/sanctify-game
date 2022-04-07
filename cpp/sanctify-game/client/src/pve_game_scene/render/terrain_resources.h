@@ -11,7 +11,6 @@ namespace sanctify::pve {
 //
 // Game specific arena stuff! Context state for all terrain renderables
 //
-
 struct CtxTerrainBaseGeoResources {
   ReadonlyResourceRegistry<terrain_pipeline::TerrainGeo>::Key pveArenaGeoKey;
   ReadonlyResourceRegistry<terrain_pipeline::MaterialPipelineInputs>::Key
@@ -30,6 +29,18 @@ load_ctx_terrain_base_geo_resources(
     wgpu::TextureFormat swap_chain_format,
     indigo::asset::IgpackLoader::ExtractDracoBufferPromiseT pve_arena_promise,
     std::shared_ptr<indigo::core::TaskList> main_thread_task_list);
+
+//
+// Frame/scene bind groups
+//
+struct CtxTerrainCommonBindGroups {
+  terrain_pipeline::ScenePipelineInputs sceneInputs;
+  terrain_pipeline::FramePipelineInputs frameInputs;
+};
+
+void create_terrain_common_bind_groups(entt::registry& world,
+                                       const wgpu::Device& device,
+                                       wgpu::TextureFormat swap_chain_format);
 
 }  // namespace sanctify::pve
 

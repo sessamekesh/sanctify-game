@@ -25,6 +25,7 @@ struct CommonLightingParamsData {
 
 typedef indigo::iggpu::UboBase<CameraCommonVsBufferData> CameraCommonVsUbo;
 typedef indigo::iggpu::UboBase<CameraCommonFsBufferData> CameraCommonFsUbo;
+typedef indigo::iggpu::UboBase<CommonLightingParamsData> CommonLightingUbo;
 
 }  // namespace sanctify::render
 

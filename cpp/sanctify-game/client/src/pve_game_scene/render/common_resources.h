@@ -13,11 +13,9 @@ namespace sanctify::pve {
  * Common GPU buffers that are used in all / almost all 3D presentation shaders
  */
 struct Common3dGpuBuffers {
-  indigo::iggpu::UboBase<render::CameraCommonVsBufferData>
-      CommonCameraVertParams;
-  indigo::iggpu::UboBase<render::CameraCommonFsBufferData>
-      CommonCameraFragParams;
-  indigo::iggpu::UboBase<render::CommonLightingParamsData> CommonLightingParams;
+  render::CameraCommonVsUbo cameraCommonVsUbo;
+  render::CameraCommonFsUbo cameraCommonFsUbo;
+  render::CommonLightingUbo commonLightingUbo;
 };
 
 /**
@@ -32,6 +30,8 @@ struct FinalRenderTargetBuffers {
   wgpu::TextureView depthStencilView;
 };
 
+void setup_common_3d_gpu_buffers(entt::registry& world,
+                                 const wgpu::Device& device);
 void set_frame_render_targets(entt::registry& world,
                               wgpu::TextureView color_target,
                               wgpu::TextureFormat color_target_format,

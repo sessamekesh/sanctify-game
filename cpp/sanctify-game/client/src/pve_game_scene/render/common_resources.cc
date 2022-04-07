@@ -1,6 +1,14 @@
 #include <pve_game_scene/render/common_resources.h>
 
 using namespace sanctify;
+using namespace indigo;
+
+void pve::setup_common_3d_gpu_buffers(entt::registry& world,
+                                      const wgpu::Device& device) {
+  world.set<Common3dGpuBuffers>(render::CameraCommonVsUbo(device),
+                                render::CameraCommonFsUbo(device),
+                                render::CommonLightingUbo(device));
+}
 
 void pve::set_frame_render_targets(entt::registry& world,
                                    wgpu::TextureView color_target,

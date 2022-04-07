@@ -4,6 +4,7 @@
 #include <igasset/proto/igasset.pb.h>
 #include <igcore/either.h>
 #include <iggpu/ubo_base.h>
+#include <render/common/camera_ubo.h>
 #include <render/terrain/terrain_geo.h>
 #include <webgpu/webgpu_cpp.h>
 
@@ -16,39 +17,18 @@ namespace sanctify::terrain_pipeline {
 // terrain code. This is all for very basic rendering.
 //
 
-struct CameraParamsUboData {
-  glm::mat4 MatView;
-  glm::mat4 MatProj;
-};
-
-struct LightingParamsUboData {
-  glm::vec3 LightDirection;
-  float AmbientCoefficient;
-  glm::vec3 LightColor;
-  float SpecularPower;
-};
-
 struct SolidColorParamsUboData {
   glm::vec3 ObjectColor;
-};
-
-struct CameraFragmentParamsUboData {
-  glm::vec3 CameraPos;
 };
 
 // Pipeline inputs that are expected to change per-frame (camera parameters)
 struct FramePipelineInputs {
   wgpu::BindGroup FrameBindGroup;
-
-  indigo::iggpu::UboBase<CameraParamsUboData> CameraParamsUbo;
-  indigo::iggpu::UboBase<CameraFragmentParamsUboData> CameraFragmentParamsUbo;
 };
 
 // Pipeline inputs that are expected to change per-scene (lighting params)
 struct ScenePipelineInputs {
   wgpu::BindGroup SceneBindGroup;
-
-  indigo::iggpu::UboBase<LightingParamsUboData> LightingParamsUbo;
 };
 
 // Pipeline inputs that are expected to change per-material (coloring params)
@@ -65,12 +45,13 @@ struct TerrainPipeline {
   wgpu::TextureFormat OutputFormat;
   wgpu::RenderPipeline Pipeline;
 
-  FramePipelineInputs create_frame_inputs(const wgpu::Device& device) const;
-  ScenePipelineInputs create_scene_inputs(const wgpu::Device& device,
-                                          glm::vec3 light_direction,
-                                          glm::vec3 light_color,
-                                          float ambient_coefficient,
-                                          float specular_power) const;
+  FramePipelineInputs create_frame_inputs(
+      const wgpu::Device& device,
+      const render::CameraCommonVsUbo& camera_common_vs_ubo,
+      const render::CameraCommonFsUbo& camera_common_fs_ubo) const;
+  ScenePipelineInputs create_scene_inputs(
+      const wgpu::Device& device,
+      const render::CommonLightingUbo& common_lighting_ubo) const;
   MaterialPipelineInputs create_material_inputs(const wgpu::Device& device,
                                                 glm::vec3 object_color) const;
 };
