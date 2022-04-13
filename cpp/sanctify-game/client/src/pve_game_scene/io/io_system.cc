@@ -10,6 +10,10 @@ using namespace pve;
 using namespace indigo;
 using namespace core;
 
+namespace {
+const char* kLogLabel = "IoSystem";
+}
+
 void IoSystem::update_io(entt::registry& world) {
   auto glfw_input_state = GlfwIoSystem::get_arena_camera_input_state(world);
   if (glfw_input_state.has_value()) {
@@ -20,6 +24,9 @@ void IoSystem::update_io(entt::registry& world) {
 
   auto nav_evt = GlfwIoSystem::get_map_nav_event(world);
   if (nav_evt.has_value()) {
+    Logger::log(kLogLabel) << "Creating nav event at location <"
+                           << nav_evt.get().mapLocation.x << ", "
+                           << nav_evt.get().mapLocation.y << ">";
     pb::GameClientSingleMessage msg{};
 
     pb::Vec2* travel_request =

@@ -49,6 +49,11 @@ void bootstrap_server_player(entt::registry& world, entt::entity e,
 
 const bool& is_ready(entt::registry& world, entt::entity e);
 
+class PlayerUtil {
+ public:
+  static PlayerId player_id(entt::registry& world, entt::entity e);
+};
+
 }  // namespace sanctify::ecs
 
 #endif

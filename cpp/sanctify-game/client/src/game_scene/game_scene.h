@@ -50,11 +50,8 @@ class GameScene : public ISceneBase,
   struct DebugGeoShit {
     debug_geo::DebugGeoPipelineBuilder pipelineBuilder;
     debug_geo::DebugGeoPipeline pipeline;
-    debug_geo::FramePipelineInputs frameInputs;
-    debug_geo::ScenePipelineInputs sceneInputs;
 
     debug_geo::DebugGeo cubeGeo;
-
     debug_geo::InstanceBuffer cubeInstanceBuffer;
   };
 
@@ -165,6 +162,10 @@ class GameScene : public ISceneBase,
     terrain_pipeline::ScenePipelineInputs sceneInputs;
     terrain_pipeline::FramePipelineInputs frameInputs;
   } terrain_gpu_;
+  struct {
+    debug_geo::ScenePipelineInputs sceneInputs;
+    debug_geo::FramePipelineInputs frameInputs;
+  } debug_gpu_;
 
   // Net client (communicate with server)
   // TODO (sessamekesh): The game should be able to run with or without a net

@@ -29,3 +29,12 @@ void ecs::bootstrap_server_player(
 const bool& ecs::is_ready(entt::registry& world, entt::entity e) {
   return world.get<ecs::PlayerConnectionState>(e).isReady;
 }
+
+PlayerId ecs::PlayerUtil::player_id(entt::registry& world, entt::entity e) {
+  auto* ctx = world.try_get<PlayerSystemAttributes>(e);
+  if (ctx == nullptr) {
+    return PlayerId{0ull};
+  }
+
+  return ctx->playerId;
+}

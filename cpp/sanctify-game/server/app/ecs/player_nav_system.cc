@@ -1,5 +1,7 @@
 #include <DetourNavMeshQuery.h>
 #include <app/ecs/player_nav_system.h>
+#include <app/pve_game_server/ecs/netstate_components.h>
+#include <app/pve_game_server/ecs/player_context_components.h>
 #include <igcore/log.h>
 #include <sanctify-game-common/gameplay/locomotion_components.h>
 #include <sanctify-game-common/gameplay/player_definition_components.h>
@@ -15,8 +17,6 @@ const char* kLogLabel = "PlayerNavSystem";
 void component::PlayerNavRequestComponent::attach_on(entt::registry& world,
                                                      entt::entity e,
                                                      glm::vec2 pos) {
-  // TODO (sessamekesh): pid util
-  Logger::log(kLogLabel) << "Attaching nav waypoint for player (pid)";
   world.emplace_or_replace<component::PlayerNavRequestComponent>(e, pos);
 }
 
@@ -96,13 +96,22 @@ void system::PlayerNavSystem::update(entt::registry& world,
       waypoints.push_back(glm::vec2(straight_path[i].x, straight_path[i].z));
     }
 
-    // TODO (sessamekesh): Utilities for adding player ID here
-    Logger::log(kLogLabel) << "Created new nav point for player (player ID)";
+    dtFreeNavMeshQuery(dt_query);
+
+    Logger::log(kLogLabel) << "Created new nav point for player "
+                           << ecs::PlayerUtil::player_id(world, e).Id
+                           << " - endpoint <" << waypoints.last().x << ", "
+                           << waypoints.last().y << ">, with "
+                           << waypoints.size() << " waypoints";
+
+    pb::GameServerSingleMessage msg{};
+    auto* pm = msg.mutable_player_movement()->mutable_destination();
+    pm->set_x(waypoints.last().x);
+    pm->set_y(waypoints.last().y);
+    ecs::net::queue_single_message(world, e, msg);
 
     world.emplace_or_replace<component::NavWaypointList>(e,
                                                          std::move(waypoints));
     world.remove<component::PlayerNavRequestComponent>(e);
-
-    dtFreeNavMeshQuery(dt_query);
   }
 }

@@ -3,6 +3,8 @@
 
 #include <igasset/vertex_formats.h>
 #include <igcore/pod_vector.h>
+#include <iggpu/instance_buffer_store.h>
+#include <util/resource_registry.h>
 #include <webgpu/webgpu_cpp.h>
 
 namespace sanctify::debug_geo {
@@ -13,11 +15,10 @@ struct DebugGeo {
   int32_t NumIndices;
   wgpu::IndexFormat IndexFormat;
 
-  DebugGeo(
-      const wgpu::Device& device,
-      const indigo::core::PodVector<indigo::asset::LegacyPositionNormalVertexData>&
-          vertices,
-      const indigo::core::PodVector<uint32_t> indices);
+  DebugGeo(const wgpu::Device& device,
+           const indigo::core::PodVector<
+               indigo::asset::LegacyPositionNormalVertexData>& vertices,
+           const indigo::core::PodVector<uint32_t> indices);
 
   static DebugGeo CreateDebugUnitCube(const wgpu::Device& device);
 };
@@ -38,6 +39,17 @@ struct InstanceBuffer {
 
   InstanceBuffer(const wgpu::Device& device);
 };
+
+struct InstanceKey {
+  ReadonlyResourceRegistry<debug_geo::DebugGeo>::Key geoKey;
+  int lifetime;
+
+  std::string get_key() const;
+  int get_lifetime() const;
+};
+
+typedef indigo::iggpu::InstanceBufferStore<InstanceKey, InstanceData>
+    DebugGeoInstanceBufferStore;
 
 }  // namespace sanctify::debug_geo
 

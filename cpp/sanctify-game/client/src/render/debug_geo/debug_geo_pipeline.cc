@@ -9,50 +9,39 @@ using namespace core;
 using namespace iggpu;
 
 FramePipelineInputs DebugGeoPipeline::create_frame_inputs(
-    const wgpu::Device& device) const {
+    const wgpu::Device& device,
+    const render::CameraCommonVsUbo& camera_common_vs_ubo,
+    const render::CameraCommonFsUbo& camera_common_fs_ubo) const {
   wgpu::BindGroupLayout per_frame_layout = pipeline.GetBindGroupLayout(0);
-
-  UboBase<CameraParamsUboData> vert_params_ubo(device);
-  UboBase<CameraFragmentParamsUboData> frag_params_ubo(device);
 
   Vector<wgpu::BindGroupEntry> bind_group_entries(2);
   bind_group_entries.push_back(::buffer_bind_group_entry(
-      0, vert_params_ubo.buffer(), vert_params_ubo.size()));
+      0, camera_common_vs_ubo.buffer(), camera_common_vs_ubo.size()));
   bind_group_entries.push_back(::buffer_bind_group_entry(
-      1, frag_params_ubo.buffer(), frag_params_ubo.size()));
+      1, camera_common_fs_ubo.buffer(), camera_common_fs_ubo.size()));
 
   auto bind_group_desc = ::bind_group_desc(bind_group_entries, per_frame_layout,
                                            "debug-geo-frame-inputs-bind-group");
 
   wgpu::BindGroup bind_group = device.CreateBindGroup(&bind_group_desc);
 
-  return FramePipelineInputs{bind_group, std::move(vert_params_ubo),
-                             std::move(frag_params_ubo)};
+  return FramePipelineInputs{bind_group};
 }
 
 ScenePipelineInputs DebugGeoPipeline::create_scene_inputs(
-    const wgpu::Device& device, glm::vec3 light_direction,
-    glm::vec3 light_color, float ambient_coefficient,
-    float specular_power) const {
+    const wgpu::Device& device,
+    const render::CommonLightingUbo& common_lighting_ubo) const {
   wgpu::BindGroupLayout per_scene_layout = pipeline.GetBindGroupLayout(1);
-
-  LightingParamsUboData lighting_params_data{};
-  lighting_params_data.AmbientCoefficient = ambient_coefficient;
-  lighting_params_data.LightDirection = light_direction;
-  lighting_params_data.SpecularPower = specular_power;
-  lighting_params_data.LightColor = light_color;
-  UboBase<LightingParamsUboData> lighting_params_ubo(device,
-                                                     lighting_params_data);
 
   core::Vector<wgpu::BindGroupEntry> bind_group_entries(1);
   bind_group_entries.push_back(::buffer_bind_group_entry(
-      0, lighting_params_ubo.buffer(), lighting_params_ubo.size()));
+      0, common_lighting_ubo.buffer(), common_lighting_ubo.size()));
   auto bind_group_desc = ::bind_group_desc(bind_group_entries, per_scene_layout,
                                            "debug-geo-scene-inputs");
 
   wgpu::BindGroup bind_group = device.CreateBindGroup(&bind_group_desc);
 
-  return ScenePipelineInputs{bind_group, std::move(lighting_params_ubo)};
+  return ScenePipelineInputs{bind_group};
 }
 
 Maybe<DebugGeoPipelineBuilder> DebugGeoPipelineBuilder::Create(
@@ -177,6 +166,13 @@ RenderUtil& RenderUtil::set_geometry(const DebugGeo& geo) {
 RenderUtil& RenderUtil::set_instances(const InstanceBuffer& instance_buffer) {
   pass_.SetVertexBuffer(1, instance_buffer.instanceBuffer);
   num_instances_ = instance_buffer.numInstances;
+  return *this;
+}
+
+RenderUtil& RenderUtil::set_instances(const wgpu::Buffer& buffer,
+                                      uint32_t num_instances) {
+  pass_.SetVertexBuffer(1, buffer);
+  num_instances_ = num_instances;
   return *this;
 }
 

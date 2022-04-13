@@ -1,4 +1,5 @@
 #include <game_scene/systems/player_move_indicator_render_system.h>
+#include <render/debug_geo/debug_geo.h>
 
 using namespace sanctify;
 

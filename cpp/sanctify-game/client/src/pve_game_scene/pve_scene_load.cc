@@ -2,6 +2,7 @@
 
 #include <ecs/components/common_render_components.h>
 #include <ecs/components/terrain_render_components.h>
+#include <ecs/utils/debug_geo_render_utils.h>
 #include <ecs/utils/terrain_render_utils.h>
 #include <igasset/igpack_loader.h>
 #include <igasync/promise_combiner.h>
@@ -9,6 +10,7 @@
 #include <pve_game_scene/ecs/utils.h>
 #include <pve_game_scene/io/glfw_io_system.h>
 #include <pve_game_scene/render/common_resources.h>
+#include <pve_game_scene/render/debug_geo_resources.h>
 #include <pve_game_scene/render/terrain_resources.h>
 
 using namespace sanctify;
@@ -57,6 +59,8 @@ std::shared_ptr<Promise<bool>> pve::load_pve_scene(
   //
   // Asset loaders...
   //
+  indigo::asset::IgpackLoader base_shaders_igpack_loader(
+      "resources/base-shader-sources.igpack", async_task_list);
   indigo::asset::IgpackLoader terrain_igpack_loader(
       "resources/pve-terrain-geo.igpack", async_task_list);
   indigo::asset::IgpackLoader terrain_shaders_loader(
@@ -71,6 +75,10 @@ std::shared_ptr<Promise<bool>> pve::load_pve_scene(
       "solidFragWgsl", async_task_list);
   auto terrain_base_geo_promise = terrain_igpack_loader.extract_draco_geo(
       "terrainBaseGeo", async_task_list);
+  auto debug_geo_vs_promise = base_shaders_igpack_loader.extract_wgsl_shader(
+      "debug3dVertWgsl", async_task_list);
+  auto debug_geo_fs_promise = base_shaders_igpack_loader.extract_wgsl_shader(
+      "debug3dFragWgsl", async_task_list);
 
   //
   // Run all the preliminary setup actions
@@ -93,6 +101,10 @@ std::shared_ptr<Promise<bool>> pve::load_pve_scene(
             terrain_base_geo_promise, main_thread_task_list);
       },
       async_task_list);
+  auto debug_geo_pipeline_promise =
+      ecs::DebugGeoRenderUtil::init_pipeline_builder(
+          world, app_base->Device, debug_geo_vs_promise, debug_geo_fs_promise,
+          main_thread_task_list);
 
   //
   // Synchronous work (setup sync resources). Do this on main thread promises to
@@ -113,19 +125,25 @@ std::shared_ptr<Promise<bool>> pve::load_pve_scene(
   // Assemble combined promise...
   //
   auto combiner = PromiseCombiner::Create();
+
   auto terrain_pipeline_key =
       combiner->add(ctx_pipeline_promise, async_task_list);
+  auto debug_geo_pipeline_key =
+      combiner->add(debug_geo_pipeline_promise, async_task_list);
   auto terrain_base_geo_key =
       combiner->add(terrain_base_geo_resources_promise, async_task_list);
   combiner->add(main_thread_work, main_thread_task_list);
 
   return combiner->combine()->then<bool>(
-      [terrain_pipeline_key, terrain_base_geo_key, &world,
+      [terrain_pipeline_key, terrain_base_geo_key, debug_geo_pipeline_key,
+       &world,
        app_base](const PromiseCombiner::PromiseCombinerResult& rsl) -> bool {
         bool has_error = false;
 
         ::load_check(rsl, terrain_pipeline_key, has_error, "terrain_pipeline");
         ::load_check(rsl, terrain_base_geo_key, has_error, "terrain_base_geo");
+        ::load_check(rsl, debug_geo_pipeline_key, has_error,
+                     "debug_geo_pipeline");
 
         // If an upstream dependency has failed entirely, don't even bother
         // trying to do any of the creation stuff.
@@ -136,6 +154,14 @@ std::shared_ptr<Promise<bool>> pve::load_pve_scene(
         pve::create_terrain_common_bind_groups(
             world, app_base->Device,
             app_base->preferred_swap_chain_texture_format());
+        ecs::DebugGeoRenderUtil::init_pipeline(
+            world, app_base->Device,
+            app_base->preferred_swap_chain_texture_format());
+        pve::DebugGeoResourceUtil::initialize_debug_geo_ctx(world,
+                                                            app_base->Device);
+        pve::DebugGeoResourceUtil::initialize_debug_geo_geo_resources(
+            world, app_base->Device);
+
         ::add_terrain_objects(world);
 
         // Success!

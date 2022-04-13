@@ -112,3 +112,9 @@ InstanceBuffer::InstanceBuffer(const wgpu::Device& device)
           device, sizeof(InstanceData) * 4, wgpu::BufferUsage::Vertex)),
       numInstances(0),
       capacity(4) {}
+
+std::string InstanceKey::get_key() const {
+  return std::to_string(geoKey.get_raw_key()) + ":" + std::to_string(lifetime);
+}
+
+int InstanceKey::get_lifetime() const { return lifetime; }

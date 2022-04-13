@@ -14,7 +14,7 @@ namespace sanctify::terrain_pipeline {
  * creating/destroying them.
  *
  * "get_instance_buffer" method is the secret sauce, but also call
- * "mark_Frame_and_cleanup_dead_buffers" each frame to release old memory
+ * "mark_frame_and_cleanup_dead_buffers" each frame to release old memory
  */
 class TerrainInstanceBufferStore {
  public:

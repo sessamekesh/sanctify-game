@@ -218,19 +218,6 @@ void GameScene::update(float dt) {
 void GameScene::render() {
   const wgpu::Device& device = base_->Device;
 
-  debug_geo_shit_.frameInputs.cameraFragParams.get_mutable().cameraPos =
-      arena_camera_.position();
-  debug_geo_shit_.frameInputs.cameraFragParams.sync(device);
-
-  // TODO (sessamekesh): Consolidate
-  {
-    auto& camera_params =
-        debug_geo_shit_.frameInputs.cameraVertParams.get_mutable();
-    camera_params.matView = arena_camera_.mat_view();
-    camera_params.matProj = glm::perspective(
-        fovy_, (float)base_->Width / base_->Height, 0.1f, 4000.f);
-    debug_geo_shit_.frameInputs.cameraVertParams.sync(device);
-  }
   // (this is the consolidated version that should be used for everybody)
   {
     auto& camera_vs_params = camera_common_vs_ubo_.get_mutable();
@@ -283,8 +270,8 @@ void GameScene::render() {
                                                        debug_cube_instances);
 
   debug_geo::RenderUtil(static_geo_pass, debug_geo_shit_.pipeline)
-      .set_frame_inputs(debug_geo_shit_.frameInputs)
-      .set_scene_inputs(debug_geo_shit_.sceneInputs)
+      .set_frame_inputs(debug_gpu_.frameInputs)
+      .set_scene_inputs(debug_gpu_.sceneInputs)
       .set_geometry(debug_geo_shit_.cubeGeo)
       .set_instances(debug_geo_shit_.cubeInstanceBuffer)
       .draw();
@@ -368,6 +355,12 @@ void GameScene::setup_pipelines(wgpu::TextureFormat swap_chain_format) {
       terrain_shit_.Pipeline.create_scene_inputs(device, common_lighting_ubo_);
   terrain_gpu_.frameInputs = terrain_shit_.Pipeline.create_frame_inputs(
       device, camera_common_vs_ubo_, camera_common_fs_ubo_);
+
+  debug_gpu_.sceneInputs = debug_geo_shit_.pipeline.create_scene_inputs(
+      device, common_lighting_ubo_);
+  debug_gpu_.frameInputs = debug_geo_shit_.pipeline.create_frame_inputs(
+      device, camera_common_vs_ubo_, camera_common_fs_ubo_);
+
   // TODO (sessamekesh): Invalidate all materials that are stored in ECS!
 }
 

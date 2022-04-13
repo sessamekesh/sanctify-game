@@ -4,6 +4,7 @@
 #include <igasset/proto/igasset.pb.h>
 #include <igcore/maybe.h>
 #include <iggpu/ubo_base.h>
+#include <render/common/camera_ubo.h>
 #include <render/debug_geo/debug_geo.h>
 #include <webgpu/webgpu_cpp.h>
 
@@ -11,45 +12,25 @@
 
 namespace sanctify::debug_geo {
 
-struct CameraParamsUboData {
-  glm::mat4 matView;
-  glm::mat4 matProj;
-};
-
-struct LightingParamsUboData {
-  glm::vec3 LightDirection;
-  float AmbientCoefficient;
-  glm::vec3 LightColor;
-  float SpecularPower;
-};
-
-struct CameraFragmentParamsUboData {
-  glm::vec3 cameraPos;
-};
-
 struct FramePipelineInputs {
   wgpu::BindGroup frameBindGroup;
-
-  indigo::iggpu::UboBase<CameraParamsUboData> cameraVertParams;
-  indigo::iggpu::UboBase<CameraFragmentParamsUboData> cameraFragParams;
 };
 
 struct ScenePipelineInputs {
   wgpu::BindGroup sceneBindGroup;
-
-  indigo::iggpu::UboBase<LightingParamsUboData> lightingParams;
 };
 
 struct DebugGeoPipeline {
   wgpu::TextureFormat outputFormat;
   wgpu::RenderPipeline pipeline;
 
-  FramePipelineInputs create_frame_inputs(const wgpu::Device& device) const;
-  ScenePipelineInputs create_scene_inputs(const wgpu::Device& device,
-                                          glm::vec3 light_direction,
-                                          glm::vec3 light_color,
-                                          float ambient_coefficient,
-                                          float specular_power) const;
+  FramePipelineInputs create_frame_inputs(
+      const wgpu::Device& device,
+      const render::CameraCommonVsUbo& camera_common_vs_ubo,
+      const render::CameraCommonFsUbo& camera_common_fs_ubo) const;
+  ScenePipelineInputs create_scene_inputs(
+      const wgpu::Device& device,
+      const render::CommonLightingUbo& common_lighting_ubo) const;
 };
 
 class DebugGeoPipelineBuilder {
@@ -86,6 +67,7 @@ class RenderUtil {
   RenderUtil& set_frame_inputs(const FramePipelineInputs& inputs);
   RenderUtil& set_geometry(const DebugGeo& geo);
   RenderUtil& set_instances(const InstanceBuffer& instances);
+  RenderUtil& set_instances(const wgpu::Buffer& buffer, uint32_t num_instances);
   RenderUtil& draw();
 
  private:

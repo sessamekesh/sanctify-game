@@ -6,6 +6,8 @@
 #include <render/terrain/terrain_pipeline.h>
 #include <util/resource_registry.h>
 
+#include <entt/entt.hpp>
+
 namespace sanctify::pve {
 
 //

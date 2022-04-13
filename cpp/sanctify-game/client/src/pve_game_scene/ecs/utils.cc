@@ -1,4 +1,5 @@
 #include <igcore/log.h>
+#include <pve_game_scene/ecs/movement_indicator_render_system.h>
 #include <pve_game_scene/ecs/netsync_components.h>
 #include <pve_game_scene/ecs/utils.h>
 
@@ -92,8 +93,10 @@ void ecs::cache_snapshot_full(entt::registry& world,
 
 void ecs::add_player_movement_indicator(entt::registry& world,
                                         const pb::PlayerMovement& msg) {
-  // TODO (sessamekesh): Add the new player movement indicator!
   const char* kLogLabel = "ecs::add_player_movement_indicator";
+
+  pve::MovementIndicatorRenderSystem::add_indicator(
+      world, glm::vec2(msg.destination().x(), msg.destination().y()));
 
   Logger::log(kLogLabel) << "Player movement registered at : "
                          << msg.destination().x() << ", "

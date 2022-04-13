@@ -306,6 +306,7 @@ void PveGameServer::update_running() {
 
     auto movement_evt = net_event_organizer_.get_move_command(pid);
     if (movement_evt.has_value()) {
+      Logger::log(kLogLabel) << "Attaching move command for player " << pid.Id;
       component::PlayerNavRequestComponent::attach_on(world_, e,
                                                       movement_evt.get());
     }

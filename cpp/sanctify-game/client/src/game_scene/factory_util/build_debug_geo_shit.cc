@@ -70,16 +70,9 @@ sanctify::load_debug_geo_shit(
         auto pipeline =
             pipeline_builder.create_pipeline(device, swap_chain_format);
 
-        // TODO (sessamekesh): Inject this as some sort of app configuration
-        auto scene_inputs = pipeline.create_scene_inputs(
-            device, glm::normalize(glm::vec3(1.f, -3.f, 1.f)),
-            glm::vec3(1.f, 1.f, 1.f), 0.5f, 50.f);
-        auto frame_inputs = pipeline.create_frame_inputs(device);
-
-        return GameScene::DebugGeoShit{
-            std::move(pipeline_builder), std::move(pipeline),
-            std::move(frame_inputs),     std::move(scene_inputs),
-            std::move(cube_geo),         std::move(cube_instances)};
+        return GameScene::DebugGeoShit{std::move(pipeline_builder),
+                                       std::move(pipeline), std::move(cube_geo),
+                                       std::move(cube_instances)};
       },
       main_thread_taks_list);
 }

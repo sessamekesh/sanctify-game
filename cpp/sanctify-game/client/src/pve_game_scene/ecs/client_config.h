@@ -19,6 +19,15 @@ struct ClientConfigComponent {
   float cameraDefaultRadius = 85.f;
   float cameraDefaultMovementSpeed = 0.8f;
   float cameraDefaultFovy = glm::radians(40.f);
+
+  /** Movement indicator render params */
+  struct {
+    float startScale = 1.f;
+    float endScale = 0.2f;
+    float lifetimeSeconds = 0.4f;
+    glm::vec3 startColor = glm::vec3(0.4f, 0.4f, 1.f);
+    glm::vec3 endColor = glm::vec3(0.f, 0.f, 0.6f);
+  } moveIndicatorRenderParams;
 };
 
 }  // namespace sanctify

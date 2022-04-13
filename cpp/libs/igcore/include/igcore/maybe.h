@@ -26,16 +26,19 @@ class Maybe {
   Maybe(empty_maybe&) : Maybe() {}
   Maybe(empty_maybe&&) : Maybe() {}
 
-  Maybe(Maybe<T>&& o) : dummy_(0x00), is_initialized_(false) {
+  Maybe(Maybe<T>&& o) noexcept : dummy_(0x00), is_initialized_(false) {
     static_assert(std::is_move_constructible<T>::value,
                   "Cannot create move constructor for a non-movable Maybe<T>");
     if (o.is_initialized_) {
       ::new (&value_) T(std::move(o.value_));
       is_initialized_ = true;
     }
+
+    o.dummy_ = 0x00;
+    o.is_initialized_ = false;
   }
 
-  Maybe& operator=(Maybe<T>&& o) {
+  Maybe& operator=(Maybe<T>&& o) noexcept {
     static_assert(std::is_move_constructible<T>::value,
                   "Cannot create move constructor for a non-movable Maybe<T>");
     if (o.is_initialized_) {
@@ -45,6 +48,9 @@ class Maybe {
       dummy_ = 0x00;
       is_initialized_ = false;
     }
+
+    o.dummy_ = 0x00;
+    o.is_initialized_ = false;
 
     return *this;
   }
@@ -62,6 +68,7 @@ class Maybe {
         "Cannot create move assignment operator for a non-movable Maybe<T>");
     ::new (&value_) T(std::move(o));
     is_initialized_ = true;
+
     return *this;
   }
 

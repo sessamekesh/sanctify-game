@@ -2,6 +2,7 @@
 #include <igasync/promise_combiner.h>
 #include <igcore/log.h>
 #include <pve_game_scene/ecs/client_config.h>
+#include <pve_game_scene/ecs/movement_indicator_render_system.h>
 #include <pve_game_scene/ecs/utils.h>
 #include <pve_game_scene/pve_game_scene.h>
 #include <pve_game_scene/render/common_resources.h>
@@ -226,6 +227,7 @@ void PveGameScene::running_update(float dt) {
   pve::IoSystem::update_io(world_);
   pve::CameraUtils::update_camera(
       world_, dt, (float)app_base_->Width / (float)app_base_->Height);
+  pve::MovementIndicatorRenderSystem::update(world_, dt);
 
   // Close out the frame with netcode stuff
   if (net_client_.has_value()) {

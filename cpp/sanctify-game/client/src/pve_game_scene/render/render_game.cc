@@ -1,8 +1,10 @@
 #include "render_game.h"
 
 #include <ecs/components/terrain_render_components.h>
+#include <ecs/utils/debug_geo_render_utils.h>
 #include <ecs/utils/terrain_render_utils.h>
 #include <pve_game_scene/render/common_resources.h>
+#include <pve_game_scene/render/debug_geo_resources.h>
 #include <pve_game_scene/render/terrain_resources.h>
 #include <pve_game_scene/render/update_common_buffers_system.h>
 #include <render/terrain/terrain_pipeline.h>
@@ -83,6 +85,19 @@ void GameRenderSystem::render(const wgpu::Device& device, entt::registry& world,
         .set_scene_inputs(bind_groups.sceneInputs);
 
     ecs::render_all_terrain_renderables(util, world, device);
+  }
+  // Debug geometry...
+  {
+    auto& pipeline = ecs::DebugGeoRenderUtil::get_pipeline(world);
+    auto& bind_groups = world.ctx<CtxDebugGeoBindGroups>();
+
+    debug_geo::RenderUtil util(main_pass, pipeline);
+    util.set_frame_inputs(bind_groups.frameInputs)
+        .set_scene_inputs(bind_groups.sceneInputs);
+
+    // TODO (sessamekesh): First attach bind groups!
+    ecs::DebugGeoRenderUtil::render_all_debug_geo_renderables(util, world,
+                                                              device);
   }
   // TODO (sessamekesh): Create
 
