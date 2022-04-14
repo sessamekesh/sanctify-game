@@ -19,6 +19,7 @@ set(IG_ENABLE_GRAPHICS_DEBUGGING "OFF" CACHE BOOL "Enable graphics debugging opt
 set(IG_ENABLE_LOGGING "ON" CACHE BOOL "Include logging statements in the build")
 set(IG_CHECK_SUBMODULES_ON_BUILD "OFF" CACHE BOOL "Check external submodules on build - off by default, but use with fresh builds")
 set(IG_BUILD_SERVER "ON" CACHE BOOL "Include the server build (worth disabling if you don't want to worry about a Boost dependency)")
+set(IG_ENABLE_ECS_VALIDATION "ON" CACHE BOOL "Include asserts that validate ECS concurrency safety (useful in debugging, but creates loud errors)")
 
 #
 # Global project settings
@@ -47,3 +48,4 @@ include(cmake/build_ig_asset_pack_plan.cmake)
 add_subdirectory(tools)
 include(cmake/export_build_tools.cmake)
 add_subdirectory(sanctify-game)
+add_subdirectory(sanctify)

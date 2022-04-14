@@ -135,7 +135,7 @@ class IVec {
    *                  false otherwise. Searching is much faster if this can be
    *                  assumed.
    */
-  bool contains(const T& val, bool is_sorted = false) {
+  bool contains(const T& val, bool is_sorted = false) const {
     if (is_sorted) {
       size_t l = 0;
       size_t r = size() - 1;
