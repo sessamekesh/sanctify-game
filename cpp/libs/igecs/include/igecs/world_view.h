@@ -42,6 +42,8 @@ class WorldView {
 
     static Decl Thin();
 
+    void merge_in_decl(const Decl& o);
+
     template <typename T>
     Decl& reads() {
 #ifdef IG_ENABLE_ECS_VALIDATION
@@ -118,6 +120,15 @@ class WorldView {
 
     WorldView create(entt::registry* registry);
 
+    const core::PodVector<CttiTypeId>& list_reads() const { return reads_; }
+    const core::PodVector<CttiTypeId>& list_writes() const { return writes_; }
+    const core::PodVector<CttiTypeId>& list_ctx_reads() const {
+      return ctx_reads_;
+    }
+    const core::PodVector<CttiTypeId>& list_ctx_writes() const {
+      return ctx_writes_;
+    }
+
    private:
     Decl(bool allow_all);
 
@@ -169,6 +180,28 @@ class WorldView {
 
  public:
   WorldView(entt::registry* registry, Decl decl);
+
+#ifdef IG_ECS_TEST_VALIDATIONS
+  template <typename T>
+  bool can_read() {
+    return decl_.can_read<T>();
+  }
+
+  template <typename T>
+  bool can_write() {
+    return decl_.can_write<T>();
+  }
+
+  template <typename T>
+  bool can_ctx_read() {
+    return decl_.can_ctx_read<T>();
+  }
+
+  template <typename T>
+  bool can_ctx_write() {
+    return decl_.can_ctx_write<T>();
+  }
+#endif
 
   template <typename T>
   T& mut_ctx() {

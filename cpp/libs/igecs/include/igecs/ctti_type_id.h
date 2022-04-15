@@ -1,6 +1,8 @@
 #ifndef LIBS_IGECS_SRC_CTTI_TYPE_ID_H
 #define LIBS_IGECS_SRC_CTTI_TYPE_ID_H
 
+#include <igcore/config.h>
+
 #include <atomic>
 #include <string>
 
@@ -39,10 +41,14 @@ struct CttiTypeId {
 
   template <typename T>
   static std::string name() {
+#ifdef IG_ENABLE_ECS_VALIDATION
 #ifdef _MSC_VER
     return trim_type_name_msvc(__FUNCSIG__);
 #else
     return trim_type_name_gcc(__PRETTY_FUNCTION__);
+#endif
+#else
+    return std::string("T-") + std::to_string(CttiTypeId::of<T>().id);
 #endif
   }
 

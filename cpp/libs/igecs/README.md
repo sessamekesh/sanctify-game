@@ -32,7 +32,7 @@ class MovementSystem {
 
 // ... later queried...
 auto d = MovementSystem::world_view_decl();
-if (d.writes<PositionComponent>()) {
+if (d.can_write<PositionComponent>()) {
   // Avoid scheduling this with other PositionComponent writers...
 }
 

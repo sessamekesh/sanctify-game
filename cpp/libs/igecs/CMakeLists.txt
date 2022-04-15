@@ -1,18 +1,22 @@
 set (HEADER_LIST
   "include/igecs/ctti_type_id.h"
+  "include/igecs/scheduler.h"
   "include/igecs/world_view.h")
 
 set (SRC_LIST
   "src/ctti_type_id.cc"
+  "src/scheduler.cc"
   "src/world_view.cc")
 
 set (TEST_SRC_LIST
   "test/ctti_type_id_test.cc"
+  "test/scheduler_test.cc"
   "test/world_view_test.cc")
 
 add_library(igecs STATIC ${HEADER_LIST} ${SRC_LIST})
 target_include_directories(igecs PUBLIC include)
 target_link_libraries(igecs PUBLIC igcore igasync EnTT)
+target_link_libraries(igecs PRIVATE dglib)
 
 if (EMSCRIPTEN)
   set_wasm_target_properties(TARGET_NAME igecs AS_LIB 1)

@@ -1,6 +1,10 @@
 #include <igasync/promise.h>
 
-/**
- * This is a stub file for Visual Studio intellisense - do not include in final
- * build
- */
+using namespace indigo;
+using namespace core;
+
+std::shared_ptr<Promise<EmptyPromiseRsl>> core::immediateEmptyPromise() {
+  auto tr = Promise<EmptyPromiseRsl>::create();
+  tr->resolve({});
+  return tr;
+}

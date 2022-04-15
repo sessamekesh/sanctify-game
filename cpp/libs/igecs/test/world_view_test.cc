@@ -113,6 +113,44 @@ TEST(IgECS_WorldView, IterateSucceedsAndTouchesEverything) {
   EXPECT_TRUE(has_2);
 }
 
+TEST(IgECS_WorldView, MergesInDecl) {
+  {
+    WorldView::Decl d;
+    d.reads<FooT>();
+    WorldView::Decl d2;
+    d2.reads<BarT>();
+    d.merge_in_decl(d2);
+    EXPECT_TRUE(d.can_read<BarT>());
+  }
+
+  {
+    WorldView::Decl d;
+    d.writes<FooT>();
+    WorldView::Decl d2;
+    d2.writes<BarT>();
+    d.merge_in_decl(d2);
+    EXPECT_TRUE(d.can_write<BarT>());
+  }
+
+  {
+    WorldView::Decl d;
+    d.ctx_reads<FooT>();
+    WorldView::Decl d2;
+    d2.ctx_reads<BarT>();
+    d.merge_in_decl(d2);
+    EXPECT_TRUE(d.can_ctx_read<BarT>());
+  }
+
+  {
+    WorldView::Decl d;
+    d.ctx_writes<FooT>();
+    WorldView::Decl d2;
+    d2.ctx_writes<BarT>();
+    d.merge_in_decl(d2);
+    EXPECT_TRUE(d.can_ctx_write<BarT>());
+  }
+}
+
 TEST(IgECS_WorldViewDeathTest, BadCtxReadFails) {
   entt::registry registry;
   registry.set<FooT>(1);

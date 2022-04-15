@@ -160,6 +160,10 @@ if (NOT EMSCRIPTEN)
   FetchContent_MakeAvailable(websocketpp)
 endif ()
 
+# Digraph library, used for ECS scheduling verification
+add_library(dglib INTERFACE)
+target_include_directories(dglib INTERFACE "digraph")
+
 # EnTT (Entity Component System library that powers core game logic)
 if (MSVC)
   set(ENTT_INCLUDE_NATVIS OFF CACHE BOOL "" FORCE)

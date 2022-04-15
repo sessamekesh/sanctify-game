@@ -373,6 +373,9 @@ class Promise : public std::enable_shared_from_this<Promise<ValT>> {
   inline const static std::string kLogLabel = "Promise";
 };
 
+/** Create an immediate empty promise */
+std::shared_ptr<Promise<EmptyPromiseRsl>> immediateEmptyPromise();
+
 }  // namespace indigo::core
 
 #endif

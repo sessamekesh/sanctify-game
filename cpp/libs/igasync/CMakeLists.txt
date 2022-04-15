@@ -6,15 +6,10 @@ set (HEADER_LIST
   "include/igasync/task_list.h")
 
 set (SRC_LIST
+  "src/promise.cc"
   "src/promise_combiner.cc"
   "src/promise_combiner_old.cc"
   "src/task_list.cc")
-
-set(VISUAL_STUDIO_EMPTY_SOURCES "src/promise.cc")
-
-if (MSVC)
-  list(APPEND SRC_LIST ${VISUAL_STUDIO_EMPTY_SOURCES})
-endif()
 
 if (IG_ENABLE_THREADS)
   list(APPEND HEADER_LIST "include/igasync/executor_thread.h")
