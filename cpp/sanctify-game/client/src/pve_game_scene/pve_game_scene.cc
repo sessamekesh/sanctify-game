@@ -9,7 +9,7 @@
 #include <pve_game_scene/render/loading_screen.h>
 #include <pve_game_scene/render/terrain_resources.h>
 
-#include "ecs/camera.h";
+#include "ecs/camera.h"
 #include "io/glfw_io_system.h"
 #include "io/io_system.h"
 #include "pve_scene_load.h"

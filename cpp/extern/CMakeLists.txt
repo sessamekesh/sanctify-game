@@ -14,22 +14,6 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git" AND IG_CHECK_SUBMODULES_ON_
   endif()
 endif()
 
-if (IG_BUILD_TESTS)
-  FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY "https://github.com/google/googletest"
-    GIT_TAG "6b74da4757a549563d7c37c8fae3e704662a043b"
-  )
-
-  # For Windows: Prevent overriding the parent project's compiler/linker settings
-  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-  FetchContent_MakeAvailable(googletest)
-
-  enable_testing()
-  include(CTest)
-  include(GoogleTest)
-endif ()
-
 # GLM
 FetchContent_Declare(
   glm
@@ -147,6 +131,8 @@ endif ()
 # WebRTC / WebSocket support (not used in Web builds - those use browser APIs)
 if (NOT EMSCRIPTEN)
   set(NO_MEDIA OFF CACHE BOOL "" FORCE)
+  set(TEST_APPS OFF CACHE BOOL "" FORCE)
+  set(NO_TESTS ON CACHE BOOL "" FORCE)
   add_subdirectory(libdatachannel)
 
   add_library(http-request INTERFACE)
@@ -187,7 +173,8 @@ target_include_directories(imgui PUBLIC imgui imgui/backends)
 target_link_libraries(imgui PUBLIC glfw dawncpp)
 
 # Native file dialog (useful in GUI tooling builds)
-if (NOT EMSCRIPTEN)
+# TODO (sessamekesh): Support linux as well
+if (WIN32)
   add_library(nativefiledialog
     "nativefiledialog/src/nfd_common.c"
     "nativefiledialog/src/nfd_win.cpp")
@@ -202,6 +189,7 @@ set(RECASTNAVIGATION_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(recastnavigation)
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(ozz_build_howtos OFF CACHE BOOL "" FORCE)
 set(ozz_build_samples OFF CACHE BOOL "" FORCE)
 set(ozz_build_tests OFF CACHE BOOL "" FORCE)
 set(ozz_build_fbx OFF CACHE BOOL "" FORCE)

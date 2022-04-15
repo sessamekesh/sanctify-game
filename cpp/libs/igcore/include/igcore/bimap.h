@@ -61,7 +61,7 @@ class Bimap {
     LT& operator*() const { return std::get<0>(m_->entries_[idx_]); }
     const LT& operator*() { return std::get<0>(m_->entries_[idx_]); }
 
-    LT* operator->() const { return &std::get<0>(m_->entries_[idx_]); }
+    const LT* operator->() const { return &std::get<0>(m_->entries_[idx_]); }
     literator_t& operator++() {
       idx_++;
       return *this;
@@ -104,7 +104,7 @@ class Bimap {
 
     RT& operator*() const { return std::get<1>(m_->entries_[idx_]); }
     const RT& operator*() { return std::get<1>(m_->entries_[idx_]); }
-    RT* operator->() const { return &std::get<1>(m_->entries_[idx_]); }
+    const RT* operator->() const { return &std::get<1>(m_->entries_[idx_]); }
     riterator_t& operator++() {
       idx_++;
       return *this;

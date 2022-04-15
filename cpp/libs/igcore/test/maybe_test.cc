@@ -12,6 +12,11 @@ struct NonCopyable {
   NonCopyable(int v) : Value(v) {}
   NonCopyable(const NonCopyable&) = delete;
   NonCopyable(NonCopyable&& o) noexcept : Value(o.Value) { o.Value = 0u; }
+
+  NonCopyable& operator=(int v) {
+    Value = v;
+    return *this;
+  }
 };
 
 Maybe<int> half_if_even(int n) {
@@ -82,7 +87,7 @@ TEST(Maybe, MapsEmptyToEmpty) {
 }
 
 TEST(Maybe, MoveMapsSuccessfully) {
-  Maybe<NonCopyable> original = 5;
+  Maybe<NonCopyable> original = NonCopyable{5};
   auto copy = original.map_move<NonCopyable>(
       [](NonCopyable&& c) { return NonCopyable(c.Value * 2); });
 

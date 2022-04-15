@@ -2,4 +2,4 @@
 
 #include <gtest/gtest.h>
 
-TEST(LocomotionSystem, fails) { ASSERT_FALSE(true); }
+// TODO (sessamekesh): Write tests

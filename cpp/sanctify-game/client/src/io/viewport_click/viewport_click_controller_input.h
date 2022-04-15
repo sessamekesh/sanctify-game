@@ -4,6 +4,7 @@
 #include <igcore/maybe.h>
 
 #include <glm/glm.hpp>
+#include <memory>
 #include <variant>
 
 namespace sanctify {

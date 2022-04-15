@@ -67,4 +67,5 @@ if (IG_BUILD_TESTS)
 
   set_property(TARGET igcore_test PROPERTY CXX_STANDARD 17)
   target_compile_features(igcore_test PUBLIC cxx_std_17)
+  set_target_properties(igcore_test PROPERTIES FOLDER tests)
 endif ()

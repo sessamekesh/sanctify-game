@@ -2,10 +2,13 @@
 
 _General Dependencies_
 * A C++ compiler
-* CMake
+* `cmake git make lsb-release`
 
 _Server builds_
-* Boost
+* `boost`
+
+_Client builds_
+* `xorg-dev libx11-xcb-dev`
 
 _WebAssembly builds_
 * Emscripten 3.0.1+
@@ -27,6 +30,31 @@ You can either...
 - `/sanctify-game/common`: Common code shared between the sanctify game server and client (main game logic)
 - `/sanctify-game/server`: Source code for sanctify game server executable
 - `/sanctify-game/client`: Source code for Sanctify game client library (including entry point for native executable and EMBINDs for web module)
+
+# Local verify notes
+```bash
+# Build image (only needs to be done once)
+docker build -f ./sanctify-clang.Dockerfile -t sanctify-clang .
+
+# Start the container (replacing K:/games/sanctify-game with your absolute git path)
+docker run -v K:/games/sanctify-game:/usr/src/sanctify-game sanctify-clang
+
+# Build and run DEBUG tests (useful for checking dev asserts)
+# (I usually do this by opening up a new CLI and attaching to the running Docker image)
+mkdir -p /usr/build/sanctify-game/dbg && cd /usr/build/sanctify-game/dbg
+cmake /usr/src/sanctify-game/cpp -DIG_BUILD_TESTS="on" -DIG_BUILD_SERVER="on" -DCMAKE_BUILD_TYPE="Debug" -DIG_ENABLE_THREADS="on" -DIG_CHECK_SUBMODULES_ON_BUILD="ON" -DIG_ENABLE_ECS_VALIDATION="ON" -DIG_TOOL_WRANGLE_PATH="./igtools.cmake"
+make igcore_test igecs-test
+./libs/igcore/igcore_test
+./libs/igecs/igecs-test
+# Or, alternatively: just make and ctest
+
+# Build and run PROD tests (useful for... checking prod builds)
+mkdir -p /usr/build/sanctify-game/rel && cd /usr/build/sanctify-game/rel
+cmake /usr/src/sanctify-game/cpp -DIG_BUILD_TESTS="on" -DIG_BUILD_SERVER="on" -DCMAKE_BUILD_TYPE="MinSizeRel" -DIG_ENABLE_THREADS="on" -DIG_CHECK_SUBMODULES_ON_BUILD="ON" -DIG_ENABLE_ECS_VALIDATION="OFF" -DIG_TOOL_WRANGLE_PATH="./igtools.cmake"
+make igcore_test igecs-test
+./libs/igcore/igcore_test
+./libs/igecs/igecs-test
+```
 
 # General Development Rules
 * ECS code is assumed to be thread safe. Either do stuff on the main thread, or in an order where you know systems will not be stepping on each others toes

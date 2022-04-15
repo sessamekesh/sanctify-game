@@ -15,13 +15,14 @@ std::string trim_type_name_msvc(const char* tn) {
   return stn.substr(off, stn.length() - off - tail);
 }
 
-std::string trim_type_name_gcc(const char* tn) {
-  const size_t off = 135;
-  const size_t tail = 8;
+std::string trim_type_name_clang(const char* tn) {
+  const size_t off = 58;
+  const size_t tail = 1;
 
   std::string stn(tn);
   return stn.substr(off, stn.length() - off - tail);
 }
+
 }  // namespace
 
 namespace indigo::igecs {
@@ -44,10 +45,14 @@ struct CttiTypeId {
 #ifdef IG_ENABLE_ECS_VALIDATION
 #ifdef _MSC_VER
     return trim_type_name_msvc(__FUNCSIG__);
+#elif __clang__
+    return trim_type_name_clang(__PRETTY_FUNCTION__);
 #else
-    return trim_type_name_gcc(__PRETTY_FUNCTION__);
+#error "CTTI pretty names not supported - disable IG_ENABLE_ECS_VALIDATION"
 #endif
 #else
+    // If no validation is built in, just return something silly like this (at
+    // least it's uniquely identifying)
     return std::string("T-") + std::to_string(CttiTypeId::of<T>().id);
 #endif
   }

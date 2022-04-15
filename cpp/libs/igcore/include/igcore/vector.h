@@ -5,6 +5,7 @@
 #include <igcore/log.h>
 
 #include <cassert>
+#include <cstring>
 
 namespace indigo::core {
 
@@ -52,7 +53,7 @@ class Vector : public IVec<T> {
 
   T& operator[](size_t i) override { return data_[i]; }
   const T& operator[](size_t i) const override {
-    assert(i < size_);
+    assert(i < this->size_);
     return data_[i];
   }
 
@@ -86,7 +87,9 @@ class Vector : public IVec<T> {
     this->size_ -= i;
     this->capacity_ -= i;
     this->data_ = new T[this->capacity_];
-    memcpy(this->data_, old_data, sizeof(T) * this->size_);
+    for (int i = 0; i < this->size_; i++) {
+      this->data_[i] = std::move(old_data[i]);
+    }
     delete[] old_data;
   }
 

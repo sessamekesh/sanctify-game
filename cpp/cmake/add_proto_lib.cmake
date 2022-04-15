@@ -38,8 +38,7 @@ function (add_proto_lib)
 
     add_custom_command(
       OUTPUT "${proto_hdr}" "${proto_src}"
-      COMMAND protoc
-      ARGS ${protoc_args}
+      COMMAND protoc ${protoc_args}
       DEPENDS "${protopath_absolute}")
   endforeach()
 

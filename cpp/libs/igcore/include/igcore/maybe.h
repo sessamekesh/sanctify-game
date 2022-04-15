@@ -1,6 +1,7 @@
 #ifndef _LIB_IGCORE_MAYBE_H_
 #define _LIB_IGCORE_MAYBE_H_
 
+#include <cstdint>
 #include <functional>
 #include <type_traits>
 

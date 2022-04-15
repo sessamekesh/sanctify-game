@@ -153,13 +153,14 @@ TEST(IgECS_Scheduler, SuccessfullyBuildsWithCorrectDepChaining) {
   scheduler.execute(nullptr, &r);
 }
 
+#ifndef NDEBUG
 TEST(IgECS_SchedulerDeathTest, FailsToBuildWithUnclearDepOrdering) {
   Scheduler::Builder sb;
 
-  sb.add_node().with_decl(::write_foo_decl()).build([](auto*) {
+  auto n1 = sb.add_node().with_decl(::write_foo_decl()).build([](auto*) {
     return core::immediateEmptyPromise();
   });
-  sb.add_node().with_decl(::read_foo_decl()).build([](auto*) {
+  auto n2 = sb.add_node().with_decl(::read_foo_decl()).build([](auto*) {
     return core::immediateEmptyPromise();
   });
 
@@ -183,3 +184,4 @@ TEST(IgECS_SchedulerDeathTest, CannotBuildNodeTwice) {
       },
       "\\[IgECS::Scheduler\\] Node is already built");
 }
+#endif

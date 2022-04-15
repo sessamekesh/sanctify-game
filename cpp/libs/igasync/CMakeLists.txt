@@ -32,6 +32,7 @@ if (IG_BUILD_TESTS)
   
   add_executable(igasync_test ${TEST_SRC_LIST})
   target_link_libraries(igasync_test gtest gtest_main igasync)
+
   gtest_discover_tests(igasync_test
     # Set a working directory both for GTest and Visual Studio to be happy
     WORKING_DIRECTORY ${PROJECT_DIR}

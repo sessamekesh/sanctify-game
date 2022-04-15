@@ -5,7 +5,7 @@ plan {
       cell_size: 1.5
       recast_build_ops {
         include_assimp_geo {
-          assimp_file_name: "sanctify_arena\\practice-arena.fbx"
+          assimp_file_name: "sanctify_arena/practice-arena.fbx"
           assimp_mesh_name: "ArenaBase"
           scale {
             x: 5
@@ -16,7 +16,7 @@ plan {
       }
       recast_build_ops {
         include_assimp_geo {
-          assimp_file_name: "sanctify_arena\\practice-arena.fbx"
+          assimp_file_name: "sanctify_arena/practice-arena.fbx"
           assimp_mesh_name: "MidTowerGeo"
           scale {
             x: 5

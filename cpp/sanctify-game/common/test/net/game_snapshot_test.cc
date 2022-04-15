@@ -139,8 +139,7 @@ TEST(GameSnapshotDiff, TestSerializeAndDeserialize) {
             component::NavWaypointList{::create_test_waypoints(2)});
   EXPECT_EQ(gen_diff.standard_navigation_params(4),
             component::StandardNavigationParams{5.f});
-  EXPECT_EQ(gen_diff.basic_player_component(4),
-            component::BasicPlayerComponent{});
+  EXPECT_TRUE(gen_diff.basic_player_component(4).has_value());
   EXPECT_EQ(gen_diff.orientation(4), component::OrientationComponent{1.f});
 }
 
@@ -169,8 +168,7 @@ TEST(GameSnapshot, TestSerializeAndDeserialize) {
             component::NavWaypointList{::create_test_waypoints(2)});
   EXPECT_EQ(gen_snapshot.standard_navigation_params(1),
             component::StandardNavigationParams{5.f});
-  EXPECT_EQ(gen_snapshot.basic_player_component(1),
-            component::BasicPlayerComponent{});
+  EXPECT_TRUE(gen_snapshot.basic_player_component(1).has_value());
   EXPECT_EQ(gen_snapshot.orientation(1), component::OrientationComponent{1.f});
 
   // VERIFY COMPONENT DELETIONS

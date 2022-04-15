@@ -1,6 +1,7 @@
 #include <igcore/log.h>
 #include <util/file_cache.h>
 
+#include <algorithm>
 #include <fstream>
 
 namespace {

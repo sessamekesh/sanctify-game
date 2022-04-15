@@ -29,6 +29,7 @@
 
 #include <cfloat>
 #include <cmath>
+#include <cstring>
 
 using namespace std;
 using namespace indigo;
@@ -62,7 +63,7 @@ ReliableFragmentReassemblyData::ReliableFragmentReassemblyData()
       PacketData(nullptr),
       PacketBytes(0u),
       PacketHeaderBytes(0u) {
-  memset(FragmentReceived, 0, sizeof(FragmentReceived));
+  std::memset(FragmentReceived, 0, sizeof(FragmentReceived));
 }
 
 ReliableFragmentReassemblyData::~ReliableFragmentReassemblyData() {
@@ -79,8 +80,8 @@ ReliableSequenceBuffer::ReliableSequenceBuffer(uint32_t num_entries,
       EntryStride(stride),
       EntrySequence(new uint32_t[num_entries]),
       EntryData(new uint8_t[num_entries * stride]) {
-  memset(EntrySequence, 0xFF, sizeof(uint32_t) * num_entries);
-  memset(EntryData, 0, sizeof(uint8_t) * num_entries * stride);
+  std::memset(EntrySequence, 0xFF, sizeof(uint32_t) * num_entries);
+  std::memset(EntryData, 0, sizeof(uint8_t) * num_entries * stride);
 }
 
 ReliableSequenceBuffer::~ReliableSequenceBuffer() {
@@ -97,7 +98,7 @@ ReliableSequenceBuffer::~ReliableSequenceBuffer() {
 
 void ReliableSequenceBuffer::reset() {
   Sequence = 0;
-  memset(EntrySequence, 0xFF, sizeof(uint32_t) * NumEntries);
+  std::memset(EntrySequence, 0xFF, sizeof(uint32_t) * NumEntries);
 }
 
 void* ReliableSequenceBuffer::insert(uint16_t sequence) {
@@ -228,7 +229,7 @@ ReliableEndpoint::ReliableEndpoint()
       TransmitPacketFunction(nullptr),
       ProcessPacketFunction(nullptr),
       Sequence(0x0000) {
-  memset(Counters, 0x00, sizeof(Counters));
+  std::memset(Counters, 0x00, sizeof(Counters));
 }
 
 ReliableEndpoint::ReliableEndpoint(
@@ -255,7 +256,7 @@ ReliableEndpoint::ReliableEndpoint(
       TransmitPacketFunction(transmit_packet_function),
       ProcessPacketFunction(process_packet_function),
       Sequence(0x0000) {
-  memset(Acks, 0x00, config.AckBufferSize * sizeof(uint16_t));
+  std::memset(Acks, 0x00, config.AckBufferSize * sizeof(uint16_t));
 }
 
 ReliableEndpoint::~ReliableEndpoint() {

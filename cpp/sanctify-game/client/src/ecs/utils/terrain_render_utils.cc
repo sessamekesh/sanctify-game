@@ -131,8 +131,10 @@ void ecs::render_all_terrain_renderables(
 
   auto& registries = world.ctx_or_set<CtxTerrainRenderableResources>();
   for (int i = 0; i < keys.size(); i++) {
-    auto& instance_buffer = registries.instanceBufferStore.get_instance_buffer(
-        device, key_pairs[i].geoKey, key_pairs[i].materialKey, values[i], 5);
+    wgpu::Buffer instance_buffer =
+        registries.instanceBufferStore.get_instance_buffer(
+            device, key_pairs[i].geoKey, key_pairs[i].materialKey, values[i],
+            5);
     const auto* geo = registries.geoRegistry.get(key_pairs[i].geoKey);
     const auto* mat = registries.materialRegistry.get(key_pairs[i].materialKey);
 

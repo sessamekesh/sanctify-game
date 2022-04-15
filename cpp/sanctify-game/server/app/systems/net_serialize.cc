@@ -19,7 +19,7 @@ NetSerializeSystem::NetSerializeSystem(float time_between_diffs,
 
 void NetSerializeSystem::receive_client_snapshot_ack(const PlayerId& player_id,
                                                      uint32_t snapshot_id) {
-  auto& player_it = sent_snapshots_.find(player_id);
+  auto player_it = sent_snapshots_.find(player_id);
   if (player_it == sent_snapshots_.end()) {
     Logger::err(kLogLabel)
         << "Attempting to ack snapshot #" << snapshot_id << " for player "

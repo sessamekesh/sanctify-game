@@ -151,6 +151,7 @@ TEST(IgECS_WorldView, MergesInDecl) {
   }
 }
 
+#ifndef NDEBUG
 TEST(IgECS_WorldViewDeathTest, BadCtxReadFails) {
   entt::registry registry;
   registry.set<FooT>(1);
@@ -233,3 +234,4 @@ TEST(IgECS_WorldViewDeathTest, BadViewWriteFails) {
   auto get = [&wv]() { return wv.view<BarT, FooT>(); };
   EXPECT_DEATH({ get(); }, "IMMUTABLE view_test failed for type .*FooT");
 }
+#endif

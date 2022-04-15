@@ -1,5 +1,8 @@
 if (NOT EMSCRIPTEN)
   add_subdirectory(igpack-gen)
   add_subdirectory(list-assimp-assets)
-  add_subdirectory(map-editor)
+
+  if (WIN32)
+    add_subdirectory(map-editor)
+  endif ()
 endif ()

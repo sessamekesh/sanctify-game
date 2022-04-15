@@ -47,6 +47,8 @@ void device_lost_callback(WGPUDeviceLostReason reason, const char* msg,
   switch (reason) {
     case WGPUDeviceLostReason_Destroyed:
       lost_reason = "WGPUDeviceLostReason_Destroyed";
+    default:
+      lost_reason = "WGPUDeviceLostReason_Unknown";
   }
   Logger::err("WGPU Device") << "Device lost (" << lost_reason << "): " << msg
                              << "\n   - Developer note: put a breakpoint here";
@@ -200,8 +202,8 @@ core::Either<std::shared_ptr<AppBase>, AppBaseCreateError> AppBase::Create(
   sdesc.chain.sType = WGPUSType_SurfaceDescriptorFromWindowsHWND;
   sdesc.hwnd = glfwGetWin32Window(window);
 #else
-  WGPUSurfaceDescriptorFromXlib sdesc{};
-  sdesc.chain.sType = WGPUSType_SurfaceDescriptorFromXlib;
+  WGPUSurfaceDescriptorFromXlibWindow sdesc{};
+  sdesc.chain.sType = WGPUSType_SurfaceDescriptorFromXlibWindow;
   sdesc.display = glfwGetX11Display();
   sdesc.window = glfwGetX11Window(window);
 #endif
@@ -241,8 +243,8 @@ void AppBase::resize_swap_chain(uint32_t width, uint32_t height) {
   sdesc.chain.sType = WGPUSType_SurfaceDescriptorFromWindowsHWND;
   sdesc.hwnd = glfwGetWin32Window(Window);
 #else
-  WGPUSurfaceDescriptorFromXlib sdesc{};
-  sdesc.chain.sType = WGPUSType_SurfaceDescriptorFromXlib;
+  WGPUSurfaceDescriptorFromXlibWindow sdesc{};
+  sdesc.chain.sType = WGPUSType_SurfaceDescriptorFromXlibWindow;
   sdesc.display = glfwGetX11Display();
   sdesc.window = glfwGetX11Window(Window);
 #endif

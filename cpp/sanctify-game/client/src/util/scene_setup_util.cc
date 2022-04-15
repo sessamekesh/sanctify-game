@@ -225,9 +225,10 @@ LoadResourceToRegistryRsl<solid_animated::SolidAnimatedGeo> util::load_geo(
                       inv_bind_poses_rsl.left_move(), indices_rsl.left_move()});
                 },
                 async_task_list)
-            ->then_consuming<bool>(
-                [debug_name, key, geo_registry,
-                 device](Either<FullAnimatedVertexData, uint8_t> rsl) -> bool {
+            ->template then_consuming<bool>(
+                [debug_name = debug_name, key = key,
+                 geo_registry = geo_registry, device = device](
+                    Either<FullAnimatedVertexData, uint8_t> rsl) -> bool {
                   if (rsl.is_right()) {
                     return false;
                   }

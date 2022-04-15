@@ -63,6 +63,7 @@ bool GlfwIoSystem::attach_glfw_io(entt::registry& world,
       e, app_base->Window, arena_camera_mouse_input_listener,
       viewport_click_controller, viewport_click_input);
   world.set<CtxGlfwListenerEntity>(e);
+  return true;
 }
 
 void GlfwIoSystem::detach_glfw_io(entt::registry& world) {

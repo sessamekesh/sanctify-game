@@ -161,7 +161,7 @@ Scheduler::Scheduler(Scheduler::Builder b) : max_spin_time_(b.max_spin_time_) {
       const auto& ctx_write = ctx_writes[ctx_write_idx];
 
       for (int compare_node_idx = 0; compare_node_idx < b.nodes_.size();
-           compare_node_idx) {
+           compare_node_idx++) {
         if (compare_node_idx == node_idx) continue;
 
         const auto& compare_node = b.nodes_[compare_node_idx];
