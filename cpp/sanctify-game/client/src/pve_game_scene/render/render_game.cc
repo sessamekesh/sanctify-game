@@ -101,12 +101,7 @@ void GameRenderSystem::render(const wgpu::Device& device, entt::registry& world,
   }
   // TODO (sessamekesh): Create
 
-  // TODO (sessamekesh): Update Emscripten library to support .End() method
-#ifdef __EMSCRIPTEN__
-  main_pass.EndPass();
-#else
   main_pass.End();
-#endif
 
   wgpu::CommandBuffer main_pass_commands = main_pass_command_encoder.Finish();
   device.GetQueue().Submit(1, &main_pass_commands);

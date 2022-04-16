@@ -17,5 +17,3 @@ ENV CC=/usr/bin/clang-14
 ENV CXX=/usr/bin/clang++-14
 ENV CPP=/usr/bin/clang-cpp-14
 ENV LD=/usr/bin/ld.lld-14
-
-CMD ["sleep", "infinity"]

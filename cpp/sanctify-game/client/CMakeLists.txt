@@ -73,6 +73,7 @@ set(src_list
   "src/game_scene/factory_util/build_net_client.cc"
   "src/game_scene/factory_util/build_terrain_shit.cc"
   "src/app_startup_scene/app_startup_scene.cc"
+  "src/app_startup_scene/startup_shader_src.cc"
   "src/ecs/systems/attach_player_renderables.cc"
   "src/ecs/systems/destroy_children_system.cc"
   "src/ecs/systems/locomotion_blend_system.cc"

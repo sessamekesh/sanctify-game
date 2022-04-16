@@ -56,5 +56,35 @@ make igcore_test igecs-test
 ./libs/igecs/igecs-test
 ```
 
+Building the JavaScript
+
+```bash
+# Build clang image (only needs to be done once)
+docker build -f ./sanctify-clang.Dockerfile -t sanctify-clang .
+
+# Configure and build tools
+docker run --rm -v K:/games/sanctify-game:/usr/src/sanctify-game -w /usr/src/sanctify-game/cpp/out/emcc-tools sanctify-clang cmake /usr/src/sanctify-game/cpp -DIG_BUILD_TESTS="on" -DIG_BUILD_SERVER="on" -DCMAKE_BUILD_TYPE="MinSizeRel" -DIG_ENABLE_THREADS="on" -DIG_CHECK_SUBMODULES_ON_BUILD="ON" -DIG_ENABLE_ECS_VALIDATION="ON" -DIG_TOOL_WRANGLE_PATH="./igtools.cmake"
+docker run --rm -v K:/games/sanctify-game:/usr/src/sanctify-game -w /usr/src/sanctify-game/cpp/out/emcc-tools sanctify-clang make protoc igpack-gen
+
+# Build emscripten image (only needs to be done once)
+docker build -f ./sanctify-emscripten.Dockerfile -t sanctify-emscripten .
+
+# Configure and build binaries for multi-threaded (standard) target
+docker run --rm -v K:/games/sanctify-game:/usr/src/sanctify-game -w /usr/src/sanctify-game/cpp/out/emcc sanctify-emscripten emcmake cmake /usr/src/sanctify-game/cpp -DIG_BUILD_TESTS="OFF" -DIG_BUILD_SERVER="off" -DCMAKE_BUILD_TYPE="MinSizeRel" -DIG_ENABLE_THREADS="on" -DIG_CHECK_SUBMODULES_ON_BUILD="ON" -DIG_ENABLE_ECS_VALIDATION="off" -DIG_TOOL_WRANGLE_PATH="../emcc-tools/igtools.cmake"
+docker run --rm -v K:/games/sanctify-game:/usr/src/sanctify-game -w /usr/src/sanctify-game/cpp/out/emcc sanctify-emscripten emmake make sanctify-game-client
+
+# Configure and build binaries for single-threaded target
+docker run --rm -v K:/games/sanctify-game:/usr/src/sanctify-game -w /usr/src/sanctify-game/cpp/out/emcc-st sanctify-emscripten emcmake cmake /usr/src/sanctify-game/cpp -DIG_BUILD_TESTS="OFF" -DIG_BUILD_SERVER="off" -DCMAKE_BUILD_TYPE="MinSizeRel" -DIG_ENABLE_THREADS="off" -DIG_CHECK_SUBMODULES_ON_BUILD="ON" -DIG_ENABLE_ECS_VALIDATION="off" -DIG_TOOL_WRANGLE_PATH="../emcc-tools/igtools.cmake"
+docker run --rm -v K:/games/sanctify-game:/usr/src/sanctify-game -w /usr/src/sanctify-game/cpp/out/emcc-st sanctify-emscripten emmake make sanctify-game-client
+
+# ... And don't forget to copy them over to the web entry point
+cp K:/games/sanctify-game/cpp/out/emcc/sanctify-game/client/sanctify-game-client.js K:/games/sanctify-game/ts/packages/sanctify-web-client/public/wasm_mt/sanctify-game-client.js
+cp K:/games/sanctify-game/cpp/out/emcc/sanctify-game/client/sanctify-game-client.worker.js K:/games/sanctify-game/ts/packages/sanctify-web-client/public/wasm_mt/sanctify-game-client.worker.js
+cp K:/games/sanctify-game/cpp/out/emcc/sanctify-game/client/sanctify-game-client.wasm K:/games/sanctify-game/ts/packages/sanctify-web-client/public/wasm_mt/sanctify-game-client.wasm
+cp K:/games/sanctify-game/cpp/out/emcc-st/sanctify-game/client/sanctify-game-client.js K:/games/sanctify-game/ts/packages/sanctify-web-client/public/wasm_st/sanctify-game-client.js
+cp K:/games/sanctify-game/cpp/out/emcc-st/sanctify-game/client/sanctify-game-client.wasm K:/games/sanctify-game/ts/packages/sanctify-web-client/public/wasm_st/sanctify-game-client.wasm
+cp K:/games/sanctify-game/cpp/out/emcc/sanctify-game/client/resources/* K:/games/sanctify-game/ts/packages/sanctify-web-client/public/resources
+```
+
 # General Development Rules
-* ECS code is assumed to be thread safe. Either do stuff on the main thread, or in an order where you know systems will not be stepping on each others toes
+* Use LibECS for everything that doesn't happen on the main thread.

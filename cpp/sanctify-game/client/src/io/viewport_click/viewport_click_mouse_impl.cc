@@ -1,6 +1,10 @@
 #include <io/viewport_click/viewport_click_controller_input.h>
 #include <io/viewport_click/viewport_click_mouse_impl.h>
 
+#ifdef EMSCRIPTEN
+#include <emscripten/html5.h>
+#endif
+
 using namespace sanctify;
 
 using MouseButtonType = IMouseButtonListener::ButtonType;

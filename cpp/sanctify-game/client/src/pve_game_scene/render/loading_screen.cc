@@ -44,12 +44,7 @@ void LoadingScreenRenderSystem::render(const wgpu::Device& device,
   wgpu::RenderPassEncoder main_pass =
       ::create_main_pass(main_pass_command_encoder, final_target_buffers);
 
-  // TODO (sessamekesh): Update Emscripten library to support .End() method
-#ifdef __EMSCRIPTEN__
-  main_pass.EndPass();
-#else
   main_pass.End();
-#endif
 
   wgpu::CommandBuffer main_pass_commands = main_pass_command_encoder.Finish();
 
