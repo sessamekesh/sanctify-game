@@ -1,25 +1,25 @@
 struct CameraParamsUbo {
-  mat_view: mat4x4<f32>;
-  mat_proj: mat4x4<f32>;
-};
+  mat_view: mat4x4<f32>,
+  mat_proj: mat4x4<f32>
+}
 
 struct ModelVsParams {
-  mat_model: mat4x4<f32>;
+  mat_model: mat4x4<f32>
 };
 
 @group(0) @binding(0) var<uniform> cameraParams: CameraParamsUbo;
 @group(0) @binding(1) var<uniform> modelVsParams: ModelVsParams;
 
 struct VertexIn {
-  @location(0) pos: vec3<f32>;
-  @location(1) normal: vec3<f32>;
-};
+  @location(0) pos: vec3<f32>,
+  @location(1) normal: vec3<f32>
+}
 
 struct VertexOut {
-  @builtin(position) pos: vec4<f32>;
-  @location(0) world_pos: vec3<f32>;
-  @location(1) normal: vec3<f32>;
-};
+  @builtin(position) pos: vec4<f32>,
+  @location(0) world_pos: vec3<f32>,
+  @location(1) normal: vec3<f32>
+}
 
 @stage(vertex)
 fn main(in: VertexIn) -> VertexOut {

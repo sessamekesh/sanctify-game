@@ -107,7 +107,7 @@ void AppStartupScene::render() {
   auto command_encoder = device.CreateCommandEncoder();
 
   wgpu::RenderPassColorAttachment attachment{};
-  attachment.clearColor = {0.f, 0.f, 0.f, 0.f};
+  attachment.clearValue = {0.f, 0.f, 0.f, 0.f};
   attachment.loadOp = wgpu::LoadOp::Clear;
   attachment.storeOp = wgpu::StoreOp::Store;
   attachment.resolveTarget = nullptr;

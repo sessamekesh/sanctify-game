@@ -194,17 +194,17 @@ void ViewportView::render(uint32_t w, uint32_t h) {
 
   wgpu::RenderPassColorAttachment attachment{};
   if (recast_builder_->is_valid_state()) {
-    attachment.clearColor = {0.55f, 0.65f, 0.55f, 1.f};
+    attachment.clearValue = {0.55f, 0.65f, 0.55f, 1.f};
   } else {
-    attachment.clearColor = {0.85f, 0.2f, 0.2f, 1.f};
+    attachment.clearValue = {0.85f, 0.2f, 0.2f, 1.f};
   }
   attachment.loadOp = wgpu::LoadOp::Clear;
   attachment.storeOp = wgpu::StoreOp::Store;
   attachment.view = viewportOutView;
 
   wgpu::RenderPassDepthStencilAttachment depth_attachment{};
-  depth_attachment.clearDepth = 1.f;
-  depth_attachment.clearStencil = 0x00;
+  depth_attachment.depthClearValue = 1.f;
+  depth_attachment.stencilClearValue = 0x00;
   depth_attachment.depthLoadOp = wgpu::LoadOp::Clear;
   depth_attachment.depthStoreOp = wgpu::StoreOp::Store;
   depth_attachment.stencilLoadOp = wgpu::LoadOp::Clear;

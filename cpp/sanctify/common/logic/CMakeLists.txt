@@ -11,7 +11,7 @@ set (TEST_SRC_LIST
 add_library(sanctify-common-logic STATIC ${HEADER_LIST} ${SRC_LIST})
 target_include_directories(sanctify-common-logic PUBLIC "${SANCTIFY_INCLUDE_ROOT}")
 
-target_link_libraries(sanctify-common-logic PUBLIC igcore EnTT glm)
+target_link_libraries(sanctify-common-logic PUBLIC igcore EnTT glm igecs)
 
 if (EMSCRIPTEN)
   set_wasm_target_properties(TARGET_NAME sanctify-common-logic AS_LIB 1)

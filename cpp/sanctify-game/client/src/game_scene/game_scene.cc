@@ -14,8 +14,8 @@ wgpu::RenderPassEncoder create_geo_pass(
     const wgpu::TextureView& depth_view, wgpu::TextureView backbuffer_view,
     wgpu::TextureFormat swap_chain_format) {
   wgpu::RenderPassDepthStencilAttachment depth_attachment{};
-  depth_attachment.clearDepth = 1.f;
-  depth_attachment.clearStencil = 0x00;
+  depth_attachment.depthClearValue = 1.f;
+  depth_attachment.stencilClearValue = 0x00;
   depth_attachment.depthLoadOp = wgpu::LoadOp::Clear;
   depth_attachment.depthStoreOp = wgpu::StoreOp::Store;
   depth_attachment.stencilLoadOp = wgpu::LoadOp::Clear;
@@ -23,7 +23,7 @@ wgpu::RenderPassEncoder create_geo_pass(
   depth_attachment.view = depth_view;
 
   wgpu::RenderPassColorAttachment color_attachment{};
-  color_attachment.clearColor = {0.1f, 0.1f, 0.11f, 1.f};
+  color_attachment.clearValue = {0.1f, 0.1f, 0.11f, 1.f};
   color_attachment.loadOp = wgpu::LoadOp::Clear;
   color_attachment.storeOp = wgpu::StoreOp::Store;
   color_attachment.view = backbuffer_view;

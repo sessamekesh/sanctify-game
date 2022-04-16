@@ -1,17 +1,17 @@
 struct VertexInput {
-  [[location(0)]] position: vec3<f32>;
-  [[location(1)]] tbn_quat: vec4<f32>;
-  [[location(2)]] mat_world_0: vec4<f32>;
-  [[location(3)]] mat_world_1: vec4<f32>;
-  [[location(4)]] mat_world_2: vec4<f32>;
-  [[location(5)]] mat_world_3: vec4<f32>;
-};
+  @location(0) position: vec3<f32>,
+  @location(1) tbn_quat: vec4<f32>,
+  @location(2) mat_world_0: vec4<f32>,
+  @location(3) mat_world_1: vec4<f32>,
+  @location(4) mat_world_2: vec4<f32>,
+  @location(5) mat_world_3: vec4<f32>
+}
 
 struct VertexOutput {
-  [[builtin(position)]] frag_coord: vec4<f32>;
-  [[location(0)]] world_pos: vec3<f32>;
-  [[location(1)]] world_normal: vec3<f32>;
-};
+  @builtin(position) frag_coord: vec4<f32>,
+  @location(0) world_pos: vec3<f32>,
+  @location(1) world_normal: vec3<f32>
+}
 
 fn normal_from_quat(q: vec4<f32>) -> vec3<f32> {
   let qxx = q.x * q.x;
@@ -33,15 +33,14 @@ fn normal_from_quat(q: vec4<f32>) -> vec3<f32> {
   return normalize(normal);
 }
 
-[[block]] // Deprecated - remove
 struct CameraParamsUbo {
-  mat_view: mat4x4<f32>;
-  mat_proj: mat4x4<f32>;
-};
+  mat_view: mat4x4<f32>,
+  mat_proj: mat4x4<f32>
+}
 
-[[group(0), binding(0)]] var<uniform> cameraParams: CameraParamsUbo;
+@group(0) @binding(0) var<uniform> cameraParams: CameraParamsUbo;
 
-[[stage(vertex)]]
+@stage(vertex)
 fn main(vertex: VertexInput) -> VertexOutput {
   var out: VertexOutput;
 

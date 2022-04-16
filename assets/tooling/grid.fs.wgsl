@@ -1,6 +1,6 @@
 struct GridParams {
-  gridline_color: vec3<f32>;
-};
+  gridline_color: vec3<f32>
+}
 
 @group(1) @binding(0) var<uniform> grid_params: GridParams;
 

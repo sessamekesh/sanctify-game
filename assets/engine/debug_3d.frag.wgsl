@@ -1,22 +1,22 @@
 struct FragmentInput {
-  @location(0) world_pos: vec3<f32>;
-  @location(1) world_normal: vec3<f32>;
-  @location(2) obj_color: vec3<f32>;
-};
+  @location(0) world_pos: vec3<f32>,
+  @location(1) world_normal: vec3<f32>,
+  @location(2) obj_color: vec3<f32>
+}
 
 struct FragmentOutput {
-  @location(0) ldr_out_color: vec4<f32>;
-};
+  @location(0) ldr_out_color: vec4<f32>
+}
 
 struct LightingParams {
-  light_direction: vec3<f32>;
-  ambient_coefficient: f32;
-  light_color: vec3<f32>;
-  specular_power: f32;
-};
+  light_direction: vec3<f32>,
+  ambient_coefficient: f32,
+  light_color: vec3<f32>,
+  specular_power: f32
+}
 
 struct CameraFragmentParams {
-  camera_pos: vec3<f32>;
+  camera_pos: vec3<f32>
 };
 
 @group(0) @binding(1) var<uniform> cameraParams: CameraFragmentParams;

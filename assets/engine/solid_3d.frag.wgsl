@@ -1,35 +1,32 @@
 struct FragmentInput {
-  [[location(0)]] world_pos: vec3<f32>;
-  [[location(1)]] world_normal: vec3<f32>;
-};
+  @location(0) world_pos: vec3<f32>,
+  @location(1) world_normal: vec3<f32>
+}
 
 struct FragmentOutput {
-  [[location(0)]] ldr_out_color: vec4<f32>;
-};
+  @location(0) ldr_out_color: vec4<f32>
+}
 
-[[block]]
 struct LightingParams {
-  light_direction: vec3<f32>;
-  ambient_coefficient: f32;
-  light_color: vec3<f32>;
-  specular_power: f32;
-};
+  light_direction: vec3<f32>,
+  ambient_coefficient: f32,
+  light_color: vec3<f32>,
+  specular_power: f32
+}
 
-[[block]]
 struct SolidColorParams {
-  object_color: vec3<f32>;
-};
+  object_color: vec3<f32>
+}
 
-[[block]]
 struct CameraFragmentParams {
-  camera_pos: vec3<f32>;
-};
+  camera_pos: vec3<f32>
+}
 
-[[group(0), binding(1)]] var<uniform> cameraParams: CameraFragmentParams;
-[[group(1), binding(0)]] var<uniform> colorParams: SolidColorParams;
-[[group(2), binding(0)]] var<uniform> lightingParams: LightingParams;
+@group(0) @binding(1) var<uniform> cameraParams: CameraFragmentParams;
+@group(1) @binding(0) var<uniform> colorParams: SolidColorParams;
+@group(2) @binding(0) var<uniform> lightingParams: LightingParams;
 
-[[stage(fragment)]]
+@stage(fragment)
 fn main(frag: FragmentInput) -> FragmentOutput {
   let mat_color = colorParams.object_color;
 

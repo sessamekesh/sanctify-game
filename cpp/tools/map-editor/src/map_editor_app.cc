@@ -108,7 +108,7 @@ void MapEditorApp::render() {
   wgpu::RenderPassColorAttachment attachment{};
   attachment.loadOp = wgpu::LoadOp::Clear;
   attachment.storeOp = wgpu::StoreOp::Store;
-  attachment.clearColor = {0.5f, 0.5f, 0.5f, 1.f};
+  attachment.clearValue = {0.5f, 0.5f, 0.5f, 1.f};
   attachment.view = base_->swap_chain().GetCurrentTextureView();
 
   wgpu::RenderPassDescriptor rp_desc{};

@@ -12,9 +12,9 @@ const char* sanctify::kStartupShaderVsSrc =
 })";
 
 const char* sanctify::kStartupShaderFsSrc = R"(struct FrameParams {
-  Dimensions: vec2<f32>;
-  Time: f32;
-};
+  Dimensions: vec2<f32>,
+  Time: f32
+}
 
 @group(0) @binding(0) var<uniform> frameParams: FrameParams;
 
@@ -41,8 +41,8 @@ fn ballPos(time: f32, freq: vec2<f32>, phase: vec2<f32>, radius: f32,
 }
 
 struct FragIn {
-  @builtin(position) FragCoord: vec4<f32>;
-};
+  @builtin(position) FragCoord: vec4<f32>
+}
 
 @stage(fragment) fn main(in: FragIn) -> @location(0) vec4<f32> {
   let center = frameParams.Dimensions / 2.;
