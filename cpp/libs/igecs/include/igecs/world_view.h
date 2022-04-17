@@ -7,6 +7,8 @@
 
 #ifdef IG_ENABLE_ECS_VALIDATION
 #include <igcore/log.h>
+
+#include <set>
 #endif
 
 #include <entt/entt.hpp>
@@ -118,7 +120,7 @@ class WorldView {
 #endif
     }
 
-    WorldView create(entt::registry* registry);
+    WorldView create(entt::registry* registry) const;
 
     const core::PodVector<CttiTypeId>& list_reads() const { return reads_; }
     const core::PodVector<CttiTypeId>& list_writes() const { return writes_; }
@@ -159,6 +161,7 @@ class WorldView {
       return false;
     }
     return view_test<Others...>();
+    read_types_.insert(CttiTypeId::of<T>());
 #endif
     return true;
   }
@@ -174,14 +177,16 @@ class WorldView {
       return false;
     }
     return view_test<Others...>();
+    write_types_.insert(CttiTypeId::of<T>());
 #endif
     return true;
   }
 
  public:
   WorldView(entt::registry* registry, Decl decl);
+  static WorldView Thin(entt::registry* registry);
 
-#ifdef IG_ECS_TEST_VALIDATIONS
+#ifdef IG_ENABLE_ECS_VALIDATION
   template <typename T>
   bool can_read() {
     return decl_.can_read<T>();
@@ -201,12 +206,37 @@ class WorldView {
   bool can_ctx_write() {
     return decl_.can_ctx_write<T>();
   }
+
+ private:
+  mutable std::set<CttiTypeId> read_types_;
+  mutable std::set<CttiTypeId> write_types_;
+  mutable std::set<CttiTypeId> ctx_read_types_;
+  mutable std::set<CttiTypeId> ctx_write_types_;
+
+ public:
+  template <typename T>
+  bool has_read() const {
+    return read_types_.count(CttiTypeId::of<T>()) > 0;
+  }
+  template <typename T>
+  bool has_written() const {
+    return write_types_.count(CttiTypeId::of<T>()) > 0;
+  }
+  template <typename T>
+  bool has_ctx_read() const {
+    return ctx_read_types_.count(CttiTypeId::of<T>()) > 0;
+  }
+  template <typename T>
+  bool has_ctx_written() const {
+    return ctx_write_types_.count(CttiTypeId::of<T>()) > 0;
+  }
 #endif
 
   template <typename T>
   T& mut_ctx() {
 #ifdef IG_ENABLE_ECS_VALIDATION
     ::assert_and_print<T>(decl_.can_ctx_write<T>(), "mut_ctx");
+    ctx_write_types_.insert(CttiTypeId::of<T>());
 #endif
     return registry_->ctx<T>();
   }
@@ -215,22 +245,43 @@ class WorldView {
   const T& ctx() {
 #ifdef IG_ENABLE_ECS_VALIDATION
     ::assert_and_print<T>(decl_.can_ctx_read<T>(), "ctx");
+    ctx_read_types_.insert(CttiTypeId::of<T>());
 #endif
     return registry_->ctx<T>();
+  }
+
+  template <typename T, typename... Args>
+  T& mut_ctx_or_set(Args&&... args) {
+#ifdef IG_ENABLE_ECS_VALIDATION
+    ::assert_and_print<T>(decl_.can_ctx_write<T>(), "mut_ctx_or_set");
+    ctx_write_types_.insert(CttiTypeId::of<T>());
+#endif
+    return registry_->ctx_or_set<T, Args...>(std::forward<Args>(args)...);
   }
 
   template <typename T>
   bool has(entt::entity e) {
 #ifdef IG_ENABLE_ECS_VALIDATION
     ::assert_and_print<T>(decl_.can_read<T>(), "has");
+    read_types_.insert(CttiTypeId::of<T>());
 #endif
     return registry_->try_get<T>(e) != nullptr;
+  }
+
+  template <typename T>
+  bool ctx_has() const {
+#ifdef IG_ENABLE_ECS_VALIDATION
+    ::assert_and_print<T>(decl_.can_ctx_read<T>(), "ctx_has");
+    ctx_read_types_.insert(CttiTypeId::of<T>());
+#endif
+    return registry_->try_ctx<T>() != nullptr;
   }
 
   template <typename T>
   T& write(entt::entity e) {
 #ifdef IG_ENABLE_ECS_VALIDATION
     ::assert_and_print<T>(decl_.can_write<T>(), "write");
+    write_types_.insert(CttiTypeId::of<T>());
 #endif
     return registry_->get<T>(e);
   }
@@ -239,15 +290,27 @@ class WorldView {
   ComponentT& attach(entt::entity e, Args&&... args) {
 #ifdef IG_ENABLE_ECS_VALIDATION
     ::assert_and_print<ComponentT>(decl_.can_write<ComponentT>(), "attach");
+    write_types_.insert(CttiTypeId::of<ComponentT>());
 #endif
     return registry_->emplace<ComponentT, Args...>(e,
                                                    std::forward<Args>(args)...);
+  }
+
+  template <typename ComponentT, typename... Args>
+  ComponentT& attach_ctx(Args&&... args) {
+#ifdef IG_ENABLE_ECS_VALIDATION
+    ::assert_and_print<ComponentT>(decl_.can_ctx_write<ComponentT>(),
+                                   "attach_ctx");
+    ctx_write_types_.insert(CttiTypeId::of<ComponentT>());
+#endif
+    return registry_->set<ComponentT, Args...>(std::forward<Args>(args)...);
   }
 
   template <typename T>
   const T& read(entt::entity e) {
 #ifdef IG_ENABLE_ECS_VALIDATION
     ::assert_and_print<T>(decl_.can_read<T>(), "read");
+    read_types_.insert(CttiTypeId::of<T>());
 #endif
     return registry_->get<T>(e);
   }
@@ -256,6 +319,7 @@ class WorldView {
   size_t remove(entt::entity e) {
 #ifdef IG_ENABLE_ECS_VALIDATION
     ::assert_and_print<T>(decl_.can_write<T>(), "remove");
+    write_types_.insert(CttiTypeId::of<T>());
 #endif
     return registry_->remove<T>(e);
   }
@@ -264,6 +328,7 @@ class WorldView {
   void remove_ctx() {
 #ifdef IG_ENABLE_ECS_VALIDATION
     ::assert_and_print<T>(decl_.can_ctx_write<T>(), "remove_ctx");
+    ctx_write_types_.insert(CttiTypeId::of<T>());
 #endif
     registry_->unset<T>();
   }

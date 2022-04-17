@@ -1,6 +1,8 @@
 #include <sanctify-game-common/gameplay/locomotion.h>
 #include <sanctify-game-common/gameplay/locomotion_components.h>
 
+/** DEPRECATED */
+
 using namespace sanctify;
 using namespace system;
 using namespace indigo;

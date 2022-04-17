@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+import "primitives.proto";
+
+package sanctify.common.pb;
+
+/*************************************************\
+ *         Common logic snapshot message         *
+ *                                               *
+ * Types and messages relating to serializing a  *
+ *  snapshot of common game logic components.    *
+\*************************************************/
+
+/** Enumeration of all recognized component types */
+enum ComponentType {
+  // This should never be observed - it may indicate an error
+  COMPONENT_TYPE_INVALID = 0;
+
+  CT_MAP_LOCATION = 1;
+  CT_ORIENTATION = 2;
+  CT_NAV_WAYPOINTS = 3;
+  CT_STANDARD_NAVIGATION_PARAMS = 4;
+}
+
+/** Enumeration of all recognized context component types */
+enum CtxComponentType {
+  // This should never be observed - it may indicate an error
+  CTX_COMPONENT_TYPE_INVALID = 0;
+
+  CCT_SIM_TIME = 1;
+}
+
+/** Context data messages (serialization schema) */
+message CtxSimTimeComponent {
+  float sim_time_seconds = 1;
+}
+
+/** Component data messages (serialization schema) */
+message MapLocationComponent {
+  Vec2 position = 1;
+}
+
+message OrientationComponent {
+  float orientation = 1;
+}
+
+message NavWaypointListComponent {
+  repeated Vec2 targets = 1;
+}
+
+message StandardNavigationParamsComponent {
+  float movement_speed = 1;
+}
+
+/** List of components attached to a single entity */
+message ComponentData {
+  MapLocationComponent map_location = 1;
+  OrientationComponent orientation = 2;
+  NavWaypointListComponent nav_waypoint_list = 3;
+  StandardNavigationParamsComponent standard_navigation_params = 4;
+
+  // Next token: 5
+}
+
+// Diff
+message EntityUpdateMask {
+  uint32 net_sync_id = 1;
+  ComponentData upsert_components = 2;
+  repeated ComponentType remove_components = 3;
+}
+
+message SnapshotDiff {
+  repeated EntityUpdateMask upsert_entities = 1;
+  repeated uint32 remove_entities = 2;
+
+  repeated CtxComponentType remove_ctx_components = 3;
+
+  // Upserted context variables
+  CtxSimTimeComponent upsert_sim_time = 4;
+
+  // Next token: 5
+}
+
+// Full Snapshot
+message GameEntity {
+  uint32 net_sync_id = 1;
+  ComponentData component_data = 2;
+}
+
+message SnapshotFull {
+  repeated GameEntity entities = 1;
+
+  // Context variables
+  CtxSimTimeComponent sim_time = 2;
+}

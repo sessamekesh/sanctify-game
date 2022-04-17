@@ -10,7 +10,7 @@ WorldView::Decl::Decl() : allow_all_(false) {}
 
 WorldView::Decl::Decl(bool allow_all) : allow_all_(allow_all) {}
 
-WorldView WorldView::Decl::create(entt::registry* registry) {
+WorldView WorldView::Decl::create(entt::registry* registry) const {
   return WorldView(registry, *this);
 }
 
@@ -43,4 +43,8 @@ void WorldView::Decl::merge_in_decl(const WorldView::Decl& o) {
       ctx_writes_.push_back(o.ctx_writes_[i]);
     }
   }
+}
+
+WorldView WorldView::Thin(entt::registry* world) {
+  return WorldView(world, WorldView::Decl::Thin());
 }

@@ -84,7 +84,7 @@ IF (NOT EMSCRIPTEN)
     endif ()
   endif ()
 
-  if (IG_CHECK_SUBMODULES_ON_BUILD OR NOT EXISTS "${PROJECT_SOURCE_DIR}/extern/dawn/third_party/tint")
+  if (IG_CHECK_SUBMODULES_ON_BUILD OR NOT EXISTS "${PROJECT_SOURCE_DIR}/extern/dawn/third_party/zlib")
     message(STATUS "Running depot_tools sync for Dawn deps")
     if (WIN32)
 	  execute_process(

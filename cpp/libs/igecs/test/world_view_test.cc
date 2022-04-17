@@ -1,4 +1,5 @@
 #define IG_ENABLE_ECS_VALIDATION
+#define IG_ECS_TEST_VALIDATIONS
 
 #include <gtest/gtest-death-test.h>
 #include <gtest/gtest.h>
@@ -148,6 +149,61 @@ TEST(IgECS_WorldView, MergesInDecl) {
     d2.ctx_writes<BarT>();
     d.merge_in_decl(d2);
     EXPECT_TRUE(d.can_ctx_write<BarT>());
+  }
+}
+
+TEST(IgECS_WorldView, RecordsDebugInfoForOtherTests) {
+  entt::registry world;
+  auto e = world.create();
+
+  {
+    WorldView wv = WorldView::Decl::Thin().create(&world);
+    EXPECT_FALSE(wv.has_read<FooT>());
+    EXPECT_FALSE(wv.has_written<FooT>());
+    EXPECT_FALSE(wv.has_ctx_read<FooT>());
+    EXPECT_FALSE(wv.has_ctx_written<FooT>());
+  }
+
+  {
+    WorldView wv = WorldView::Decl::Thin().create(&world);
+
+    wv.attach<FooT>(e, 42);
+
+    EXPECT_FALSE(wv.has_read<FooT>());
+    EXPECT_TRUE(wv.has_written<FooT>());
+    EXPECT_FALSE(wv.has_ctx_read<FooT>());
+    EXPECT_FALSE(wv.has_ctx_written<FooT>());
+  }
+
+  {
+    WorldView wv = WorldView::Decl::Thin().create(&world);
+
+    wv.attach_ctx<FooT>(10);
+
+    EXPECT_FALSE(wv.has_read<FooT>());
+    EXPECT_FALSE(wv.has_written<FooT>());
+    EXPECT_FALSE(wv.has_ctx_read<FooT>());
+    EXPECT_TRUE(wv.has_ctx_written<FooT>());
+  }
+
+  {
+    WorldView wv = WorldView::Decl::Thin().create(&world);
+
+    EXPECT_EQ(wv.read<FooT>(e).a, 42);
+    EXPECT_TRUE(wv.has_read<FooT>());
+    EXPECT_FALSE(wv.has_written<FooT>());
+    EXPECT_FALSE(wv.has_ctx_read<FooT>());
+    EXPECT_FALSE(wv.has_ctx_written<FooT>());
+  }
+
+  {
+    WorldView wv = WorldView::Decl::Thin().create(&world);
+
+    EXPECT_EQ(wv.ctx<FooT>().a, 10);
+    EXPECT_FALSE(wv.has_read<FooT>());
+    EXPECT_FALSE(wv.has_written<FooT>());
+    EXPECT_TRUE(wv.has_ctx_read<FooT>());
+    EXPECT_FALSE(wv.has_ctx_written<FooT>());
   }
 }
 

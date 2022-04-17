@@ -82,6 +82,21 @@ class Maybe {
     }
   }
 
+  Maybe& operator=(const Maybe<T>& o) {
+    static_assert(
+        std::is_copy_constructible<T>::value,
+        "Cannot create copy assignment operator for non-copyable Maybe<T>");
+
+    is_initialized_ = false;
+
+    if (o.is_initialized_) {
+      ::new (&value_) T(o.value_);
+      is_initialized_ = true;
+    }
+
+    return *this;
+  }
+
   Maybe(const T& o) {
     static_assert(std::is_copy_constructible<T>::value,
                   "Cannot create copy constructor for a non-copyable T");
