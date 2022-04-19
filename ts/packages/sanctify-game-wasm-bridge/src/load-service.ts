@@ -10,8 +10,7 @@ export class SanctifyGameClientLoadService {
   constructor(private readonly baseUrl: string) {}
 
   async loadGameScript(): Promise<void> {
-    navigator.gpu.requestAdapter()
-    if (this.scriptElement) {;
+    if (this.scriptElement) {
       return;
     }
 

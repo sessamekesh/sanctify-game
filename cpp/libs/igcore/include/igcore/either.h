@@ -18,8 +18,8 @@ struct Left {
 };
 
 template <typename T>
-constexpr Left<T> left(T const& x) {
-  return {x};
+Left<T> left(T const& x) {
+  return Left<T>{x};
 }
 
 template <typename T>

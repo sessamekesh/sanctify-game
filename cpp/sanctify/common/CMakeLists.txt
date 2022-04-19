@@ -7,3 +7,4 @@ add_proto_lib(
 )
 
 add_subdirectory(logic)
+add_subdirectory(simple_client_app)
