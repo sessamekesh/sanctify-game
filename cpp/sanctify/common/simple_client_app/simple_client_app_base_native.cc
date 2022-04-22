@@ -102,7 +102,7 @@ dawn_native::Adapter get_adapter(
       log << "(" << i++ << ") " << adapter_properties.name << " - "
           << adapter_properties.driverDescription << "\n"
           << "  Backend: " << ::backend_string(adapter_properties.backendType)
-          << " (" << ::adapter_string(adapter_properties.adapterType) << ")";
+          << " (" << ::adapter_string(adapter_properties.adapterType) << ")\n";
     }
   }
 

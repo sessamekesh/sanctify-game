@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package sanctify.pve.pb;
+
+/*************************************************\
+ *           Pve Offline Client Config           *
+ *                                               *
+ * Configuration object passed to the offline    *
+ *  PvE client. Any runtime configuration that   *
+ *  might be put in CLI arguments should be put  *
+ *  in here instead.                             *
+ *                                               *
+ * Application state that may be updated by the  *
+ *  web client (for debugging or user settings)  *
+ *  can also be included here.
+\*************************************************/
+
+message NetworkSimulationParameters {
+  // Client -> server latency characteristics
+  float client_server_latency_median = 1;
+  float client_server_latency_stdev = 2;
+  float client_server_packet_loss_pct = 3;
+
+  // Server -> client latency characteristics
+  float server_client_latency_median = 4;
+  float server_client_latency_stdev = 5;
+  float server_client_packet_loss_pct = 6;
+
+  // Next token: 7
+}
+
+message RenderSettings {
+  float swap_chain_resize_latency = 1;
+}
+
+message DebugSettings {
+  float frame_time = 1;
+}
+
+message PveOfflineClientConfig {
+  NetworkSimulationParameters initial_network_sim_state = 1;
+  RenderSettings render_settings = 2;
+  DebugSettings debug_settings = 3;
+}
