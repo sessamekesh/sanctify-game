@@ -3,17 +3,17 @@
 using namespace sanctify;
 
 namespace {
-emscripten::val kPreferredTextureJsCallback = {};
+emscripten::val kPreferredTextureJsCallback = emscripten::val::null();
 }
 
 wgpu::TextureFormat evil_hacks::get_preferred_texture_format() {
-  int jsRsl = ::kPreferredTextureJsCallback();
+  int jsRsl = ::kPreferredTextureJsCallback().as<int>();
   switch (jsRsl) {
     case 0:
     default:
       return wgpu::TextureFormat::BGRA8Unorm;
     case 1:
-      wgpu::TextureFormat::RGBA8Unorm;
+      return wgpu::TextureFormat::RGBA8Unorm;
   }
 }
 

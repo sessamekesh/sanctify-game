@@ -1,28 +1,27 @@
-import {SanctifyGameClientInstance, SanctifyClientWasmBridge} from './sanctify-wasm';
+import { SanctifyPveOfflineClientBridge, SanctifyPveOfflineClientInstance } from './wasm-bridge';
 
 export const SUPPORTS_MULTITHREADING = typeof SharedArrayBuffer === 'function';
 
-export class SanctifyGameClientLoadService {
-  private scriptElement: HTMLScriptElement|null = null;
+export class SanctifyPveOfflineClientLoadService {
+  private scriptElementPromise: Promise<HTMLScriptElement>|null = null;
   private gameCanvas: HTMLCanvasElement|null = null;
-  private gameClient: SanctifyGameClientInstance|null = null;
+  private gameClientPromise: Promise<SanctifyPveOfflineClientInstance>|null = null;
 
   constructor(private readonly baseUrl: string) {}
 
   async loadGameScript(): Promise<void> {
-    if (this.scriptElement) {
+    if (this.scriptElementPromise) {
       return;
     }
 
     const src = SUPPORTS_MULTITHREADING
-      ? `${this.baseUrl}/wasm_mt/sanctify-game-client.js`
-      : `${this.baseUrl}/wasm_st/sanctify-game-client.js`;
+      ? `${this.baseUrl}/wasm_mt/sanctify-pve-offline-client.js`
+      : `${this.baseUrl}/wasm_st/sanctify-pve-offline-client.js`;
     
-    return new Promise((resolve, reject) => {
+    this.scriptElementPromise = new Promise((resolve, reject) => {
       const scriptElement = document.createElement('script');
       scriptElement.onload = () => {
-        this.scriptElement = scriptElement;
-        resolve();
+        resolve(scriptElement);
       };
       scriptElement.onerror = () => {
         document.body.removeChild(scriptElement);
@@ -50,8 +49,8 @@ export class SanctifyGameClientLoadService {
     return this.gameCanvas;
   }
 
-  async getGameClient(): Promise<SanctifyGameClientInstance> {
-    if (!this.gameClient) {
+  async getGameClient(): Promise<SanctifyPveOfflineClientInstance> {
+    if (!this.gameClientPromise) {
       if (!navigator.gpu) {
         throw new Error('WebGPU is not supported');
       }
@@ -60,21 +59,23 @@ export class SanctifyGameClientLoadService {
       canvas.width = canvas.clientHeight * devicePixelRatio;
       canvas.height = canvas.clientWidth * devicePixelRatio;
 
-      const [_empty, adapter] = await Promise.all([
-        this.loadGameScript(),
-        navigator.gpu.requestAdapter()
-      ]);
-
-      if (!adapter) {
-        throw new Error('Could not get WebGPU adapter');
-      }
-
-      const device = await adapter.requestDevice();
-
-      const wasmModule = await SanctifyClientWasmBridge.Create(canvas, device);
-      this.gameClient = wasmModule.createClient();
+      this.gameClientPromise = (async () => {
+        const [_empty, adapter] = await Promise.all([
+          this.loadGameScript(),
+          navigator.gpu.requestAdapter()
+        ]);
+  
+        if (!adapter) {
+          throw new Error('Could not get WebGPU adapter');
+        }
+  
+        const device = await adapter.requestDevice();
+  
+        const wasmModule = await SanctifyPveOfflineClientBridge.Create(canvas, adapter, device);
+        return wasmModule.createClient();
+      })();
     }
 
-    return this.gameClient;
+    return this.gameClientPromise;
   }
 }

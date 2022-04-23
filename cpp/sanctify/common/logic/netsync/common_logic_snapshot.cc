@@ -30,14 +30,14 @@ Maybe<Either<ComponentT, common::pb::ComponentType>> gen_diff(
   }
 
   if (base_value.has_value() && dest_value.is_empty()) {
-    return right<common::pb::ComponentType>(component_type);
+    return {right<common::pb::ComponentType>(component_type)};
   }
 
   if (base_value.get() == dest_value.get()) {
     return empty_maybe{};
   }
 
-  return left(dest_value.move());
+  return {left(dest_value.move())};
 }
 
 template <typename ComponentT>
@@ -71,14 +71,14 @@ Maybe<Either<CtxT, common::pb::CtxComponentType>> gen_ctx_diff(
   }
 
   if (base_value.has_value() && dest_value.is_empty()) {
-    return right<common::pb::CtxComponentType>(component_type);
+    return {right<common::pb::CtxComponentType>(component_type)};
   }
 
   if (base_value.get() == dest_value.get()) {
     return empty_maybe{};
   }
 
-  return left(dest_value.move());
+  return {left(dest_value.move())};
 }
 
 template <typename CtxT>

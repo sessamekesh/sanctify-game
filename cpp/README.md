@@ -71,19 +71,19 @@ docker build -f ./sanctify-emscripten.Dockerfile -t sanctify-emscripten .
 
 # Configure and build binaries for multi-threaded (standard) target
 docker run --rm -v K:/games/sanctify-game:/usr/src/sanctify-game -w /usr/src/sanctify-game/cpp/out/emcc sanctify-emscripten emcmake cmake /usr/src/sanctify-game/cpp -DIG_BUILD_TESTS="OFF" -DIG_BUILD_SERVER="off" -DCMAKE_BUILD_TYPE="MinSizeRel" -DIG_ENABLE_THREADS="on" -DIG_CHECK_SUBMODULES_ON_BUILD="ON" -DIG_ENABLE_ECS_VALIDATION="off" -DIG_TOOL_WRANGLE_PATH="../emcc-tools/igtools.cmake"
-docker run --rm -v K:/games/sanctify-game:/usr/src/sanctify-game -w /usr/src/sanctify-game/cpp/out/emcc sanctify-emscripten emmake make sanctify-game-client
+docker run --rm -v K:/games/sanctify-game:/usr/src/sanctify-game -w /usr/src/sanctify-game/cpp/out/emcc sanctify-emscripten emmake make sanctify-pve-offline-client
 
 # Configure and build binaries for single-threaded target
 docker run --rm -v K:/games/sanctify-game:/usr/src/sanctify-game -w /usr/src/sanctify-game/cpp/out/emcc-st sanctify-emscripten emcmake cmake /usr/src/sanctify-game/cpp -DIG_BUILD_TESTS="OFF" -DIG_BUILD_SERVER="off" -DCMAKE_BUILD_TYPE="MinSizeRel" -DIG_ENABLE_THREADS="off" -DIG_CHECK_SUBMODULES_ON_BUILD="ON" -DIG_ENABLE_ECS_VALIDATION="off" -DIG_TOOL_WRANGLE_PATH="../emcc-tools/igtools.cmake"
-docker run --rm -v K:/games/sanctify-game:/usr/src/sanctify-game -w /usr/src/sanctify-game/cpp/out/emcc-st sanctify-emscripten emmake make sanctify-game-client
+docker run --rm -v K:/games/sanctify-game:/usr/src/sanctify-game -w /usr/src/sanctify-game/cpp/out/emcc-st sanctify-emscripten emmake make sanctify-pve-offline-client
 
 # ... And don't forget to copy them over to the web entry point
-cp K:/games/sanctify-game/cpp/out/emcc/sanctify-game/client/sanctify-game-client.js K:/games/sanctify-game/ts/packages/sanctify-web-client/public/wasm_mt/sanctify-game-client.js
-cp K:/games/sanctify-game/cpp/out/emcc/sanctify-game/client/sanctify-game-client.worker.js K:/games/sanctify-game/ts/packages/sanctify-web-client/public/wasm_mt/sanctify-game-client.worker.js
-cp K:/games/sanctify-game/cpp/out/emcc/sanctify-game/client/sanctify-game-client.wasm K:/games/sanctify-game/ts/packages/sanctify-web-client/public/wasm_mt/sanctify-game-client.wasm
-cp K:/games/sanctify-game/cpp/out/emcc-st/sanctify-game/client/sanctify-game-client.js K:/games/sanctify-game/ts/packages/sanctify-web-client/public/wasm_st/sanctify-game-client.js
-cp K:/games/sanctify-game/cpp/out/emcc-st/sanctify-game/client/sanctify-game-client.wasm K:/games/sanctify-game/ts/packages/sanctify-web-client/public/wasm_st/sanctify-game-client.wasm
-cp K:/games/sanctify-game/cpp/out/emcc/sanctify-game/client/resources/* K:/games/sanctify-game/ts/packages/sanctify-web-client/public/resources
+cp K:/games/sanctify-game/cpp/out/emcc/sanctify/pve/offline_client/sanctify-pve-offline-client.js K:/games/sanctify-game/ts/packages/pve-offline-client/public/wasm_mt/sanctify-pve-offline-client.js
+cp K:/games/sanctify-game/cpp/out/emcc/sanctify/pve/offline_client/sanctify-pve-offline-client.worker.js K:/games/sanctify-game/ts/packages/pve-offline-client/public/wasm_mt/sanctify-pve-offline-client.worker.js
+cp K:/games/sanctify-game/cpp/out/emcc/sanctify/pve/offline_client/sanctify-pve-offline-client.wasm K:/games/sanctify-game/ts/packages/pve-offline-client/public/wasm_mt/sanctify-pve-offline-client.wasm
+
+cp K:/games/sanctify-game/cpp/out/emcc-st/sanctify/pve/offline_client/sanctify-pve-offline-client.js K:/games/sanctify-game/ts/packages/pve-offline-client/public/wasm_st/sanctify-pve-offline-client.js
+cp K:/games/sanctify-game/cpp/out/emcc-st/sanctify/pve/offline_client/sanctify-pve-offline-client.wasm K:/games/sanctify-game/ts/packages/pve-offline-client/public/wasm_st/sanctify-pve-offline-client.wasm
 ```
 
 # General Development Rules

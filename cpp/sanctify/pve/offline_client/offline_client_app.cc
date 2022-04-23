@@ -3,6 +3,10 @@
 #include <igcore/either.h>
 #include <igcore/log.h>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/html5.h>
+#endif
+
 using namespace sanctify;
 using namespace pve;
 using namespace indigo;
@@ -13,7 +17,16 @@ const char* kLogLabel = "SanctifyOfflineClientApp";
 }
 
 std::shared_ptr<OfflineClientApp> OfflineClientApp::Create(
-    pb::PveOfflineClientConfig config) {
+    std::string config_string) {
+  pb::PveOfflineClientConfig config{};
+  if (!config.ParseFromString(config_string)) {
+    Logger::err(kLogLabel) << "Failed to parse config string";
+    return nullptr;
+  }
+
+  Logger::log(kLogLabel) << "Creating a new OfflineClientApp! This should only "
+                            "happen once per application lifetime";
+
   auto app_base_rsl =
       SimpleClientAppBase::Create("Sanctify PvE Offline Client");
 

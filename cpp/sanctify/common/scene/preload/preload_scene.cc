@@ -39,6 +39,12 @@ PreloadScene::PreloadScene(
       },
       main_thread_task_list_);
 
+  fs_ubo_.get_mutable().t =
+      std::chrono::duration_cast<std::chrono::seconds>(
+          std::chrono::high_resolution_clock::now().time_since_epoch())
+          .count() %
+      123456789;
+
   create_render_pipeline();
 }
 

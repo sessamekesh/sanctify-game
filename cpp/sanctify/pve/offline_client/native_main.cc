@@ -9,7 +9,8 @@ int main() {
   config.mutable_render_settings()->set_swap_chain_resize_latency(0.5f);
   config.mutable_debug_settings()->set_frame_time(1.f / 60.f);
 
-  auto app = sanctify::pve::OfflineClientApp::Create(config);
+  auto app =
+      sanctify::pve::OfflineClientApp::Create(config.SerializeAsString());
 
   if (app == nullptr) {
     indigo::core::Logger::log("main")

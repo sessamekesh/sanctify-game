@@ -1,4 +1,5 @@
 #include <emscripten/emscripten.h>
+#include <emscripten/html5.h>
 #include <igcore/log.h>
 
 #include "evil_emscripten_hacks.h"
@@ -32,7 +33,7 @@ void SimpleClientAppBase::resize_swap_chain(uint32_t width, uint32_t height) {
   swap_desc.height = height;
   swap_desc.presentMode = wgpu::PresentMode::Fifo;
 
-  swapChain = device.CreateSwapChain(Surface, &swap_desc);
+  swapChain = device.CreateSwapChain(surface, &swap_desc);
 
   width = width;
   height = height;

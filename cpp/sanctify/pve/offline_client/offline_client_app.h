@@ -14,8 +14,7 @@ namespace sanctify::pve {
 class OfflineClientApp : public std::enable_shared_from_this<OfflineClientApp>,
                          public sanctify::ISceneConsumer {
  public:
-  static std::shared_ptr<OfflineClientApp> Create(
-      pb::PveOfflineClientConfig config);
+  static std::shared_ptr<OfflineClientApp> Create(std::string config_string);
 
   void set_scene(std::shared_ptr<ISceneBase> next_scene) override;
 

@@ -14,6 +14,7 @@
 #include <entt/entt.hpp>
 
 namespace {
+#ifdef IG_ENABLE_ECS_VALIDATION
 template <typename T>
 std::string failmsg(const char* method) {
   return (std::string("ECS validation failure: method ") + method +
@@ -28,7 +29,7 @@ void assert_and_print(bool condition, const char* method) {
   }
   assert(condition);
 }
-
+#endif
 }  // namespace
 
 namespace indigo::igecs {
@@ -122,6 +123,7 @@ class WorldView {
 
     WorldView create(entt::registry* registry) const;
 
+#ifdef IG_ENABLE_ECS_VALIDATION
     const core::PodVector<CttiTypeId>& list_reads() const { return reads_; }
     const core::PodVector<CttiTypeId>& list_writes() const { return writes_; }
     const core::PodVector<CttiTypeId>& list_ctx_reads() const {
@@ -130,6 +132,7 @@ class WorldView {
     const core::PodVector<CttiTypeId>& list_ctx_writes() const {
       return ctx_writes_;
     }
+#endif
 
    private:
     Decl(bool allow_all);
