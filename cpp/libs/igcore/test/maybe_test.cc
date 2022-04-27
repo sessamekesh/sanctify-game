@@ -19,6 +19,32 @@ struct NonCopyable {
   }
 };
 
+struct MovableWithNonTrivialDtor {
+  int value;
+  bool* setOnDestroy;
+
+  MovableWithNonTrivialDtor() = delete;
+  MovableWithNonTrivialDtor(int v, bool* set_on_destroy)
+      : value(v), setOnDestroy(set_on_destroy) {}
+  ~MovableWithNonTrivialDtor() {
+    if (setOnDestroy) {
+      *setOnDestroy = true;
+    }
+  }
+
+  MovableWithNonTrivialDtor(const MovableWithNonTrivialDtor&) = delete;
+  MovableWithNonTrivialDtor& operator=(const MovableWithNonTrivialDtor&) =
+      delete;
+
+  MovableWithNonTrivialDtor(MovableWithNonTrivialDtor&& o) noexcept
+      : value(o.value), setOnDestroy(std::exchange(o.setOnDestroy, nullptr)) {}
+  MovableWithNonTrivialDtor& operator=(MovableWithNonTrivialDtor&& o) noexcept {
+    value = o.value;
+    setOnDestroy = std::exchange(o.setOnDestroy, nullptr);
+    return *this;
+  }
+};
+
 Maybe<int> half_if_even(int n) {
   if (n % 2 == 0) {
     return Maybe<int>(n / 2);
@@ -132,4 +158,16 @@ TEST(Maybe, FlatMapReturnsEmpty) {
   EXPECT_TRUE(original.has_value());
   EXPECT_EQ(original.get(), 3);
   EXPECT_FALSE(mapped.has_value());
+}
+
+TEST(Maybe, CallsDtorWhenEmptied) {
+  bool dtor_called = false;
+  Maybe<MovableWithNonTrivialDtor> maybe =
+      MovableWithNonTrivialDtor(1, &dtor_called);
+
+  EXPECT_FALSE(dtor_called);
+
+  maybe = indigo::core::empty_maybe{};
+
+  EXPECT_TRUE(dtor_called);
 }

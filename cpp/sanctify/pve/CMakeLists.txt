@@ -1,1 +1,2 @@
+add_subdirectory(render_common)
 add_subdirectory(offline_client)

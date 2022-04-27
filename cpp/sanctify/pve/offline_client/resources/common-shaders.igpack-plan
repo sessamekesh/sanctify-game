@@ -1,0 +1,19 @@
+plan {
+  asset_pack_file_path: "resources/common-shaders.igpack"
+  actions {
+    copy_wgsl_source {
+      igasset_name: "solidStaticVs"
+      input_file_path: "common/render/solid_static/solid_static.vs.wgsl"
+      shader_type: VERTEX
+      entry_point: "main"
+    }
+  }
+  actions {
+    copy_wgsl_source {
+      igasset_name: "solidStaticFs"
+      input_file_path: "common/render/solid_static/solid_static.fs.wgsl"
+      shader_type: FRAGMENT
+      entry_point: "main"
+    }
+  }
+}

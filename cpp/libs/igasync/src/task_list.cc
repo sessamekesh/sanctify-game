@@ -1,5 +1,7 @@
 #include <igasync/task_list.h>
 
+#include <algorithm>
+
 using namespace indigo;
 using namespace core;
 
@@ -28,11 +30,8 @@ void TaskList::add_listener(
 void TaskList::remove_listener(
     const std::shared_ptr<ITaskScheduledListener>& listener) {
   std::lock_guard l(m_);
-  for (auto it = listeners_.begin(); it != listeners_.end(); it++) {
-    if (*it == listener) {
-      it = listeners_.erase(it);
-    }
-  }
+  listeners_.erase(std::remove(listeners_.begin(), listeners_.end(), listener),
+                   listeners_.end());
 }
 
 bool TaskList::execute_next() {

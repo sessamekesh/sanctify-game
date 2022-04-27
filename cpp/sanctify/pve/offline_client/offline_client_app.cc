@@ -2,6 +2,7 @@
 
 #include <igcore/either.h>
 #include <igcore/log.h>
+#include "game_scene/pve_offline_game_scene.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/html5.h>
@@ -52,7 +53,7 @@ std::shared_ptr<OfflineClientApp> OfflineClientApp::Create(
   // TODO (sessamekesh): Get loading scene here instead of this one, which will
   //  never be resolved and allows the preload scene to just... spin
   auto next_scene_promise =
-      Promise<Either<std::shared_ptr<ISceneBase>, std::string>>::create();
+      PveOfflineGameScene::Create(app_base, main_thread_task_list, config);
 
   auto startup_scene = std::shared_ptr<PreloadScene>(
       new PreloadScene(app_base->device, app_base->swapChain, app_base->width,

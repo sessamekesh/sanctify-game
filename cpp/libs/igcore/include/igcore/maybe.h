@@ -24,7 +24,6 @@ class Maybe {
 
   static Maybe<T> empty() { return Maybe<T>(); }
 
-  Maybe(empty_maybe&) : Maybe() {}
   Maybe(empty_maybe&&) : Maybe() {}
 
   Maybe(Maybe<T>&& o) noexcept : dummy_(0x00), is_initialized_(false) {
@@ -42,6 +41,9 @@ class Maybe {
   Maybe& operator=(Maybe<T>&& o) noexcept {
     static_assert(std::is_move_constructible<T>::value,
                   "Cannot create move constructor for a non-movable Maybe<T>");
+
+    destroy_self();
+
     if (o.is_initialized_) {
       ::new (&value_) T(std::move(o.value_));
       is_initialized_ = true;
@@ -67,6 +69,9 @@ class Maybe {
     static_assert(
         std::is_move_assignable<T>::value,
         "Cannot create move assignment operator for a non-movable Maybe<T>");
+
+    destroy_self();
+
     ::new (&value_) T(std::move(o));
     is_initialized_ = true;
 
@@ -87,7 +92,7 @@ class Maybe {
         std::is_copy_constructible<T>::value,
         "Cannot create copy assignment operator for non-copyable Maybe<T>");
 
-    is_initialized_ = false;
+    destroy_self();
 
     if (o.is_initialized_) {
       ::new (&value_) T(o.value_);
@@ -108,9 +113,7 @@ class Maybe {
   ~Maybe() {
     static_assert(std::is_destructible<T>::value,
                   "Maybe<T> can only be destructed for destructable T");
-    if (is_initialized_) {
-      value_.~T();
-    }
+    destroy_self();
   }
 
   bool operator==(const Maybe<T>& o) const {
@@ -192,8 +195,9 @@ class Maybe {
       return Maybe<U>();
     }
 
-    is_initialized_ = false;
-    return fn(std::move(value_));
+    Maybe<U> rsl = fn(std::move(value_));
+    destroy_self();
+    return std::move(rsl);
   }
 
   T or_else(T default_value) {
@@ -229,6 +233,15 @@ class Maybe {
     T value_;
   };
   bool is_initialized_;
+
+ private:
+  void destroy_self() {
+    if (is_initialized_) {
+      value_.~T();
+      dummy_ = 0x00;
+      is_initialized_ = false;
+    }
+  }
 };
 
 template <typename T>

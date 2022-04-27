@@ -6,6 +6,8 @@ add_proto_lib(
   INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/sanctify/common/proto"
 )
 
+add_subdirectory(util)
 add_subdirectory(logic)
 add_subdirectory(simple_client_app)
+add_subdirectory(render)
 add_subdirectory(scene)

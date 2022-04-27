@@ -39,6 +39,9 @@ namespace indigo::core {
  * At some point in the future, a "race" API may be supported as well.
  */
 
+// TODO (sessamekesh): The PromiseCombiner is a memory leak! For some reason the
+// dtor is never called
+
 class PromiseCombiner : public std::enable_shared_from_this<PromiseCombiner> {
  public:
   template <typename T>
@@ -116,6 +119,17 @@ class PromiseCombiner : public std::enable_shared_from_this<PromiseCombiner> {
           ->unsafe_sync_move();
     }
 
+   public:
+    PromiseCombinerResult(const PromiseCombinerResult&) = delete;
+    PromiseCombinerResult& operator=(const PromiseCombinerResult&) = delete;
+    PromiseCombinerResult(PromiseCombinerResult&&) = default;
+    PromiseCombinerResult& operator=(PromiseCombinerResult&&) = default;
+    ~PromiseCombinerResult() {
+      if (combiner_ != nullptr) {
+        combiner_->promise_ptrs_.clear();
+      }
+    }
+
    private:
     PromiseCombinerResult(std::shared_ptr<PromiseCombiner> combiner)
         : combiner_(combiner) {}
@@ -136,9 +150,13 @@ class PromiseCombiner : public std::enable_shared_from_this<PromiseCombiner> {
     PromiseCombinerKey<T> key(next_key_++);
     promise_ptrs_.push_back({key.key_, promise, false});
     promise->on_success(
-        [key, l = shared_from_this()](const auto&) {
-          // formatting comment
-          l->resolve_promise(key.key_);
+        [key, l = weak_from_this()](const auto&) {
+          auto t = l.lock();
+          if (t != nullptr) {
+            t->resolve_promise(key.key_);
+          } else {
+            indigo::core::Logger::log("PromiseCombiner") << "Well shit";
+          }
         },
         task_list);
     return key;
@@ -150,9 +168,57 @@ class PromiseCombiner : public std::enable_shared_from_this<PromiseCombiner> {
   PromiseCombiner(PromiseCombiner&&) = delete;
   PromiseCombiner& operator=(const PromiseCombiner&) = delete;
   PromiseCombiner& operator=(PromiseCombiner&&) = delete;
-  ~PromiseCombiner() = default;
+  ~PromiseCombiner() { is_combine_requested_ = false; }
 
-  std::shared_ptr<core::Promise<PromiseCombinerResult>> combine();
+  template <typename RslT>
+  std::shared_ptr<indigo::core::Promise<RslT>> combine(
+      std::function<RslT(PromiseCombinerResult rsl)> cb,
+      std::shared_ptr<indigo::core::TaskList> task_list) {
+    {
+      std::lock_guard l(rsl_mut_);
+      if (is_combine_requested_) {
+        core::Logger::err("PromiseCombiner")
+            << "Combine requested a second time - this "
+               "may indicate a programmer error";
+        assert(false);
+      }
+
+      final_result_ = PromiseCombinerResult(shared_from_this());
+      is_combine_requested_ = true;
+    }
+
+    resolve_promise(0u);
+
+    return final_promise_->then_consuming<RslT>(
+        [cb](PromiseCombinerResult rsl) { return cb(std::move(rsl)); },
+        task_list);
+  }
+
+  template <typename RslT>
+  std::shared_ptr<indigo::core::Promise<RslT>> combine_chaining(
+      std::function<std::shared_ptr<indigo::core::Promise<RslT>>(
+          PromiseCombinerResult rsl)>
+          cb,
+      std::shared_ptr<indigo::core::TaskList> task_list) {
+    {
+      std::lock_guard l(rsl_mut_);
+      if (is_combine_requested_) {
+        core::Logger::err("PromiseCombiner")
+            << "Combine requested a second time - this "
+               "may indicate a programmer error";
+        assert(false);
+      }
+
+      final_result_ = PromiseCombinerResult(shared_from_this());
+      is_combine_requested_ = true;
+    }
+
+    resolve_promise(0u);
+
+    return final_promise_->then_chain_consuming<RslT>(
+        [cb](PromiseCombinerResult rsl) { return cb(std::move(rsl)); },
+        task_list);
+  }
 
  private:
   PromiseCombiner();
@@ -170,6 +236,7 @@ class PromiseCombiner : public std::enable_shared_from_this<PromiseCombiner> {
   std::mutex rsl_mut_;
   core::Vector<PromiseEntry> promise_ptrs_;
 
+  PromiseCombinerResult final_result_;
   std::shared_ptr<core::Promise<PromiseCombinerResult>> final_promise_;
   bool is_combine_requested_;
 };

@@ -30,6 +30,11 @@ SimpleClientAppBase::SimpleClientAppBase(GLFWwindow* window,
       executor_threads_(std::thread::hardware_concurrency())
 #endif
 {
+#ifdef IG_ENABLE_THREADS
+  for (int i = 0; i < std::thread::hardware_concurrency(); i++) {
+    executor_threads_.push_back(std::make_shared<ExecutorThread>());
+  }
+#endif
 }
 
 SimpleClientAppBase::~SimpleClientAppBase() {

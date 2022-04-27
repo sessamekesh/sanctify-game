@@ -3,7 +3,7 @@ FROM debian:bullseye
 RUN apt-get -qq update
 RUN apt-get -qq install -y cmake git make lsb-release
 RUN apt-get -qq install -y wget software-properties-common
-RUN apt-get -qq install -y gnupg2 xorg-dev libx11-xcb-dev
+RUN apt-get -qq install -y gnupg2 xorg-dev libx11-xcb-dev ninja-build
 
 WORKDIR /usr/deps
 

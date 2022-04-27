@@ -283,7 +283,7 @@ void Scheduler::execute(
     }
     schedule.push_back(SNode{
         nodes_[i].id_,
-        node_combiner->combine()->then_chain<core::EmptyPromiseRsl>(
+        node_combiner->combine_chaining<core::EmptyPromiseRsl>(
             [this, i, world, main_thread_task_list,
              any_thread_task_list](const auto&) {
               return this->nodes_[i].schedule(world, main_thread_task_list,
@@ -296,8 +296,12 @@ void Scheduler::execute(
 
   // Schedule is built! Proceed to execute everything...
   bool is_done = false;
-  all_nodes_combiner->combine()->on_success(
-      [&is_done](const auto&) { is_done = true; }, main_thread_task_list);
+  all_nodes_combiner->combine<core::EmptyPromiseRsl>(
+      [&is_done](auto) {
+        is_done = true;
+        return core::EmptyPromiseRsl{};
+      },
+      main_thread_task_list);
 
   //
   // Okay this is a tricky section full of weird shit.

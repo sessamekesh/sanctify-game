@@ -5,7 +5,8 @@ set (HEADER_LIST
   "netsync/common_logic_snapshot_diff.h"
   "netsync/netsync.h"
   "netsync/proto_serialize.h"
-  "update_common/tick_time_elapsed.h")
+  "update_common/tick_time_elapsed.h"
+  "viewport/arena_camera.h")
 
 set (SRC_LIST
   "locomotion/locomotion.cc"
@@ -14,13 +15,15 @@ set (SRC_LIST
   "netsync/common_logic_snapshot_diff.cc"
   "netsync/netsync.cc"
   "netsync/proto_serialize.cc"
-  "update_common/tick_time_elapsed.cc")
+  "update_common/tick_time_elapsed.cc"
+  "viewport/arena_camera.cc")
 
 set (TEST_SRC_LIST
   "locomotion/locomotion_system_test.cc"
   "netsync/common_logic_snapshot_diff_test.cc"
   "netsync/common_logic_snapshot_test.cc"
-  "update_common/tick_time_elapsed_test.cc")
+  "update_common/tick_time_elapsed_test.cc"
+  "viewport/arena_camera_test.cc")
 
 add_library(sanctify-common-logic STATIC ${HEADER_LIST} ${SRC_LIST})
 target_include_directories(sanctify-common-logic PUBLIC "${SANCTIFY_INCLUDE_ROOT}")

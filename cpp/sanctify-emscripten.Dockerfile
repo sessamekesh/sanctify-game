@@ -2,7 +2,7 @@ FROM debian:bullseye
 
 RUN apt-get -qq update
 RUN apt-get -qq install -y cmake git make lsb-release wget software-properties-common gnupg2
-RUN apt-get -qq install -y python3 lbzip2
+RUN apt-get -qq install -y python3 lbzip2 ninja-build
 
 WORKDIR /usr/deps
 

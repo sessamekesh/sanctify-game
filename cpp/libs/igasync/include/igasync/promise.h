@@ -257,6 +257,25 @@ class Promise : public std::enable_shared_from_this<Promise<ValT>> {
   }
 
   /**
+   * Utility wrapper that does the same thing as "then_chain" (above), but
+   * consuming the result instead of just passing it along.
+   */
+  template <typename MT>
+  std::shared_ptr<Promise<MT>> then_chain_consuming(
+      std::function<std::shared_ptr<core::Promise<MT>>(ValT)> cb,
+      std::shared_ptr<TaskList> task_list, std::string op_label = "") {
+    auto tr = Promise<MT>::create(op_label);
+    consume(
+        [tr, cb = std::move(cb), op_label, task_list](ValT val) {
+          cb(std::move(val))
+              ->consume([tr, task_list](MT vv) { tr->resolve(std::move(vv)); },
+                        task_list, op_label);
+        },
+        task_list, op_label);
+    return tr;
+  }
+
+  /**
    * Utility method to return an empty promise after a promise has resolved.
    * Useful for creating gating promises without having to pass around huge type
    * signatures everywhere.

@@ -1,6 +1,8 @@
 #ifndef LIB_IGGPU_UTIL_H
 #define LIB_IGGPU_UTIL_H
 
+#include <igasync/promise.h>
+#include <igcore/either.h>
 #include <igcore/pod_vector.h>
 #include <igcore/vector.h>
 #include <iggpu/texture.h>
