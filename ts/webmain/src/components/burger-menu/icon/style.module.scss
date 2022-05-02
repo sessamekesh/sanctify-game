@@ -1,0 +1,26 @@
+.icon-holder {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 36px;
+  height: 30px;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 10px;
+  margin-left: 12px;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.25);
+  }
+}
+
+.bar {
+  background-color: #560BAD;
+  border-radius: 4px;
+  width: 100%;
+  height: 4px;
+
+  :hover > & {
+    opacity: 0.85;
+  }
+}

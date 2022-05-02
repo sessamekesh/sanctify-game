@@ -81,14 +81,14 @@ docker run --rm -v K:/games/sanctify-game:/usr/src/sanctify-game -w /usr/src/san
 docker run --rm -v K:/games/sanctify-game:/usr/src/sanctify-game -w /usr/src/sanctify-game/cpp/out/emcc-st sanctify-emscripten emmake ninja sanctify-pve-offline-client
 
 # ... And don't forget to copy them over to the web entry point
-cp K:/games/sanctify-game/cpp/out/emcc/sanctify/pve/offline_client/sanctify-pve-offline-client.js K:/games/sanctify-game/ts/packages/pve-offline-client/public/wasm_mt/sanctify-pve-offline-client.js
-cp K:/games/sanctify-game/cpp/out/emcc/sanctify/pve/offline_client/sanctify-pve-offline-client.worker.js K:/games/sanctify-game/ts/packages/pve-offline-client/public/wasm_mt/sanctify-pve-offline-client.worker.js
-cp K:/games/sanctify-game/cpp/out/emcc/sanctify/pve/offline_client/sanctify-pve-offline-client.wasm K:/games/sanctify-game/ts/packages/pve-offline-client/public/wasm_mt/sanctify-pve-offline-client.wasm
+cp K:/games/sanctify-game/cpp/out/emcc/sanctify/pve/offline_client/sanctify-pve-offline-client.js K:/games/sanctify-game/ts/webmain/public/wasm_mt/sanctify-pve-offline-client.js
+cp K:/games/sanctify-game/cpp/out/emcc/sanctify/pve/offline_client/sanctify-pve-offline-client.worker.js K:/games/sanctify-game/ts/webmain/public/wasm_mt/sanctify-pve-offline-client.worker.js
+cp K:/games/sanctify-game/cpp/out/emcc/sanctify/pve/offline_client/sanctify-pve-offline-client.wasm K:/games/sanctify-game/ts/webmain/public/wasm_mt/sanctify-pve-offline-client.wasm
 
-cp K:/games/sanctify-game/cpp/out/emcc-st/sanctify/pve/offline_client/sanctify-pve-offline-client.js K:/games/sanctify-game/ts/packages/pve-offline-client/public/wasm_st/sanctify-pve-offline-client.js
-cp K:/games/sanctify-game/cpp/out/emcc-st/sanctify/pve/offline_client/sanctify-pve-offline-client.wasm K:/games/sanctify-game/ts/packages/pve-offline-client/public/wasm_st/sanctify-pve-offline-client.wasm
+cp K:/games/sanctify-game/cpp/out/emcc-st/sanctify/pve/offline_client/sanctify-pve-offline-client.js K:/games/sanctify-game/ts/webmain/public/wasm_st/sanctify-pve-offline-client.js
+cp K:/games/sanctify-game/cpp/out/emcc-st/sanctify/pve/offline_client/sanctify-pve-offline-client.wasm K:/games/sanctify-game/ts/webmain/public/wasm_st/sanctify-pve-offline-client.wasm
 
-cp K:/games/sanctify-game/cpp/out/emcc-st/sanctify/pve/offline_client/resources/common-shaders.igpack K:/games/sanctify-game/ts/packages/pve-offline-client/public/resources/common-shaders.igpack
+cp K:/games/sanctify-game/cpp/out/emcc-st/sanctify/pve/offline_client/resources/common-shaders.igpack K:/games/sanctify-game/ts/webmain/public/resources/common-shaders.igpack
 ```
 
 # General Development Rules

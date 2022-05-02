@@ -1,0 +1,18 @@
+{
+  "name": "@sanctify/pve-offline-wasm-wrapper",
+  "version": "0.0.1",
+  "private": "true",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "scripts": {
+    "proto:generate": "protoc --ts_proto_out=./src/ -I=../../../cpp/sanctify/pve/offline_client/ ../../../cpp/sanctify/pve/offline_client/pve_offline_client_config.proto --ts_proto_opt=esModuleInterop=true",
+    "tsc": "tsc"
+  },
+  "dependencies": {
+    "@webgpu/types": "^0.1.14"
+  },
+  "devDependencies": {
+    "ts-proto": "^1.110.4"
+  }
+}
