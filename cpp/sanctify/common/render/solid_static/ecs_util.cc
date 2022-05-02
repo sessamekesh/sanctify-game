@@ -28,7 +28,7 @@ bool EcsUtil::prepare_world(indigo::igecs::WorldView* wv) {
 void EcsUtil::attach_renderable(igecs::WorldView* wv, entt::entity e,
                                 ReadonlyResourceRegistry<Geo>::Key geo_key,
                                 InstanceData instance_data) {
-  wv->write<MatWorldComponent>(e).matWorld = instance_data.matWorld;
+  wv->attach_or_replace<MatWorldComponent>(e).matWorld = instance_data.matWorld;
   wv->attach<RenderableComponent>(
       e, geo_key, instance_data.albedo, instance_data.metallic,
       instance_data.roughness, instance_data.ambientOcclusion);

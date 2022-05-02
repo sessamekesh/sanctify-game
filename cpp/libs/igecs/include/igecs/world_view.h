@@ -300,6 +300,16 @@ class WorldView {
   }
 
   template <typename ComponentT, typename... Args>
+  ComponentT& attach_or_replace(entt::entity e, Args&&... args) {
+#ifdef IG_ENABLE_ECS_VALIDATION
+    ::assert_and_print<ComponentT>(decl_.can_write<ComponentT>(), "attach");
+    write_types_.insert(CttiTypeId::of<ComponentT>());
+#endif
+    return registry_->emplace_or_replace<ComponentT, Args...>(
+        e, std::forward<Args>(args)...);
+  }
+
+  template <typename ComponentT, typename... Args>
   ComponentT& attach_ctx(Args&&... args) {
 #ifdef IG_ENABLE_ECS_VALIDATION
     ::assert_and_print<ComponentT>(decl_.can_ctx_write<ComponentT>(),

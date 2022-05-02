@@ -25,6 +25,8 @@ add_proto_lib(
 #
 # Asset Packs
 #
+set(asset_root "${PROJECT_SOURCE_DIR}/../assets")
+
 build_ig_asset_pack_plan(
   TARGET_NAME  sanctify-pve-offline-common-shaders-igpack
   PLAN         resources/common-shaders.igpack-plan
@@ -34,6 +36,16 @@ build_ig_asset_pack_plan(
     "common/render/solid_static/solid_static.fs.wgsl"
   TARGET_OUTPUT_FILES
     "resources/common-shaders.igpack"
+)
+
+build_ig_asset_pack_plan(
+  TARGET_NAME  sanctify-pve-offline-arena-base-igpack
+  PLAN         resources/arena-base.igpack-plan
+  INDIR        "${asset_root}"
+  INFILES
+    "sanctify_arena/sanctify-pve.fbx"
+  TARGET_OUTPUT_FILES
+    "resources/arena-base.igpack"
 )
 
 add_executable(sanctify-pve-offline-client ${platform_src_list} ${hdr_list} ${src_list})
@@ -46,7 +58,8 @@ target_link_libraries(sanctify-pve-offline-client PUBLIC
             sanctify-pve-render-common
             sanctify-simple-client-app)
 add_dependencies(sanctify-pve-offline-client
-            sanctify-pve-offline-common-shaders-igpack)
+            sanctify-pve-offline-common-shaders-igpack
+            sanctify-pve-offline-arena-base-igpack)
 
 if (EMSCRIPTEN)
   set_wasm_target_properties(TARGET_NAME sanctify-pve-offline-client

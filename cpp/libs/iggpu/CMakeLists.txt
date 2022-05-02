@@ -1,5 +1,6 @@
 set(header_list
   "include/iggpu/instance_buffer_store.h"
+  "include/iggpu/pipeline_builder.h"
   "include/iggpu/texture.h"
   "include/iggpu/thin_ubo.h"
   "include/iggpu/ubo_base.h"
@@ -7,6 +8,7 @@ set(header_list
 
 set(src_list
   "src/instance_buffer_store.cc"
+  "src/pipeline_builder.cc"
   "src/texture.cc"
   "src/thin_ubo.cc"
   "src/util.cc")

@@ -36,14 +36,17 @@ PveOfflineGameScene::Create(std::shared_ptr<SimpleClientAppBase> app_base,
           app_base, main_thread_task_list, async_task_list, client_config));
 
   asset::IgpackLoader shader_loader("resources/common-shaders.igpack",
-                                    main_thread_task_list);
+                                    async_task_list);
+  asset::IgpackLoader arena_base_loader("resources/arena-base.igpack",
+                                        async_task_list);
 
   const wgpu::Device& device = game_scene->base_->device;
   entt::registry& client_world = game_scene->client_world_;
   auto width = game_scene->base_->width;
   auto height = game_scene->base_->height;
 
-  auto wv = igecs::WorldView::Thin(&game_scene->client_world_);
+  auto* world = &game_scene->client_world_;
+  auto wv = igecs::WorldView::Thin(world);
 
   auto common_ubo_hdr_promise =
       CommonRenderLoadingUtil::setup_ubos_and_hdr_state(
@@ -53,18 +56,64 @@ PveOfflineGameScene::Create(std::shared_ptr<SimpleClientAppBase> app_base,
       CommonRenderLoadingUtil::build_solid_shader_pipeline(
           device, &client_world, common_ubo_hdr_promise, main_thread_task_list,
           async_task_list, &shader_loader, "solidStaticVs", "solidStaticFs");
+  auto load_terrain_base_promise =
+      arena_base_loader.extract_draco_geo("terrainBaseGeo", async_task_list)
+          ->then_chain<Maybe<std::string>>(
+              [world, device, main_thread_task_list](
+                  const asset::IgpackLoader::ExtractDracoBufferT& rsl) {
+                if (rsl.is_right()) {
+                  return Promise<Maybe<std::string>>::immediate(
+                      {"Failed to load Draco result"});
+                }
+
+                const auto& decoder = rsl.get_left();
+
+                auto pos_norm_rsl = decoder->get_pos_norm_data();
+                auto indices_rsl = decoder->get_index_data();
+
+                if (pos_norm_rsl.is_right() || indices_rsl.is_right()) {
+                  return Promise<Maybe<std::string>>::immediate(
+                      {"Failed to extract pos/norm/indices from Draco"});
+                }
+
+                return Promise<Maybe<std::string>>::schedule(
+                    main_thread_task_list,
+                    [world, pn = pos_norm_rsl.left_move(),
+                     idc = indices_rsl.left_move(), device]() {
+                      auto wv = indigo::igecs::WorldView::Thin(world);
+
+                      auto geo_key =
+                          render::solid_static::EcsUtil::register_geo(
+                              &wv, device, pn, idc);
+
+                      render::solid_static::EcsUtil::attach_renderable(
+                          &wv, wv.create(), geo_key,
+                          render::solid_static::InstanceData{
+                              glm::mat4(1.f), glm::vec3(1.f, 1.f, 1.f), 0.01f,
+                              0.3f, 0.f});
+
+                      return empty_maybe{};
+                    });
+              },
+              async_task_list);
 
   auto combiner = PromiseCombiner::Create();
 
   auto solid_static_shader_rsl_key =
       combiner->add(solid_static_pipeline_promise, async_task_list);
+  auto load_terrain_base_key =
+      combiner->add(load_terrain_base_promise, async_task_list);
 
   return combiner->combine<Either<std::shared_ptr<ISceneBase>, std::string>>(
-      [game_scene,
-       solid_static_shader_rsl_key](PromiseCombiner::PromiseCombinerResult rsl)
+      [game_scene, solid_static_shader_rsl_key,
+       load_terrain_base_key](PromiseCombiner::PromiseCombinerResult rsl)
           -> Either<std::shared_ptr<ISceneBase>, std::string> {
         if (rsl.get(solid_static_shader_rsl_key).has_value()) {
           return right<std::string>("Failed to load the SolidStaticShader");
+        }
+
+        if (rsl.get(load_terrain_base_key).has_value()) {
+          return right<std::string>("Failed to load terrain geo");
         }
 
         // TODO (sessamekesh): Move this to a different load step

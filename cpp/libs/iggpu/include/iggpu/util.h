@@ -74,6 +74,12 @@ wgpu::BindGroupEntry buffer_bind_group_entry(uint32_t binding,
                                              uint32_t size,
                                              uint32_t offset = 0u);
 
+wgpu::BindGroupEntry sampler_bind_group_entry(uint32_t binding,
+                                              const wgpu::Sampler& sampler);
+
+wgpu::BindGroupEntry tex_view_bind_group_entry(
+    uint32_t binding, const wgpu::TextureView& tex_view);
+
 Texture create_empty_texture_2d(const wgpu::Device& device, uint32_t width,
                                 uint32_t height, uint32_t mip_levels,
                                 wgpu::TextureFormat format,
@@ -90,6 +96,10 @@ wgpu::VertexBufferLayout vertex_buffer_layout(
     wgpu::VertexStepMode vertex_step_mode);
 
 wgpu::DepthStencilState depth_stencil_state_standard();
+
+wgpu::FragmentState standard_fragment_state(
+    const wgpu::ColorTargetState& color_target_state,
+    wgpu::ShaderModule shader_module, const char* entry_point);
 
 }  // namespace indigo::iggpu
 

@@ -184,6 +184,7 @@ RenderUtil& RenderUtil::draw(bool* o_success) {
       num_instances_ > 0) {
     pass_->DrawIndexed(num_indices_, num_instances_);
     if (o_success) *o_success = true;
+    return *this;
   }
 
   if (o_success) *o_success = false;

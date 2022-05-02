@@ -1,5 +1,7 @@
 #include "render_client_scheduler.h"
 
+#include <common/render/common/render_components.h>
+#include <common/render/solid_static/ecs_util.h>
 #include <common/render/viewport/update_arena_camera_system.h>
 
 using namespace sanctify;

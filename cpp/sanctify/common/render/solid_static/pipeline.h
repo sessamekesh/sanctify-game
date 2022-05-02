@@ -31,7 +31,7 @@ struct Pipeline {
       const render::CommonLightingUbo& common_lighting_ubo) const;
 };
 
-struct PipelineBuilder {
+class PipelineBuilder {
  public:
   static PipelineBuilder Create(const wgpu::Device& device,
                                 const indigo::asset::pb::WgslSource& vs_src,

@@ -125,6 +125,22 @@ wgpu::BindGroupEntry iggpu::buffer_bind_group_entry(uint32_t binding,
   return entry;
 }
 
+wgpu::BindGroupEntry iggpu::sampler_bind_group_entry(
+    uint32_t binding, const wgpu::Sampler& sampler) {
+  wgpu::BindGroupEntry entry{};
+  entry.binding = binding;
+  entry.sampler = sampler;
+  return entry;
+}
+
+wgpu::BindGroupEntry iggpu::tex_view_bind_group_entry(
+    uint32_t binding, const wgpu::TextureView& tex_view) {
+  wgpu::BindGroupEntry entry{};
+  entry.binding = binding;
+  entry.textureView = tex_view;
+  return entry;
+}
+
 wgpu::Buffer iggpu::create_empty_buffer(const wgpu::Device& device,
                                         uint32_t size,
                                         wgpu::BufferUsage usage) {
@@ -201,6 +217,20 @@ wgpu::DepthStencilState iggpu::depth_stencil_state_standard() {
   state.format = wgpu::TextureFormat::Depth24PlusStencil8;
   state.depthWriteEnabled = true;
   state.depthCompare = wgpu::CompareFunction::Less;
+
+  return state;
+}
+
+wgpu::FragmentState iggpu::standard_fragment_state(
+    const wgpu::ColorTargetState& color_target_state,
+    wgpu::ShaderModule shader_module, const char* entry_point) {
+  wgpu::FragmentState state{};
+  state.module = shader_module;
+  state.entryPoint = entry_point;
+  state.constantCount = 0;
+  state.constants = nullptr;
+  state.targetCount = 1;
+  state.targets = &color_target_state;
 
   return state;
 }
