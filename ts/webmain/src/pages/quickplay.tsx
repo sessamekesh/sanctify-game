@@ -6,40 +6,39 @@ import SanctifyGameApi from '../services/pve-offline-load-service';
 
 type GameplayElementProps = {
   api: SanctifyPveOfflineClientLoadService,
+  gameClient: SanctifyPveOfflineClientInstance|null,
   setGameClient: React.Dispatch<React.SetStateAction<SanctifyPveOfflineClientInstance|null>>,
 };
 
-function GameplayElement({api, setGameClient}: GameplayElementProps) {
-  const parentDivRef = useRef<HTMLDivElement>(null);
+function GameplayElement({api, gameClient, setGameClient}: GameplayElementProps) {
+  const attachDiv = (div: HTMLDivElement) => {
+    const canvas = api.getGameCanvas();
+    const currentParent = canvas.parentElement;
 
-  useEffect(() => {
-    let __client: SanctifyPveOfflineClientInstance|null = null;
+    if (currentParent === div) {
+      return;
+    }
 
-    let stupidHackIntervalHandle = setInterval(() => {
-      if (parentDivRef.current != null) {
-        const canvas = api.getGameCanvas();
-        parentDivRef.current.appendChild(canvas);
-
-        api.getGameClient().then(client => {
-          console.log('Creating the game client!');
-          setGameClient(client);
-          client.start();
-          __client = client;
-        });
-        clearInterval(stupidHackIntervalHandle);
+    if (div == null) {
+      if (gameClient) {
+        gameClient.pause();
       }
-    }, 100);
+      return;
+    }
 
-    return () => {
-      console.log('Destroying the game client!');
-      __client?.destroy();
-    };
-  }, []);
+    div.appendChild(canvas);
+    api.getGameClient().then(client => {
+      client.start();
+      setGameClient(client);
+    });
+  };
 
-  return <div ref={parentDivRef} style={{
-    width: '100%',
-    height: '100%',
-    display: 'block',
+  return <div ref={attachDiv} style={{
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
   }} />;
 }
 
@@ -58,7 +57,7 @@ export default function QuickPlay() {
       <Script src={api.gameScriptUrl()} strategy="afterInteractive" onLoad={()=>setScriptLoaded(true)} />
       {!scriptLoaded && <div>Loading script...</div>}
       {!gameClient && <div>Loading game...</div>}
-      {scriptLoaded && <GameplayElement api={api} setGameClient={setGameClient} />}
+      {scriptLoaded && <GameplayElement api={api} gameClient={gameClient} setGameClient={setGameClient} />}
     </div>
   )
 }

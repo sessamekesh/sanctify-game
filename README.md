@@ -4,6 +4,16 @@
 
 Browser-based MoBA style game. This repository contains the full monorepo for the entire Sanctify project, including all server binaries, external dependencies, intermediate libraries, development tools, and web applications used for the Sanctify project.
 
+## Local Development
+
+This project uses Docker Compose to make everything easier.
+
+For developing the web frontend:
+
+```bash
+docker-compose -f docker-compose.yaml up sanctify-frontend-develop
+```
+
 ## Dependencies
 
 * Python 3.x

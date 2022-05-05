@@ -13,7 +13,8 @@ const BaseHeader = () => {
         <h3>Game</h3>
         <Link href="/quickplay">Quick Play</Link>
       </BurgerMenu>
-      <Link href="/login">Login/Register</Link>
+      <i>Sanctify Game</i>
+      <Link href="/login">Login / Register</Link>
     </div>
   );
 };

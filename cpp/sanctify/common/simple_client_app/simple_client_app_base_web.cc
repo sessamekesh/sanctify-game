@@ -33,6 +33,8 @@ void SimpleClientAppBase::resize_swap_chain(uint32_t width, uint32_t height) {
   swap_desc.height = height;
   swap_desc.presentMode = wgpu::PresentMode::Fifo;
 
+  // TODO (sessamekesh): I don't know if Emscripten or WGPU needs updating for the
+  //  GPUCanvasCompositingAlphaMode, but one of them does and that goes here.
   swapChain = device.CreateSwapChain(surface, &swap_desc);
 
   width = width;

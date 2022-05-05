@@ -48,6 +48,7 @@ export class SanctifyPveOfflineClientLoadService {
       this.gameCanvas.id = 'app_canvas';
       this.gameCanvas.style.width = '100%';
       this.gameCanvas.style.height = '100%';
+      this.gameCanvas.style.display = 'block';
     }
 
     return this.gameCanvas;

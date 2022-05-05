@@ -1,0 +1,27 @@
+# To start: docker-compose -f docker-compose.yaml up develop
+version: "3.9"
+services:
+  # Start sanctify web frontend in development
+  sanctify-frontend-develop:
+    container_name: sanctify-frontend
+    profiles:
+      - donotstart
+    stdin_open: true
+    ports:
+      - target: 3000
+        published: 3000
+        protocol: tcp
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: develop
+    volumes:
+      # Share the source code to allow development
+      - ./ts:/app/
+      # Prevent sharing of node_modules between host and container
+      # to avoid ownership and/or platform issues
+      - build_nextjs-app:/app/webmain/.next
+      - nm_nextjs-app:/app/node_modules
+volumes:
+  build_nextjs-app:
+  nm_nextjs-app:
