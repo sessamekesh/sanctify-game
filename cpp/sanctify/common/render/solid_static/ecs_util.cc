@@ -13,7 +13,7 @@ using namespace core;
 
 namespace {
 const char* kLogLabel = "s::r::solid_static::EcsUtil";
-}
+}  // namespace
 
 bool EcsUtil::prepare_world(indigo::igecs::WorldView* wv) {
   if (!wv->ctx_has<CtxHdrFramebufferParams>()) {
@@ -115,6 +115,16 @@ void EcsUtil::unregister_geo(igecs::WorldView* wv,
 void EcsUtil::unregister_all_geo(igecs::WorldView* wv) {
   wv->mut_ctx<CtxResourceRegistries>().geoRegistry =
       ReadonlyResourceRegistry<Geo>();
+}
+
+const igecs::WorldView::Decl& EcsUtil::render_decl() {
+  static const igecs::WorldView::Decl kRenderDecl =
+      igecs::WorldView::Decl()
+          .reads<RenderableComponent>()
+          .reads<MatWorldComponent>()
+          .ctx_writes<CtxResourceRegistries>();
+
+  return kRenderDecl;
 }
 
 // TODO (sessamekesh): Static geo is likely to stay the same on the GPU, instead

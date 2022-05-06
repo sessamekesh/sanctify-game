@@ -2,6 +2,7 @@
 
 #include <common/render/common/render_components.h>
 #include <common/render/solid_static/ecs_util.h>
+#include <common/render/tonemap/ecs_util.h>
 #include <common/render/viewport/update_arena_camera_system.h>
 #include <igecs/world_view.h>
 
@@ -63,4 +64,19 @@ CommonRenderLoadingUtil::build_solid_shader_pipeline(
             world, device, vs_promise, fs_promise, main_thread_task_list);
       },
       main_thread_task_list);
+}
+
+std::shared_ptr<Promise<Maybe<render::PipelineBuildError>>>
+CommonRenderLoadingUtil::build_tonemapping_shader_pipeline(
+    const wgpu::Device& device, entt::registry* world,
+    std::shared_ptr<indigo::core::TaskList> main_thread_task_list,
+    std::shared_ptr<indigo::core::TaskList> async_task_list,
+    indigo::asset::IgpackLoader* shader_resource_file, std::string vs_key,
+    std::string fs_key) {
+  auto vs_promise =
+      shader_resource_file->extract_wgsl_shader(vs_key, async_task_list);
+  auto fs_promise =
+      shader_resource_file->extract_wgsl_shader(fs_key, async_task_list);
+  return render::tonemap::EcsUtil::create_ctx_pipeline(
+      world, device, vs_promise, fs_promise, main_thread_task_list);
 }

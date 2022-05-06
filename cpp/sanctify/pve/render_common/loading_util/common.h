@@ -35,6 +35,16 @@ class CommonRenderLoadingUtil {
       std::shared_ptr<indigo::core::TaskList> async_task_list,
       indigo::asset::IgpackLoader* shader_resource_file, std::string vs_key,
       std::string fs_key);
+
+  // Load tonemapping shader (depends on platform global)
+  static std::shared_ptr<
+      indigo::core::Promise<indigo::core::Maybe<render::PipelineBuildError>>>
+  build_tonemapping_shader_pipeline(
+      const wgpu::Device& device, entt::registry* world,
+      std::shared_ptr<indigo::core::TaskList> main_thread_task_list,
+      std::shared_ptr<indigo::core::TaskList> async_task_list,
+      indigo::asset::IgpackLoader* shader_resource_file, std::string vs_key,
+      std::string fs_key);
 };
 
 }  // namespace sanctify::pve

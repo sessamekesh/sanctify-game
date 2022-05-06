@@ -45,7 +45,7 @@ class WorldView {
 
     static Decl Thin();
 
-    void merge_in_decl(const Decl& o);
+    Decl& merge_in_decl(const Decl& o);
 
     template <typename T>
     Decl& reads() {

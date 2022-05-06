@@ -21,6 +21,8 @@ struct CtxHdrFramebufferParams {
 
 struct CtxPlatformObjects {
   wgpu::Device device;
+  wgpu::TextureFormat swapChainFormat;
+  wgpu::TextureView swapChainBackbuffer;
   uint32_t viewportWidth;
   uint32_t viewportHeight;
 };

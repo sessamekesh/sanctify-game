@@ -34,7 +34,7 @@ TonemappingArgsInputs Pipeline::create_tonemapping_args_inputs(
   Vector<wgpu::BindGroupEntry> entries(2);
   entries.push_back(
       iggpu::buffer_bind_group_entry(0, args_ubo.buffer(), args_ubo.size()));
-  entries.push_back(iggpu::sampler_bind_group_entry(0, tonemap_sampler));
+  entries.push_back(iggpu::sampler_bind_group_entry(1, tonemap_sampler));
 
   auto desc = iggpu::bind_group_desc(entries, layout);
 
@@ -70,7 +70,7 @@ Pipeline Pipeline::FromBuilder(const wgpu::Device& device,
   desc.fragment = &fragment_state;
   desc.primitive.topology = wgpu::PrimitiveTopology::TriangleStrip;
   desc.primitive.stripIndexFormat = wgpu::IndexFormat::Uint16;
-  desc.primitive.cullMode = wgpu::CullMode::Back;
+  desc.primitive.cullMode = wgpu::CullMode::None;
   desc.primitive.frontFace = wgpu::FrontFace::CCW;
 
   auto gpu_pipeline = device.CreateRenderPipeline(&desc);
@@ -83,7 +83,9 @@ RenderUtil::RenderUtil(const wgpu::RenderPassEncoder* pass,
     : pass_(pass),
       pipeline_(pipeline),
       tonemapping_args_set_(false),
-      texture_inputs_set_(false) {}
+      texture_inputs_set_(false) {
+  pass->SetPipeline(pipeline->pipeline);
+}
 
 RenderUtil& RenderUtil::set_tonemapping_args_inputs(
     const TonemappingArgsInputs& inputs) {

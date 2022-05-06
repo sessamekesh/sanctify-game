@@ -111,6 +111,8 @@ void SimpleClientAppBase::fire_swap_chain_resized_events(uint32_t w,
   for (int i = 0; i < listeners_.size(); i++) {
     listeners_[i]->on_swap_chain_resize(w, h);
   }
+  width = w;
+  height = h;
 }
 
 void SimpleClientAppBase::attach_listener(

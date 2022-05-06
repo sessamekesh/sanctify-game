@@ -39,7 +39,7 @@ fn xyY_to_rgb(xyY_color: vec3<f32>) -> vec3<f32> {
   // worked so well? http://www.brucelindbloom.com/index.html?Eqn_xyY_to_XYZ.html
   let xyz_color = vec3<f32>(
     (xyY_color.x * xyY_color.z) / xyY_color.y,
-    xyY_color.y,
+    xyY_color.z,
     (1. - xyY_color.x - xyY_color.y) * xyY_color.z / xyY_color.y
   );
 
@@ -56,29 +56,29 @@ fn xyY_to_rgb(xyY_color: vec3<f32>) -> vec3<f32> {
 // ACES filmic tone mapping curve - there are definitely others, but this one is great.
 // Adapted from https://www.shadertoy.com/view/WdjSW3, which was in turn adapted from
 // https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
-fn tonemap_aces(x: f32) -> x32 {
-  const a = 2.51;
-  const b = 0.03;
-  const c = 2.43;
-  const d = 0.59;
-  const e = 0.14;
+fn tonemap_aces(x: f32) -> f32 {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
   
   return (x * (a * x + b)) / (x * ( c * x + d) + e);
 }
 
 @stage(fragment) fn main(frag: FragmentInput) -> FragmentOutput {
-  let hdr_color = textureSample(hdrTexture, hdrSampler, uv).rgb;
+  let hdr_color = textureSample(hdrTexture, hdrSampler, frag.uv).rgb;
 
   // https://bruop.github.io/tonemapping/
   let hdr_color_xyY = rgb_to_xyY(hdr_color);
 
   // Select a tonemapping function as appropriate
   let exposure_adjusted_luminance = tonemap_aces(
-      hdr_color_xyY.z / (9.6 * frag.avgLuminosity + 0.0001));
+      hdr_color_xyY.z / (9.6 * tonemappingArguments.avgLuminosity + 0.0001));
 
   let ldr_rgb_color = xyY_to_rgb(vec3<f32>(hdr_color_xyY.xy, exposure_adjusted_luminance));
 
   let gamma_adjusted = pow(ldr_rgb_color, vec3<f32>(1. / 2.2));
 
-  return FragmentOutput(gamma_adjusted, 1.);
+  return FragmentOutput(vec4<f32>(gamma_adjusted, 1.));
 }

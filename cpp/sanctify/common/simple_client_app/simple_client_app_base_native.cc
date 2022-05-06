@@ -8,6 +8,7 @@
 #include <GLFW/glfw3native.h>
 #include <dawn/dawn_proc.h>
 #include <dawn/native/DawnNative.h>
+#include <igcore/config.h>
 #include <igcore/log.h>
 
 using namespace sanctify;

@@ -151,7 +151,9 @@ RenderUtil::RenderUtil(const wgpu::RenderPassEncoder* pass,
       frame_inputs_set_(false),
       scene_inputs_set_(false),
       num_indices_(-1),
-      num_instances_(-1) {}
+      num_instances_(-1) {
+  pass->SetPipeline(pipeline->pipeline);
+}
 
 RenderUtil& RenderUtil::set_scene_inputs(const SceneInputs& inputs) {
   pass_->SetBindGroup(1, inputs.sceneBindGroup);

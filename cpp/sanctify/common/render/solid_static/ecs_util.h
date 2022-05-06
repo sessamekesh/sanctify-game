@@ -77,6 +77,7 @@ struct EcsUtil {
   static void unregister_all_geo(indigo::igecs::WorldView* wv);
 
   // Rendering
+  static const indigo::igecs::WorldView::Decl& render_decl();
   static void render_matching(indigo::igecs::WorldView* wv,
                               const wgpu::Device& device,
                               RenderUtil* render_util,

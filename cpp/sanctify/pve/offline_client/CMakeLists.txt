@@ -1,10 +1,12 @@
 set(hdr_list
   "game_scene/pve_offline_game_scene.h"
+  "game_scene/pve_offline_render.h"
   "game_scene/render_client_scheduler.h"
   "offline_client_app.h")
 
 set(src_list
   "game_scene/pve_offline_game_scene.cc"
+  "game_scene/pve_offline_render.cc"
   "game_scene/render_client_scheduler.cc"
   "offline_client_app.cc")
 
@@ -34,6 +36,8 @@ build_ig_asset_pack_plan(
   INFILES
     "common/render/solid_static/solid_static.vs.wgsl"
     "common/render/solid_static/solid_static.fs.wgsl"
+    "common/render/tonemap/tonemap.vs.wgsl"
+    "common/render/tonemap/tonemap.fs.wgsl"
   TARGET_OUTPUT_FILES
     "resources/common-shaders.igpack"
 )

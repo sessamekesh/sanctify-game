@@ -16,4 +16,20 @@ plan {
       entry_point: "main"
     }
   }
+  actions {
+    copy_wgsl_source {
+      igasset_name: "tonemapVs"
+      input_file_path: "common/render/tonemap/tonemap.vs.wgsl"
+      shader_type: VERTEX
+      entry_point: "main"
+    }
+  }
+  actions {
+    copy_wgsl_source {
+      igasset_name: "tonemapFs"
+      input_file_path: "common/render/tonemap/tonemap.fs.wgsl"
+      shader_type: FRAGMENT
+      entry_point: "main"
+    }
+  }
 }

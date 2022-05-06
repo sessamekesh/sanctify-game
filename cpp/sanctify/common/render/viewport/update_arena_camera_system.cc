@@ -58,7 +58,8 @@ void UpdateArenaCameraSystem::update(indigo::igecs::WorldView* wv) {
   auto& updates = wv->mut_ctx<CtxArenaCameraInputs>();
 
   if (updates.lookAtAdjustment != glm::vec3(0.f, 0.f, 0.f) ||
-      updates.radiusAdjustment != 0.f) {
+      updates.radiusAdjustment != 0.f ||
+      ubos.cameraVsUbo.get_immutable().matView[3][3] == 0.f) {
     camera.set_radius(camera.radius() + updates.radiusAdjustment);
     camera.set_look_at(camera.look_at() + updates.lookAtAdjustment);
 

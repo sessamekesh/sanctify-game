@@ -6,6 +6,7 @@ set (HEADER_LIST
   "solid_static/instance_store.h"
   "solid_static/pipeline.h"
   "solid_static/solid_static_geo.h"
+  "tonemap/ecs_util.h"
   "tonemap/pipeline.h"
   "viewport/update_arena_camera_system.h")
 
@@ -15,6 +16,7 @@ set (SRC_LIST
   "solid_static/instance_store.cc"
   "solid_static/pipeline.cc"
   "solid_static/solid_static_geo.cc"
+  "tonemap/ecs_util.cc"
   "tonemap/pipeline.cc"
   "viewport/update_arena_camera_system.cc")
 

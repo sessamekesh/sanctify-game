@@ -48,6 +48,11 @@ PveOfflineGameScene::Create(std::shared_ptr<SimpleClientAppBase> app_base,
   auto* world = &game_scene->client_world_;
   auto wv = igecs::WorldView::Thin(world);
 
+  world->set<render::CtxPlatformObjects>(
+      device, app_base->swapChainFormat,
+      app_base->swapChain.GetCurrentTextureView(), app_base->width,
+      app_base->height);
+
   auto common_ubo_hdr_promise =
       CommonRenderLoadingUtil::setup_ubos_and_hdr_state(
           device, &client_world, main_thread_task_list, width, height,
@@ -56,6 +61,11 @@ PveOfflineGameScene::Create(std::shared_ptr<SimpleClientAppBase> app_base,
       CommonRenderLoadingUtil::build_solid_shader_pipeline(
           device, &client_world, common_ubo_hdr_promise, main_thread_task_list,
           async_task_list, &shader_loader, "solidStaticVs", "solidStaticFs");
+  auto tonemap_pipeline_promise =
+      CommonRenderLoadingUtil ::build_tonemapping_shader_pipeline(
+          device, &client_world, main_thread_task_list, async_task_list,
+          &shader_loader, "tonemapVs", "tonemapFs");
+
   auto load_terrain_base_promise =
       arena_base_loader.extract_draco_geo("terrainBaseGeo", async_task_list)
           ->then_chain<Maybe<std::string>>(
@@ -101,12 +111,14 @@ PveOfflineGameScene::Create(std::shared_ptr<SimpleClientAppBase> app_base,
 
   auto solid_static_shader_rsl_key =
       combiner->add(solid_static_pipeline_promise, async_task_list);
+  auto tonemap_shader_rsl_key =
+      combiner->add(tonemap_pipeline_promise, async_task_list);
   auto load_terrain_base_key =
       combiner->add(load_terrain_base_promise, async_task_list);
 
   return combiner->combine<Either<std::shared_ptr<ISceneBase>, std::string>>(
-      [game_scene, solid_static_shader_rsl_key,
-       load_terrain_base_key](PromiseCombiner::PromiseCombinerResult rsl)
+      [game_scene, solid_static_shader_rsl_key, load_terrain_base_key,
+       tonemap_shader_rsl_key](PromiseCombiner::PromiseCombinerResult rsl)
           -> Either<std::shared_ptr<ISceneBase>, std::string> {
         if (rsl.get(solid_static_shader_rsl_key).has_value()) {
           return right<std::string>("Failed to load the SolidStaticShader");
@@ -116,12 +128,16 @@ PveOfflineGameScene::Create(std::shared_ptr<SimpleClientAppBase> app_base,
           return right<std::string>("Failed to load terrain geo");
         }
 
+        if (rsl.get(tonemap_shader_rsl_key).has_value()) {
+          return right<std::string>("Failed to load tonemapping shader");
+        }
+
         // TODO (sessamekesh): Move this to a different load step
         auto wv = indigo::igecs::WorldView::Thin(&game_scene->client_world_);
         render::UpdateArenaCameraSystem::set_camera(
             &wv,
-            logic::ArenaCamera(glm::vec3(0.f, 0.f, 0.f), glm::radians(20.f),
-                               glm::radians(45.f), 10.f),
+            logic::ArenaCamera(glm::vec3(0.f, 0.f, 0.f), glm::radians(35.f),
+                               glm::radians(45.f), 45.f),
             0.1f, 1000.f, glm::radians(40.f));
         render::UpdateArenaCameraSystem::set_lighting(
             &wv, render::CommonLightingParamsData{
@@ -154,17 +170,23 @@ PveOfflineGameScene::PveOfflineGameScene(
 void PveOfflineGameScene::update(float dt) {
   // TODO (sessamekesh): Update the client, then the network transition layer,
   //  then the server
+
+  // IO
+  // TODO (sessamekesh): Put in camera update processing here!
 }
 
 void PveOfflineGameScene::render() {
   const auto& device = base_->device;
 
-  client_world_.set<render::CtxPlatformObjects>(device, base_->width,
-                                                base_->height);
+  client_world_.set<render::CtxPlatformObjects>(
+      device, base_->swapChainFormat, base_->swapChain.GetCurrentTextureView(),
+      base_->width, base_->height);
 
   base_->attach_async_task_list(any_thread_task_list_);
   render_client_scheduler_.execute(any_thread_task_list_, &client_world_);
   base_->detach_async_task_list(any_thread_task_list_);
+
+  base_->swapChain.Present();
 }
 
 bool PveOfflineGameScene::should_quit() { return should_quit_; }

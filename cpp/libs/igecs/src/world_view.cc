@@ -19,7 +19,7 @@ WorldView::WorldView(entt::registry* registry, Decl decl)
   assert(registry != nullptr);
 }
 
-void WorldView::Decl::merge_in_decl(const WorldView::Decl& o) {
+WorldView::Decl& WorldView::Decl::merge_in_decl(const WorldView::Decl& o) {
 #ifdef IG_ENABLE_ECS_VALIDATION
   for (int i = 0; i < o.reads_.size(); i++) {
     if (!reads_.contains(o.reads_[i])) {
@@ -45,6 +45,7 @@ void WorldView::Decl::merge_in_decl(const WorldView::Decl& o) {
     }
   }
 #endif
+  return *this;
 }
 
 WorldView WorldView::Thin(entt::registry* world) {
