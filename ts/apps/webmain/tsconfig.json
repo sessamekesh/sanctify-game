@@ -1,6 +1,17 @@
 {
   "compilerOptions": {
     "module": "CommonJS",
+    "jsx": "preserve",
+    "noEmit": true,
+    "allowSyntheticDefaultImports": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "forceConsistentCasingInFileNames": true,
+    "incremental": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
     "declaration": true,
     "noImplicitAny": true,
     "removeComments": true,
@@ -8,7 +19,6 @@
     "emitDecoratorMetadata": true,
     "strictNullChecks": true,
     "experimentalDecorators": true,
-    "noEmit": false,
     "target": "ES5",
     "esModuleInterop": true,
     "sourceMap": true,
@@ -17,6 +27,11 @@
       "dom"
     ]
   },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "next-env.d.ts"
+  ],
   "exclude": [
     "node_modules",
     "**/*.spec.ts"

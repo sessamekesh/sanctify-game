@@ -1,0 +1,26 @@
+{
+  "name": "@sanctify/webmain",
+  "version": "0.0.1",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "build": "recursive-copy -w ../../packages/pve-offline-wasm/public ./public",
+    "dev": "next -p 3000",
+    "buildnext": "next build",
+    "start": "next start -p 3000"
+  },
+  "dependencies": {
+    "next": "^12.1.6",
+    "react": "^18.1.0",
+    "react-dom": "^18.1.0",
+    "@sanctify/pve-offline-wasm": "*"
+  },
+  "devDependencies": {
+    "@types/next": "^9.0.0",
+    "@types/react": "^18.0.8",
+    "next-transpile-modules": "^9.0.0",
+    "sass": "^1.51.0",
+    "typescript": "^4.6.4",
+    "recursive-copy-cli": "^1.0.20"
+  }
+}

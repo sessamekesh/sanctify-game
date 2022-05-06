@@ -1,0 +1,25 @@
+{
+  "name": "@sanctify/pve-offline-wasm",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "license": "MIT",
+  "config": {
+    "projectroot": "${pwd}/../../.."
+  },
+  "scripts": {
+    "proto:generate": "protoc --ts_proto_out=./src/ -I=../../../cpp/sanctify/pve/offline_client/ ../../../cpp/sanctify/pve/offline_client/pve_offline_client_config.proto --ts_proto_opt=esModuleInterop=true",
+    "build:sanctify-tools": "echo docker run --rm -v %npm_package_config_projectroot%:/src -v ${pwd}/.wasm-build:/build sanctify-llvm ts/packages/pve-offline-wasm/build-tools.sh | powershell",
+    "build:sanctify-wasm": "echo docker run --rm -v %npm_package_config_projectroot%:/src -v ${pwd}/.wasm-build:/build -v ${pwd}/public:/out sanctify-emsdk ts/packages/pve-offline-wasm/build-wasm.sh | powershell",
+    "build:app": "tsc",
+    "build": "npm run build:sanctify-tools && npm run build:sanctify-wasm"
+  },
+  "dependencies": {
+    "@webgpu/types": "^0.1.14"
+  },
+  "devDependencies": {
+    "typescript": "^4.6.4",
+    "ts-proto": "^1.110.4"
+  }
+}

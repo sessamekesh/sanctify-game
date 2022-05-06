@@ -1,0 +1,27 @@
+{
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**"]
+    },
+    "webmain#build": {
+      "dependsOn": ["^build"],
+      "outputs": [".wasm-build/**"],
+      "inputs": [
+        "../../../cpp/**/*.cc",
+        "../../../cpp/**/*.h",
+        "../../../cpp/**/*.proto",
+        "../../../proto/**/*.proto",
+        "../../../assets/**/*.wgsl",
+        "../../../cpp/**/*.igpack-plan",
+        "../../../cpp/**/*.wgsl"
+      ]
+    },
+    "lint": {
+      "outputs": []
+    },
+    "dev": {
+      "cache": false
+    }
+  }
+}

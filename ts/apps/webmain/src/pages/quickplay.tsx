@@ -1,11 +1,11 @@
-import { SanctifyPveOfflineClientInstance, SanctifyPveOfflineClientLoadService } from "@sanctify/pve-offline-wasm-wrapper";
+import { SanctifyPveOfflineClientInstance, ClientLoadService } from "@sanctify/pve-offline-wasm";
 import Head from "next/head";
 import Script from "next/script";
-import React, { useEffect, useRef, useState } from "react";
+import React, {  useState } from "react";
 import SanctifyGameApi from '../services/pve-offline-load-service';
 
 type GameplayElementProps = {
-  api: SanctifyPveOfflineClientLoadService,
+  api: ClientLoadService,
   gameClient: SanctifyPveOfflineClientInstance|null,
   setGameClient: React.Dispatch<React.SetStateAction<SanctifyPveOfflineClientInstance|null>>,
 };
@@ -43,7 +43,7 @@ function GameplayElement({api, gameClient, setGameClient}: GameplayElementProps)
 }
 
 export default function QuickPlay() {
-  const api = SanctifyGameApi('');
+  const api = SanctifyGameApi();
 
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [gameClient, setGameClient] = useState<SanctifyPveOfflineClientInstance|null>(null);
@@ -54,7 +54,7 @@ export default function QuickPlay() {
         <title>Loading...</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <Script src={api.gameScriptUrl()} strategy="afterInteractive" onLoad={()=>setScriptLoaded(true)} />
+      <Script src={api.gameScriptUrl('')} strategy="afterInteractive" onLoad={()=>setScriptLoaded(true)} />
       {!scriptLoaded && <div>Loading script...</div>}
       {!gameClient && <div>Loading game...</div>}
       {scriptLoaded && <GameplayElement api={api} gameClient={gameClient} setGameClient={setGameClient} />}

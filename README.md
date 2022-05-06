@@ -16,15 +16,13 @@ docker-compose -f docker-compose.yaml up sanctify-frontend-develop
 
 ## Dependencies
 
-* Python 3.x
+* NodeJS and NPM
+* Docker
+
+For local development of WASM code:
+
 * CMake 3.18+
 * A C++ compiler
-* NodeJS and NPM
-
-For WebAssembly game builds:
-
-* Emscripten
-* Ninja (on Windows)
 
 ## Directory Structure
 
@@ -37,3 +35,30 @@ This monorepo hosts several applications across different languages with differe
 ## Project List
 
 For each individual project, go to the appropriate subdirectory for build/running instructions.
+
+## [WIP] Building the web app
+
+1) First, all Git submodules need to be pulled. To help with build times, this is not done automatically in CMake runs by default.
+
+```bash
+# From root directory
+git submodule init
+git submodule update
+```
+
+2) Second, Docker images for performing WASM builds must be built
+
+```bash
+cd ts/packages/pve-offline-wasm
+docker build -f emscripten-builder.dockerfile -t sanctify-emsdk .
+docker build -f llvm-builder.dockerfile -t sanctify-llvm .
+```
+
+3) WASM builds can no be performed as regular
+
+```bash
+cd ts
+# TODO (sessamekesh): This command only needs to be run between builds?
+yarn build
+yarn dev
+```
