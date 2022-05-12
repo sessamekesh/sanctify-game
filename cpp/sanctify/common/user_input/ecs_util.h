@@ -36,6 +36,7 @@ class EcsUtil {
 
   // State
   static void set_mouse_pos(indigo::igecs::WorldView* wv, glm::vec2 pos);
+  static void clear_mouse_pos(indigo::igecs::WorldView* wv);
   static indigo::core::Maybe<glm::vec2> get_mouse_pos(
       indigo::igecs::WorldView* wv);
 };

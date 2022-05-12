@@ -39,6 +39,10 @@ void EcsUtil::set_mouse_pos(igecs::WorldView* wv, glm::vec2 pos) {
   wv->mut_ctx_or_set<::CtxEventsQueue>().mousePos = pos;
 }
 
+void EcsUtil::clear_mouse_pos(igecs::WorldView* wv) {
+  wv->mut_ctx_or_set<::CtxEventsQueue>().mousePos = empty_maybe{};
+}
+
 Maybe<glm::vec2> EcsUtil::get_mouse_pos(igecs::WorldView* wv) {
   return wv->mut_ctx_or_set<::CtxEventsQueue>().mousePos;
 }

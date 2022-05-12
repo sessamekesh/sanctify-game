@@ -7,7 +7,6 @@ using namespace io;
 using namespace indigo;
 
 namespace {
-// TODO (sessamekesh): Listeners
 
 GlfwDesktopEventEmitter* gInstance = nullptr;
 
@@ -19,27 +18,33 @@ struct CtxMouseState {
 void glfw_cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
   if (!gInstance || !gInstance->world()) return;
 
-  auto wv = igecs::WorldView::Thin(gInstance->world());
-
-  auto& ctx = wv.mut_ctx_or_set<CtxMouseState>(xpos, ypos);
+  auto* wv = gInstance->thin_view();
+  auto& ctx = wv->mut_ctx_or_set<CtxMouseState>(xpos, ypos);
 
   bool is_primary_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
   bool is_secondary_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
 
-  EcsUtil::add_event(&wv, Event{MouseMoveEvent{
-                              is_primary_down, is_secondary_down,
-                              glm::vec2{ctx.x, ctx.y}, glm::vec2{xpos, ypos}}});
-  EcsUtil::set_mouse_pos(&wv, glm::vec2{xpos, ypos});
+  EcsUtil::add_event(wv, Event{MouseMoveEvent{
+                             is_primary_down, is_secondary_down,
+                             glm::vec2{ctx.x, ctx.y}, glm::vec2{xpos, ypos}}});
+  EcsUtil::set_mouse_pos(wv, glm::vec2{xpos, ypos});
 
   ctx.x = xpos;
   ctx.y = ypos;
+}
+
+void glfw_cursor_enter_callback(GLFWwindow* window, int entered) {
+  if (!gInstance || !gInstance->world()) return;
+  if (!entered) {
+    EcsUtil::clear_mouse_pos(gInstance->thin_view());
+  }
 }
 
 void glfw_mouse_button_callback(GLFWwindow* window, int button, int action,
                                 int mods) {
   if (!gInstance || !gInstance->world()) return;
 
-  auto wv = igecs::WorldView::Thin(gInstance->world());
+  auto* wv = gInstance->thin_view();
 
   double xpos = 0., ypos = 0.;
   glfwGetCursorPos(window, &xpos, &ypos);
@@ -47,9 +52,9 @@ void glfw_mouse_button_callback(GLFWwindow* window, int button, int action,
   bool is_primary = button == GLFW_MOUSE_BUTTON_LEFT;
   if (action == GLFW_PRESS) {
     EcsUtil::add_event(
-        &wv, Event{MouseDownEvent{is_primary, glm::vec2(xpos, ypos)}});
+        wv, Event{MouseDownEvent{is_primary, glm::vec2(xpos, ypos)}});
   } else if (action == GLFW_RELEASE) {
-    EcsUtil::add_event(&wv,
+    EcsUtil::add_event(wv,
                        Event{MouseUpEvent{is_primary, glm::vec2(xpos, ypos)}});
   }
 }
@@ -57,7 +62,9 @@ void glfw_mouse_button_callback(GLFWwindow* window, int button, int action,
 }  // namespace
 
 GlfwDesktopEventEmitter::GlfwDesktopEventEmitter(entt::registry* world)
-    : window_(nullptr), world_(world) {}
+    : window_(nullptr),
+      world_(world),
+      thin_view_(igecs::WorldView::Thin(world)) {}
 
 GlfwDesktopEventEmitter::~GlfwDesktopEventEmitter() {
   if (window_) {
@@ -77,11 +84,11 @@ void GlfwDesktopEventEmitter::attach_to_window(GLFWwindow* window) {
 
   glfwSetCursorPosCallback(window_, ::glfw_cursor_pos_callback);
   glfwSetMouseButtonCallback(window_, ::glfw_mouse_button_callback);
+  glfwSetCursorEnterCallback(window_, ::glfw_cursor_enter_callback);
 }
 
 void GlfwDesktopEventEmitter::detach() {
-  // TODO (sessamekesh): GLFW event emitters
-
+  glfwSetCursorEnterCallback(window_, nullptr);
   glfwSetMouseButtonCallback(window_, nullptr);
   glfwSetCursorPosCallback(window_, nullptr);
 

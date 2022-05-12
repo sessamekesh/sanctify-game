@@ -1,7 +1,8 @@
 #ifndef SANCTIFY_COMMON_USER_INPUT_GLFW_DESKTOP_EVENT_EMITTER_H
 #define SANCTIFY_COMMON_USER_INPUT_GLFW_DESKTOP_EVENT_EMITTER_H
 
-#include <glfw/glfw3.h>
+#include <GLFW/glfw3.h>
+#include <igecs/world_view.h>
 
 #include <entt/entt.hpp>
 
@@ -20,10 +21,12 @@ class GlfwDesktopEventEmitter {
   void detach();
 
   entt::registry* world() { return world_; }
+  indigo::igecs::WorldView* thin_view() { return &thin_view_; }
 
  private:
   GLFWwindow* window_;
   entt::registry* world_;
+  indigo::igecs::WorldView thin_view_;
 };
 
 }  // namespace sanctify::io
