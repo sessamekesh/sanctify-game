@@ -1,5 +1,6 @@
 set (HEADER_LIST
   "include/igecs/ctti_type_id.h"
+  "include/igecs/evt_queue.h"
   "include/igecs/scheduler.h"
   "include/igecs/world_view.h")
 

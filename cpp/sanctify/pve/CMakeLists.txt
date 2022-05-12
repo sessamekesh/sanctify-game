@@ -1,2 +1,3 @@
 add_subdirectory(render_common)
 add_subdirectory(offline_client)
+add_subdirectory(net_logic_common)

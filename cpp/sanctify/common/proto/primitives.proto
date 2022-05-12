@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package sanctify.common.pb;
+package sanctify.common.proto;
 
 /*************************************************\
  *                  Primitives                   *

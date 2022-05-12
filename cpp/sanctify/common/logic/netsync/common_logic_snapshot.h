@@ -3,8 +3,8 @@
 
 #include <common/logic/locomotion/locomotion.h>
 #include <common/logic/update_common/tick_time_elapsed.h>
-#include <common/pb/common_logic_snapshot.pb.h>
 #include <igcore/maybe.h>
+#include <sanctify/common/proto/common_logic_snapshot.pb.h>
 
 #include "common_logic_snapshot_diff.h"
 
@@ -58,8 +58,8 @@ class CommonLogicSnapshot {
   standard_navigation_params(uint32_t net_sync_id) const;
 
   // Serialization
-  common::pb::SnapshotFull serialize() const;
-  static CommonLogicSnapshot Deserialize(const common::pb::SnapshotFull& pb);
+  common::proto::SnapshotFull serialize() const;
+  static CommonLogicSnapshot Deserialize(const common::proto::SnapshotFull& pb);
 
  private:
   std::set<uint32_t> alive_entities_;

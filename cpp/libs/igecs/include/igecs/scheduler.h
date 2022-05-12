@@ -48,6 +48,9 @@ class Scheduler {
               indigo::core::EmptyPromiseRsl>>(WorldView* wv)>
               cb);
 
+      /** Shorthand for use with synchronous systems */
+      [[nodiscard]] Node build(void (*cb)(WorldView* wv));
+
      private:
       Builder(NodeId node_id, Scheduler::Builder& b);
 

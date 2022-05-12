@@ -43,6 +43,13 @@ TEST(IgECS_WorldView, UnrestrictedWorldViewAllowsAccesses) {
 
   world_view.write<FooT>(e).a = 222;
   EXPECT_EQ(world_view.read<FooT>(e).a, 222);
+
+  world_view.enqueue_event(FooT{5});
+  world_view.enqueue_event(FooT{10});
+  auto foo_evts = world_view.consume_events<FooT>();
+  EXPECT_EQ(foo_evts.size(), 2);
+  EXPECT_EQ(foo_evts[0].a, 5);
+  EXPECT_EQ(foo_evts[1].a, 10);
 }
 
 TEST(IgECS_WorldView, CtxReadWriteSucceeds) {
@@ -149,6 +156,18 @@ TEST(IgECS_WorldView, MergesInDecl) {
     d2.ctx_writes<BarT>();
     d.merge_in_decl(d2);
     EXPECT_TRUE(d.can_ctx_write<BarT>());
+  }
+
+  {
+    WorldView::Decl d, d2;
+    d.evt_writes<FooT>();
+    WorldView::Decl d3;
+    d.evt_consumes<BarT>();
+    d.merge_in_decl(d2).merge_in_decl(d3);
+    EXPECT_TRUE(d.can_evt_write<FooT>());
+    EXPECT_TRUE(d.can_evt_consume<BarT>());
+    EXPECT_FALSE(d.can_evt_write<BarT>());
+    EXPECT_FALSE(d.can_evt_consume<FooT>());
   }
 }
 
@@ -289,5 +308,31 @@ TEST(IgECS_WorldViewDeathTest, BadViewWriteFails) {
   //  doesn't compile? It's weird. This works though.
   auto get = [&wv]() { return wv.view<BarT, FooT>(); };
   EXPECT_DEATH({ get(); }, "IMMUTABLE view_test failed for type .*FooT");
+}
+
+TEST(IgECS_WorldViewDeathTest, BadEventQueueFails) {
+  entt::registry registry;
+
+  WorldView::Decl decl;
+  decl.evt_writes<FooT>().evt_consumes<BarT>();
+  auto wv = decl.create(&registry);
+
+  // No death
+  wv.enqueue_event<FooT>(FooT{1});
+  EXPECT_EQ(wv.consume_events<BarT>().size(), 0);
+
+  // Death on writing the wrong event type
+  EXPECT_DEATH(
+      {
+        wv.enqueue_event<BarT>(BarT{1, 2});
+      },
+      "ECS validation failure: method enqueue_event failed for type .*BarT");
+
+  // Death on consuming the wrong event type
+  EXPECT_DEATH(
+      {
+          wv.consume_events<FooT>();
+      },
+      "ECS validation failure: method consume_events failed for type .*FooT");
 }
 #endif

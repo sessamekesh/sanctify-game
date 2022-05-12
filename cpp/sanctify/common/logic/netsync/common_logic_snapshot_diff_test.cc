@@ -58,7 +58,7 @@ TEST(CommonLogicDiff, SeparatesEntitiesById) {
   sender.delete_entity(4);
 
   sender.delete_component(
-      5, common::pb::ComponentType::CT_STANDARD_NAVIGATION_PARAMS);
+      5, common::proto::ComponentType::CT_STANDARD_NAVIGATION_PARAMS);
 
   ASSERT_TRUE(sender.sim_time().has_value());
   EXPECT_FLOAT_EQ(sender.sim_time().get().simTimeSeconds, 1.5f);
@@ -73,8 +73,8 @@ TEST(CommonLogicDiff, SeparatesEntitiesById) {
   EXPECT_EQ(sender.deleted_entities(), std::set<uint32_t>{4});
 
   EXPECT_EQ(sender.deleted_components(5),
-            std::set<common::pb::ComponentType>{
-                common::pb::ComponentType::CT_STANDARD_NAVIGATION_PARAMS});
+            std::set<common::proto::ComponentType>{
+                common::proto::ComponentType::CT_STANDARD_NAVIGATION_PARAMS});
 
   CommonLogicDiff receiver = CommonLogicDiff::Deserialize(sender.serialize());
 
@@ -91,6 +91,6 @@ TEST(CommonLogicDiff, SeparatesEntitiesById) {
   EXPECT_EQ(receiver.deleted_entities(), std::set<uint32_t>{4});
 
   EXPECT_EQ(receiver.deleted_components(5),
-            std::set<common::pb::ComponentType>{
-                common::pb::ComponentType::CT_STANDARD_NAVIGATION_PARAMS});
+            std::set<common::proto::ComponentType>{
+                common::proto::ComponentType::CT_STANDARD_NAVIGATION_PARAMS});
 }

@@ -153,6 +153,34 @@ TEST(IgECS_Scheduler, SuccessfullyBuildsWithCorrectDepChaining) {
   scheduler.execute(nullptr, &r);
 }
 
+TEST(IgECS_Scheduler, SuccessfullyBuildsWithGoodEventOrdering) {
+  Scheduler::Builder sb;
+
+  struct EvtType {
+    int payload;
+  };
+  WorldView::Decl write_decl = WorldView::Decl().evt_writes<EvtType>();
+  WorldView::Decl consume_decl = WorldView::Decl().evt_consumes<EvtType>();
+
+  auto producer_node_a = sb.add_node().with_decl(write_decl).build([](auto*) {
+    return core::immediateEmptyPromise();
+  });
+  auto producer_node_b = sb.add_node().with_decl(write_decl).build([](auto*) {
+    return core::immediateEmptyPromise();
+  });
+
+  auto consumer_node =
+      sb.add_node()
+          .with_decl(consume_decl)
+          .depends_on(producer_node_a)
+          .depends_on(producer_node_b)
+          .build([](auto*) { return core::immediateEmptyPromise(); });
+
+  auto scheduler = sb.build();
+  entt::registry r;
+  scheduler.execute(nullptr, &r);
+}
+
 #ifndef NDEBUG
 TEST(IgECS_SchedulerDeathTest, FailsToBuildWithUnclearDepOrdering) {
   Scheduler::Builder sb;
@@ -183,5 +211,33 @@ TEST(IgECS_SchedulerDeathTest, CannotBuildNodeTwice) {
         auto n2 = nb.build([](auto*) { return core::immediateEmptyPromise(); });
       },
       "\\[IgECS::Scheduler\\] Node is already built");
+}
+
+TEST(IgECS_SchedulerDeathTest, FailsWithUnclearEventOrdering) {
+  Scheduler::Builder sb;
+
+  struct EvtType {
+    int payload;
+  };
+  WorldView::Decl write_decl = WorldView::Decl().evt_writes<EvtType>();
+  WorldView::Decl consume_decl = WorldView::Decl().evt_consumes<EvtType>();
+
+  auto producer_node_a = sb.add_node().with_decl(write_decl).build([](auto*) {
+    return core::immediateEmptyPromise();
+  });
+  auto producer_node_b = sb.add_node().with_decl(write_decl).build([](auto*) {
+    return core::immediateEmptyPromise();
+  });
+
+  auto consumer_node =
+      sb.add_node()
+          .with_decl(consume_decl)
+          .depends_on(producer_node_a)
+          // Leave commented out - this is the missing piece
+          // .depends_on(producer_node_b)
+          .build([](auto*) { return core::immediateEmptyPromise(); });
+
+  EXPECT_DEATH({ auto scheduler = sb.build(); },
+               "\\[IgECS::Scheduler\\] Strict dependency not found");
 }
 #endif

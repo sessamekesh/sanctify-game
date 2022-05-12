@@ -17,11 +17,11 @@ const char* kLogLabel = "CommonLogicSnapshot";
 // Diff generation utils
 //
 template <typename ComponentT>
-Maybe<Either<ComponentT, common::pb::ComponentType>> gen_diff(
+Maybe<Either<ComponentT, common::proto::ComponentType>> gen_diff(
     uint32_t net_sync_id, const CommonLogicSnapshot& base,
     const CommonLogicSnapshot& dest,
     Maybe<ComponentT> (CommonLogicSnapshot::*getter)(uint32_t) const,
-    common::pb::ComponentType component_type) {
+    common::proto::ComponentType component_type) {
   Maybe<ComponentT> base_value = (base.*getter)(net_sync_id);
   Maybe<ComponentT> dest_value = (dest.*getter)(net_sync_id);
 
@@ -30,7 +30,7 @@ Maybe<Either<ComponentT, common::pb::ComponentType>> gen_diff(
   }
 
   if (base_value.has_value() && dest_value.is_empty()) {
-    return {right<common::pb::ComponentType>(component_type)};
+    return {right<common::proto::ComponentType>(component_type)};
   }
 
   if (base_value.get() == dest_value.get()) {
@@ -45,7 +45,7 @@ void diff_component(uint32_t net_sync_id, const CommonLogicSnapshot& base,
                     const CommonLogicSnapshot& dest, CommonLogicDiff* mut_diff,
                     Maybe<ComponentT> (CommonLogicSnapshot::*getter)(uint32_t)
                         const,
-                    common::pb::ComponentType component_type) {
+                    common::proto::ComponentType component_type) {
   auto diff_rsl = ::gen_diff(net_sync_id, base, dest, getter, component_type);
 
   if (diff_rsl.has_value()) {
@@ -59,10 +59,10 @@ void diff_component(uint32_t net_sync_id, const CommonLogicSnapshot& base,
 }
 
 template <typename CtxT>
-Maybe<Either<CtxT, common::pb::CtxComponentType>> gen_ctx_diff(
+Maybe<Either<CtxT, common::proto::CtxComponentType>> gen_ctx_diff(
     const CommonLogicSnapshot& base, const CommonLogicSnapshot& dest,
     Maybe<CtxT> (CommonLogicSnapshot::*getter)() const,
-    common::pb::CtxComponentType component_type) {
+    common::proto::CtxComponentType component_type) {
   Maybe<CtxT> base_value = (base.*getter)();
   Maybe<CtxT> dest_value = (dest.*getter)();
 
@@ -71,7 +71,7 @@ Maybe<Either<CtxT, common::pb::CtxComponentType>> gen_ctx_diff(
   }
 
   if (base_value.has_value() && dest_value.is_empty()) {
-    return {right<common::pb::CtxComponentType>(component_type)};
+    return {right<common::proto::CtxComponentType>(component_type)};
   }
 
   if (base_value.get() == dest_value.get()) {
@@ -86,7 +86,7 @@ void diff_ctx_component(const CommonLogicSnapshot& base,
                         const CommonLogicSnapshot& dest,
                         CommonLogicDiff* mut_diff,
                         Maybe<CtxT> (CommonLogicSnapshot::*getter)() const,
-                        common::pb::CtxComponentType component_type) {
+                        common::proto::CtxComponentType component_type) {
   auto diff_rsl = ::gen_ctx_diff(base, dest, getter, component_type);
 
   if (diff_rsl.has_value()) {
@@ -123,7 +123,7 @@ CommonLogicDiff CommonLogicSnapshot::CreateDiff(
 
   // Context component diffs
   ::diff_ctx_component(base, dest, &diff, &CommonLogicSnapshot::sim_time,
-                       common::pb::CtxComponentType::CCT_SIM_TIME);
+                       common::proto::CtxComponentType::CCT_SIM_TIME);
 
   // Upsert all elements found in the base snapshot, unless they are identical
   //  in the destination snapshot. This upsertion may include deleting
@@ -131,16 +131,16 @@ CommonLogicDiff CommonLogicSnapshot::CreateDiff(
   for (uint32_t dest_net_sync_id : dest.alive_entities_) {
     ::diff_component(dest_net_sync_id, base, dest, &diff,
                      &CommonLogicSnapshot::map_location,
-                     common::pb::ComponentType::CT_MAP_LOCATION);
+                     common::proto::ComponentType::CT_MAP_LOCATION);
     ::diff_component(dest_net_sync_id, base, dest, &diff,
                      &CommonLogicSnapshot::orientation,
-                     common::pb::ComponentType::CT_ORIENTATION);
+                     common::proto::ComponentType::CT_ORIENTATION);
     ::diff_component(dest_net_sync_id, base, dest, &diff,
                      &CommonLogicSnapshot::nav_waypoint_list,
-                     common::pb::ComponentType::CT_NAV_WAYPOINTS);
+                     common::proto::ComponentType::CT_NAV_WAYPOINTS);
     ::diff_component(dest_net_sync_id, base, dest, &diff,
                      &CommonLogicSnapshot::standard_navigation_params,
-                     common::pb::ComponentType::CT_STANDARD_NAVIGATION_PARAMS);
+                     common::proto::ComponentType::CT_STANDARD_NAVIGATION_PARAMS);
   }
 
   // Find all the entities in the base snapshot that do not exist in the
@@ -164,7 +164,7 @@ CommonLogicSnapshot CommonLogicSnapshot::ApplyDiff(
   // Delete context components
   for (auto deleted_ctx_component : diff.deleted_ctx_components()) {
     switch (deleted_ctx_component) {
-      case common::pb::CtxComponentType::CCT_SIM_TIME:
+      case common::proto::CtxComponentType::CCT_SIM_TIME:
         dest.sim_time_ = empty_maybe{};
         break;
       default:
@@ -187,16 +187,16 @@ CommonLogicSnapshot CommonLogicSnapshot::ApplyDiff(
     // Delete components...
     for (auto deleted_component_type : diff.deleted_components(nsid)) {
       switch (deleted_component_type) {
-        case common::pb::ComponentType::CT_MAP_LOCATION:
+        case common::proto::ComponentType::CT_MAP_LOCATION:
           dest.nav_waypoints_.erase(nsid);
           break;
-        case common::pb::ComponentType::CT_ORIENTATION:
+        case common::proto::ComponentType::CT_ORIENTATION:
           dest.orientations_.erase(nsid);
           break;
-        case common::pb::ComponentType::CT_NAV_WAYPOINTS:
+        case common::proto::ComponentType::CT_NAV_WAYPOINTS:
           dest.nav_waypoints_.erase(nsid);
           break;
-        case common::pb::ComponentType::CT_STANDARD_NAVIGATION_PARAMS:
+        case common::proto::ComponentType::CT_STANDARD_NAVIGATION_PARAMS:
           dest.nav_params_.erase(nsid);
           break;
 
@@ -270,8 +270,8 @@ CommonLogicSnapshot::standard_navigation_params(uint32_t net_sync_id) const {
   return ::extract(net_sync_id, &nav_params_, &alive_entities_);
 }
 
-common::pb::SnapshotFull CommonLogicSnapshot::serialize() const {
-  common::pb::SnapshotFull pb{};
+common::proto::SnapshotFull CommonLogicSnapshot::serialize() const {
+  common::proto::SnapshotFull pb{};
 
   // Context components...
   sim_time_.if_present(
@@ -279,11 +279,11 @@ common::pb::SnapshotFull CommonLogicSnapshot::serialize() const {
 
   // Serialize entities...
   for (uint32_t nsid : alive_entities_) {
-    common::pb::GameEntity* e = pb.add_entities();
+    common::proto::GameEntity* e = pb.add_entities();
     e->set_net_sync_id(nsid);
 
     // Components...
-    common::pb::ComponentData* cd = e->mutable_component_data();
+    common::proto::ComponentData* cd = e->mutable_component_data();
     map_location(nsid).if_present(
         [cd](const auto& v) { ::serialize(cd->mutable_map_location(), v); });
     orientation(nsid).if_present(
@@ -300,7 +300,7 @@ common::pb::SnapshotFull CommonLogicSnapshot::serialize() const {
 }
 
 CommonLogicSnapshot CommonLogicSnapshot::Deserialize(
-    const common::pb::SnapshotFull& pb) {
+    const common::proto::SnapshotFull& pb) {
   CommonLogicSnapshot snapshot{};
 
   // Context components...
@@ -308,9 +308,9 @@ CommonLogicSnapshot CommonLogicSnapshot::Deserialize(
     snapshot.set(::deserialize(pb.sim_time()));
   }
 
-  for (const common::pb::GameEntity& e : pb.entities()) {
+  for (const common::proto::GameEntity& e : pb.entities()) {
     uint32_t nsid = e.net_sync_id();
-    const common::pb::ComponentData& cd = e.component_data();
+    const common::proto::ComponentData& cd = e.component_data();
 
     if (cd.has_map_location()) {
       snapshot.add(nsid, ::deserialize(cd.map_location()));

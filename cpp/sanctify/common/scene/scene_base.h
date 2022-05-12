@@ -15,6 +15,9 @@ class ISceneBase {
   virtual void on_swap_chain_format_change(wgpu::TextureFormat format) {}
   virtual void render() {}
   virtual bool should_quit() { return false; }
+
+  virtual void attach_io() {}
+  virtual void detach_io() {}
 };
 
 class ISceneConsumer {

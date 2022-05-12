@@ -1,18 +1,17 @@
 set(HEADER_LIST
-  "camera_util.h"
-  "resource_registry.h")
+  "resource_registry.h"
+  "transform_3d.h")
 
 set(SRC_LIST
-  "camera_util.cc")
+  "transform_3d.cc")
 
 set(TEST_SRC_LIST
-  "camera_util_test.cc"
   "resource_registry_test.cc")
 
 add_library(sanctify-common-util STATIC ${HEADER_LIST} ${SRC_LIST})
 target_include_directories(sanctify-common-util PUBLIC "${SANCTIFY_INCLUDE_ROOT}")
 
-target_link_libraries(sanctify-common-util PUBLIC igcore)
+target_link_libraries(sanctify-common-util PUBLIC igcore glm)
 
 if (EMSCRIPTEN)
   set_wasm_target_properties(TARGET_NAME sanctify-common-util AS_LIB 1)

@@ -52,6 +52,14 @@ Scheduler::Node Scheduler::Node::Builder::build(
   return node;
 }
 
+Scheduler::Node Scheduler::Node::Builder::build(void (*cb)(WorldView* wv)) {
+  auto fn = [cb](WorldView* wv) {
+    cb(wv);
+    return core::immediateEmptyPromise();
+  };
+  return build(std::move(fn));
+}
+
 //
 // Scheduler::Node
 //
@@ -154,6 +162,7 @@ Scheduler::Scheduler(Scheduler::Builder b) : max_spin_time_(b.max_spin_time_) {
     const auto& node = b.nodes_[node_idx];
     const auto& ctx_writes = node.wv_decl_.list_ctx_writes();
     const auto& writes = node.wv_decl_.list_writes();
+    const auto& consumes = node.wv_decl_.list_evt_consumes();
 
     // CTX read/write comparisons...
     for (int ctx_write_idx = 0; ctx_write_idx < ctx_writes.size();
@@ -193,6 +202,27 @@ Scheduler::Scheduler(Scheduler::Builder b) : max_spin_time_(b.max_spin_time_) {
             assert(false &&
                    "[IgECS::Scheduler] Strict dependency not found between "
                    "write and other component access!");
+          }
+        }
+      }
+    }
+
+    // Event queue/consume comparisons...
+    for (int consume_idx = 0; consume_idx < consumes.size(); consume_idx++) {
+      const auto& consume = consumes[consume_idx];
+
+      for (int compare_node_idx = 0; compare_node_idx < b.nodes_.size();
+           compare_node_idx++) {
+        if (compare_node_idx == node_idx) continue;
+
+        const auto& compare_node = b.nodes_[compare_node_idx];
+        if (compare_node.wv_decl_.list_evt_writes().contains(consume) ||
+            compare_node.wv_decl_.list_evt_consumes().contains(consume)) {
+          if (!has_strict_dep(b.nodes_, node.id_, compare_node.id_) &&
+              !has_strict_dep(b.nodes_, compare_node.id_, node.id_)) {
+            assert(false &&
+                   "[IgECS::Scheduler] Strict dependency not found between "
+                   "event consume and event enqueue nodes!");
           }
         }
       }

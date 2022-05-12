@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+import "sanctify/common/proto/primitives.proto";
+
+package sanctify.pve.proto;
+
+/**
+ * Sanctify client protobuf types - for sending messages from client to server
+ */
+
+//
+// MESSAGE TYPES
+//
+message ClientPing {
+  bool is_ready = 1;
+  uint32 ping_id = 2;
+  float sim_time = 3;
+}
+
+message SnapshotReceived {
+  uint32 snapshot_id = 1;
+}
+
+message PlayerMovementRequest {
+  sanctify.common.proto.Vec2 position = 1;
+}
+
+//
+// UNIFIED CLIENT MESSAGE TYPE
+//
+message PveClientSingleMessage {
+  oneof msg_body {
+    // Occasional message to let the server know that the underlying network
+    //  connection is still healthy, and what time the client thinks it is for
+    //  telemetry purposes.
+    ClientPing client_ping = 1;
+
+    // Notification sent to the server that a snapshot has been received, and
+    //  that it may be used as the basis for future messages.
+    SnapshotReceived snapshot_received = 2;
+
+    // Notification of intention of the player to move to a specified position.
+    //  This may or may not actually be on the surface of the map.
+    PlayerMovementRequest player_movement_request = 3;
+  }
+}
+
+message PveClientActionsList {
+  repeated PveClientSingleMessage actions = 1;
+}
+
+message PveClientMessage {
+  // Magic number that verifies that this message came from the correct version
+  //  of the client - all breaking changes to this proto should involve a new
+  //  version number as well so that the server can handle messages appropriately!
+  uint32 magic_header = 1;
+
+  PveClientActionsList actions = 2;
+}

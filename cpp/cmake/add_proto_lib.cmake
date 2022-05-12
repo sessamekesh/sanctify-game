@@ -4,7 +4,7 @@
 function (add_proto_lib)
   set(options)
   set(oneValueArgs OUTDIR TARGET_NAME)
-  set(multiValueArgs INCLUDE_DIRS PROTO_INFILES)
+  set(multiValueArgs INCLUDE_DIRS PROTO_INFILES PROTO_LIB_DEPS)
   cmake_parse_arguments(APL "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if (NOT TARGET protoc)
@@ -44,6 +44,10 @@ function (add_proto_lib)
 
   add_library(${APL_TARGET_NAME} STATIC "${proto_hdrs}" "${proto_srcs}")
   target_link_libraries(${APL_TARGET_NAME} PUBLIC libprotobuf)
+
+  foreach(IN_LIB IN LISTS APL_PROTO_LIB_DEPS)
+    target_link_libraries(${APL_TARGET_NAME} PUBLIC "${IN_LIB}")
+  endforeach()
 
   target_include_directories(${APL_TARGET_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/proto")
   set_target_properties(${APL_TARGET_NAME} PROPERTIES FOLDER proto_messages)

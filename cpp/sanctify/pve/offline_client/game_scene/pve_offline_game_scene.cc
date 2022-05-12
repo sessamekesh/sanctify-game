@@ -1,5 +1,6 @@
 #include "pve_offline_game_scene.h"
 
+#include <common/logic/update_common/tick_time_elapsed.h>
 #include <common/render/common/camera_ubos.h>
 #include <common/render/common/render_components.h>
 #include <common/render/solid_static/ecs_util.h>
@@ -10,6 +11,7 @@
 #include <pve/render_common/loading_util/common.h>
 
 #include "render_client_scheduler.h"
+#include "update_client_scheduler.h"
 
 using namespace sanctify;
 using namespace pve;
@@ -161,18 +163,28 @@ PveOfflineGameScene::PveOfflineGameScene(
       async_task_list_(async_task_list),
       config_(std::move(config)),
       should_quit_(false),
-      render_client_scheduler_(pve::build_render_client_scheduler()) {}
+      update_client_scheduler_(pve::UpdateClientScheduler::build()),
+      render_client_scheduler_(pve::build_render_client_scheduler()),
+      desktop_event_emitter_(&client_world_) {}
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //                                  SCENE UPDATING
 ///////////////////////////////////////////////////////////////////////////////////////
 
 void PveOfflineGameScene::update(float dt) {
-  // TODO (sessamekesh): Update the client, then the network transition layer,
-  //  then the server
+  // TODO (sessamekesh): Get rid of this dependency - or, better yet, move
+  //  camera stuff over to render.
+  const auto& device = base_->device;
+  client_world_.set<render::CtxPlatformObjects>(
+      device, base_->swapChainFormat, base_->swapChain.GetCurrentTextureView(),
+      base_->width, base_->height);
+  indigo::igecs::WorldView thinview =
+      indigo::igecs::WorldView::Thin(&client_world_);
+  logic::FrameTimeElapsedUtil::mark_time_elapsed(&thinview, dt);
 
-  // IO
-  // TODO (sessamekesh): Put in camera update processing here!
+  base_->attach_async_task_list(any_thread_task_list_);
+  update_client_scheduler_.execute(any_thread_task_list_, &client_world_);
+  base_->detach_async_task_list(any_thread_task_list_);
 }
 
 void PveOfflineGameScene::render() {
@@ -200,3 +212,9 @@ void PveOfflineGameScene::on_viewport_resize(uint32_t width, uint32_t height) {
 
 void PveOfflineGameScene::on_swap_chain_format_change(
     wgpu::TextureFormat format) {}
+
+void PveOfflineGameScene::attach_io() {
+  desktop_event_emitter_.attach_to_window(base_->window);
+}
+
+void PveOfflineGameScene::detach_io() { desktop_event_emitter_.detach(); }

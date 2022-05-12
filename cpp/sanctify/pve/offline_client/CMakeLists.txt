@@ -1,13 +1,19 @@
 set(hdr_list
+  "game_scene/systems/process_user_input.h"
+  "game_scene/systems/stage_client_message.h"
   "game_scene/pve_offline_game_scene.h"
   "game_scene/pve_offline_render.h"
   "game_scene/render_client_scheduler.h"
+  "game_scene/update_client_scheduler.h"
   "offline_client_app.h")
 
 set(src_list
+  "game_scene/systems/process_user_input.cc"
+  "game_scene/systems/stage_client_message.cc"
   "game_scene/pve_offline_game_scene.cc"
   "game_scene/pve_offline_render.cc"
   "game_scene/render_client_scheduler.cc"
+  "game_scene/update_client_scheduler.cc"
   "offline_client_app.cc")
 
 if (EMSCRIPTEN)
@@ -58,6 +64,8 @@ target_link_libraries(sanctify-pve-offline-client PUBLIC
             sanctify-common-logic
             sanctify-common-render
             sanctify-common-scene
+            sanctify-common-user-input
+            sanctify-pve-net-logic-common
             sanctify-pve-offline-client-config-proto
             sanctify-pve-render-common
             sanctify-simple-client-app)

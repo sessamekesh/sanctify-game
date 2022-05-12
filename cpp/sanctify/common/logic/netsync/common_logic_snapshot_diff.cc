@@ -50,7 +50,7 @@ CommonLogicDiff::CommonLogicDiff() {}
 void CommonLogicDiff::upsert(CtxSimTime sim_time) { sim_time_ = sim_time; }
 
 void CommonLogicDiff::delete_ctx_component(
-    common::pb::CtxComponentType ctx_component_type) {
+    common::proto::CtxComponentType ctx_component_type) {
   deleted_ctx_components_.insert(ctx_component_type);
 }
 
@@ -80,12 +80,12 @@ void CommonLogicDiff::delete_entity(uint32_t net_sync_id) {
 }
 
 void CommonLogicDiff::delete_component(
-    uint32_t net_sync_id, common::pb::ComponentType component_type) {
+    uint32_t net_sync_id, common::proto::ComponentType component_type) {
   upserted_entities_.insert(net_sync_id);
   auto it = deleted_components_.find(net_sync_id);
   if (it == deleted_components_.end()) {
     deleted_components_.emplace(
-        net_sync_id, std::set<common::pb::ComponentType>{component_type});
+        net_sync_id, std::set<common::proto::ComponentType>{component_type});
   } else {
     it->second.insert(component_type);
   }
@@ -99,17 +99,17 @@ const std::set<uint32_t>& CommonLogicDiff::upserted_entities() const {
   return upserted_entities_;
 }
 
-std::set<common::pb::ComponentType> CommonLogicDiff::deleted_components(
+std::set<common::proto::ComponentType> CommonLogicDiff::deleted_components(
     uint32_t net_sync_id) const {
   auto it = deleted_components_.find(net_sync_id);
   if (it == deleted_components_.end()) {
-    return std::set<common::pb::ComponentType>{};
+    return std::set<common::proto::ComponentType>{};
   } else {
     return it->second;
   }
 }
 
-std::set<common::pb::CtxComponentType> CommonLogicDiff::deleted_ctx_components()
+std::set<common::proto::CtxComponentType> CommonLogicDiff::deleted_ctx_components()
     const {
   return deleted_ctx_components_;
 }
@@ -136,8 +136,8 @@ CommonLogicDiff::standard_navigation_params(uint32_t net_sync_id) const {
   return ::extract(net_sync_id, &standard_navigation_params_upserts_);
 }
 
-common::pb::SnapshotDiff CommonLogicDiff::serialize() const {
-  common::pb::SnapshotDiff diff_proto{};
+common::proto::SnapshotDiff CommonLogicDiff::serialize() const {
+  common::proto::SnapshotDiff diff_proto{};
 
   // Context upserts/deletes
   if (sim_time_.has_value()) {
@@ -146,13 +146,13 @@ common::pb::SnapshotDiff CommonLogicDiff::serialize() const {
 
   // Upserted entities
   for (auto nsid : upserted_entities_) {
-    common::pb::EntityUpdateMask* entity_upsert_proto =
+    common::proto::EntityUpdateMask* entity_upsert_proto =
         diff_proto.add_upsert_entities();
 
     entity_upsert_proto->set_net_sync_id(nsid);
 
     // Components
-    common::pb::ComponentData* components =
+    common::proto::ComponentData* components =
         entity_upsert_proto->mutable_upsert_components();
 
     map_location(nsid).if_present([components](const auto& v) {
@@ -184,7 +184,7 @@ common::pb::SnapshotDiff CommonLogicDiff::serialize() const {
 }
 
 CommonLogicDiff CommonLogicDiff::Deserialize(
-    const common::pb::SnapshotDiff& diff) {
+    const common::proto::SnapshotDiff& diff) {
   CommonLogicDiff diff_model{};
 
   // Context components
@@ -193,11 +193,11 @@ CommonLogicDiff CommonLogicDiff::Deserialize(
   }
 
   // Upserted entities
-  for (const common::pb::EntityUpdateMask& upserted_entities :
+  for (const common::proto::EntityUpdateMask& upserted_entities :
        diff.upsert_entities()) {
     uint32_t nsid = upserted_entities.net_sync_id();
 
-    const common::pb::ComponentData& components =
+    const common::proto::ComponentData& components =
         upserted_entities.upsert_components();
 
     // Upserted components

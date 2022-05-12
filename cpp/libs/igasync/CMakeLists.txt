@@ -1,4 +1,5 @@
 set (HEADER_LIST
+  "include/igasync/concurrent_queue.h"
   "include/igasync/promise.h"
   "include/igasync/frame_task_scheduler.h"
   "include/igasync/promise_combiner.h"

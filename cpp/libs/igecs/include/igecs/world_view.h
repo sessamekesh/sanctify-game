@@ -3,7 +3,10 @@
 
 #include <igcore/config.h>
 #include <igcore/pod_vector.h>
+#include <igcore/vector.h>
 #include <igecs/ctti_type_id.h>
+
+#include "evt_queue.h"
 
 #ifdef IG_ENABLE_ECS_VALIDATION
 #include <igcore/log.h>
@@ -82,6 +85,22 @@ class WorldView {
     }
 
     template <typename T>
+    Decl& evt_writes() {
+#ifdef IG_ENABLE_ECS_VALIDATION
+      evt_writes_.push_back(CttiTypeId::of<std::remove_const_t<T>>());
+#endif
+      return *this;
+    }
+
+    template <typename T>
+    Decl& evt_consumes() {
+#ifdef IG_ENABLE_ECS_VALIDATION
+      evt_consumes_.push_back(CttiTypeId::of<std::remove_const_t<T>>());
+#endif
+      return *this;
+    }
+
+    template <typename T>
     [[nodiscard]] bool can_read() const {
 #ifdef IG_ENABLE_ECS_VALIDATION
       return allow_all_ ||
@@ -121,6 +140,26 @@ class WorldView {
 #endif
     }
 
+    template <typename T>
+    [[nodiscard]] bool can_evt_write() const {
+#ifdef IG_ENABLE_ECS_VALIDATION
+      return allow_all_ ||
+             evt_writes_.contains(CttiTypeId::of<std::remove_const_t<T>>());
+#else
+      return true;
+#endif
+    }
+
+    template <typename T>
+    [[nodiscard]] bool can_evt_consume() const {
+#ifdef IG_ENABLE_ECS_VALIDATION
+      return allow_all_ ||
+             evt_consumes_.contains(CttiTypeId::of<std::remove_const_t<T>>());
+#else
+      return true;
+#endif
+    }
+
     WorldView create(entt::registry* registry) const;
 
 #ifdef IG_ENABLE_ECS_VALIDATION
@@ -131,6 +170,12 @@ class WorldView {
     }
     const core::PodVector<CttiTypeId>& list_ctx_writes() const {
       return ctx_writes_;
+    }
+    const core::PodVector<CttiTypeId>& list_evt_writes() const {
+      return evt_writes_;
+    }
+    const core::PodVector<CttiTypeId>& list_evt_consumes() const {
+      return evt_consumes_;
     }
 #endif
 
@@ -143,6 +188,8 @@ class WorldView {
     indigo::core::PodVector<CttiTypeId> writes_;
     indigo::core::PodVector<CttiTypeId> ctx_reads_;
     indigo::core::PodVector<CttiTypeId> ctx_writes_;
+    indigo::core::PodVector<CttiTypeId> evt_writes_;
+    indigo::core::PodVector<CttiTypeId> evt_consumes_;
 #endif
   };
 
@@ -210,11 +257,23 @@ class WorldView {
     return decl_.can_ctx_write<T>();
   }
 
+  template <typename T>
+  bool can_enqueue_event() {
+    return decl_.can_evt_write();
+  }
+
+  template <typename T>
+  bool can_consume_events() {
+    return decl_.can_evt_consume();
+  }
+
  private:
   mutable std::set<CttiTypeId> read_types_;
   mutable std::set<CttiTypeId> write_types_;
   mutable std::set<CttiTypeId> ctx_read_types_;
   mutable std::set<CttiTypeId> ctx_write_types_;
+  mutable std::set<CttiTypeId> evt_queue_types_;
+  mutable std::set<CttiTypeId> evt_consume_types_;
 
  public:
   template <typename T>
@@ -232,6 +291,14 @@ class WorldView {
   template <typename T>
   bool has_ctx_written() const {
     return ctx_write_types_.count(CttiTypeId::of<T>()) > 0;
+  }
+  template <typename T>
+  bool has_evt_enqueued() const {
+    return evt_queue_types_.count(CttiTypeId::of<T>()) > 0;
+  }
+  template <typename T>
+  bool has_evt_consumed() const {
+    return evt_consume_types_.count(CttiTypeId::of<T>()) > 0;
   }
 #endif
 
@@ -356,6 +423,35 @@ class WorldView {
     assert(rsl);
 #endif
     return registry_->view<Component, Other..., Exclude...>(e);
+  }
+
+  template <typename T>
+  void enqueue_event(T&& evt) {
+#ifdef IG_ENABLE_ECS_VALIDATION
+    ::assert_and_print<T>(decl_.can_evt_write<T>(), "enqueue_event");
+    evt_queue_types_.insert(CttiTypeId::of<T>());
+#endif
+    CtxEventQueue<T>& ctx_queue = registry_->ctx_or_set<CtxEventQueue<T>>();
+    ctx_queue.queue.enqueue(evt);
+  }
+
+  template <typename T>
+  indigo::core::Vector<T> consume_events() {
+#ifdef IG_ENABLE_ECS_VALIDATION
+    ::assert_and_print<T>(decl_.can_evt_consume<T>(), "consume_events");
+    evt_consume_types_.insert(CttiTypeId::of<T>());
+#endif
+    CtxEventQueue<T>& ctx_queue = registry_->ctx_or_set<CtxEventQueue<T>>();
+    T bulk_events[16]{};
+    size_t num_evts = 0;
+    indigo::core::Vector<T> evts;
+    while ((num_evts = ctx_queue.queue.try_dequeue_bulk(bulk_events, 16)) !=
+           0) {
+      for (size_t i = 0; i < num_evts; i++) {
+        evts.push_back(std::move(bulk_events[i]));
+      }
+    }
+    return std::move(evts);
   }
 
   inline entt::entity create() { return registry_->create(); }

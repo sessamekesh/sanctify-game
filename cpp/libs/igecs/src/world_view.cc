@@ -44,6 +44,18 @@ WorldView::Decl& WorldView::Decl::merge_in_decl(const WorldView::Decl& o) {
       ctx_writes_.push_back(o.ctx_writes_[i]);
     }
   }
+
+  for (int i = 0; i < o.evt_writes_.size(); i++) {
+    if (!evt_writes_.contains(o.evt_writes_[i])) {
+      evt_writes_.push_back(o.evt_writes_[i]);
+    }
+  }
+
+  for (int i = 0; i < o.evt_consumes_.size(); i++) {
+    if (!evt_consumes_.contains(o.evt_consumes_[i])) {
+      evt_consumes_.push_back(o.evt_consumes_[i]);
+    }
+  }
 #endif
   return *this;
 }

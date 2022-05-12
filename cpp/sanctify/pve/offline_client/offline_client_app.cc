@@ -2,6 +2,7 @@
 
 #include <igcore/either.h>
 #include <igcore/log.h>
+
 #include "game_scene/pve_offline_game_scene.h"
 
 #ifdef __EMSCRIPTEN__
@@ -83,6 +84,12 @@ OfflineClientApp::OfflineClientApp(
       time_to_swap_chain_update_(0.f) {}
 
 void OfflineClientApp::set_scene(std::shared_ptr<ISceneBase> next_scene) {
+  if (active_scene_) {
+    active_scene_->detach_io();
+  }
+
+  next_scene->attach_io();
+
   active_scene_ = next_scene;
 }
 
