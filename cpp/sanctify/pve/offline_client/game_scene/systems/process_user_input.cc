@@ -46,13 +46,13 @@ void ProcessUserInputSystem::update(indigo::igecs::WorldView* wv) {
     // TODO (sessamekesh): Adjust these formulas to be correct!
     if (xpct < screen_threshold_x) {
       float scroll_strength = glm::sqrt(1.f - (xpct / screen_threshold_x));
-      ctx_camera_inputs.lookAtAdjustment -=
+      ctx_camera_inputs.lookAtAdjustment +=
           ctx_camera.arenaCamera.screen_right() * mvt_speed * dt *
           scroll_strength;
     } else if (xpct > (1.f - screen_threshold_x)) {
       float scroll_strength =
           glm::sqrt((xpct - (1.f - screen_threshold_x)) / screen_threshold_x);
-      ctx_camera_inputs.lookAtAdjustment +=
+      ctx_camera_inputs.lookAtAdjustment -=
           ctx_camera.arenaCamera.screen_right() * mvt_speed * dt *
           scroll_strength;
     }

@@ -3,7 +3,6 @@
 
 #include <common/scene/scene_base.h>
 #include <common/simple_client_app/simple_client_app_base.h>
-#include <common/user_input/glfw/desktop_event_emitter.h>
 #include <igasync/promise.h>
 #include <igcore/either.h>
 #include <igecs/scheduler.h>
@@ -29,8 +28,7 @@ class PveOfflineGameScene : public ISceneBase,
   bool should_quit() override;
   void on_viewport_resize(uint32_t width, uint32_t height) override;
   void on_swap_chain_format_change(wgpu::TextureFormat format) override;
-  void attach_io() override;
-  void detach_io() override;
+  void consume_event(io::Event evt) override;
 
  private:
   PveOfflineGameScene(
@@ -47,9 +45,6 @@ class PveOfflineGameScene : public ISceneBase,
   // Simulation essentials
   entt::registry client_world_;
   entt::registry server_world_;
-
-  // Input methods
-  io::GlfwDesktopEventEmitter desktop_event_emitter_;
 
   std::shared_ptr<indigo::core::TaskList> any_thread_task_list_;
   indigo::igecs::Scheduler update_client_scheduler_;

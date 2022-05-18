@@ -11,6 +11,20 @@ struct MouseMoveEvent {
 
   glm::vec2 startPos;
   glm::vec2 endPos;
+
+  static MouseMoveEvent of(bool is_primary_down, bool is_secondary_down,
+                           glm::vec2 start_pos, glm::vec2 end_pos) {
+    return MouseMoveEvent{is_primary_down, is_secondary_down, start_pos,
+                          end_pos};
+  }
+};
+
+struct FocusChangeEvent {
+  bool isFocused;
+
+  static FocusChangeEvent of(bool is_focused) {
+    return FocusChangeEvent{is_focused};
+  }
 };
 
 struct MouseDownEvent {

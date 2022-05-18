@@ -4,6 +4,7 @@
 #include <common/scene/preload/preload_scene.h>
 #include <common/scene/scene_base.h>
 #include <common/simple_client_app/simple_client_app_base.h>
+#include <common/user_input/events.h>
 #include <igasync/task_list.h>
 #include <pve/offline_client/pb/pve_offline_client_config.pb.h>
 
@@ -23,6 +24,13 @@ class OfflineClientApp : public std::enable_shared_from_this<OfflineClientApp>,
   void render();
   void run_tasks_for(float dt);
   bool should_quit();
+
+  // Standard inputs
+  void mouse_move(io::MouseMoveEvent evt);
+  void focus_change(io::FocusChangeEvent evt);
+
+  // Expose GLFW window for native builds
+  GLFWwindow* get_window() const;
 
  private:
   OfflineClientApp(

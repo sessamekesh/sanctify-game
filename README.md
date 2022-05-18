@@ -59,6 +59,6 @@ docker build -f llvm-builder.dockerfile -t sanctify-llvm .
 ```bash
 cd ts
 # TODO (sessamekesh): This command only needs to be run between builds?
-yarn build
+yarn build --force
 yarn dev
 ```

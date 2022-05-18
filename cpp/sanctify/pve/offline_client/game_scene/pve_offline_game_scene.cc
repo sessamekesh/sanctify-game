@@ -164,8 +164,7 @@ PveOfflineGameScene::PveOfflineGameScene(
       config_(std::move(config)),
       should_quit_(false),
       update_client_scheduler_(pve::UpdateClientScheduler::build()),
-      render_client_scheduler_(pve::build_render_client_scheduler()),
-      desktop_event_emitter_(&client_world_) {}
+      render_client_scheduler_(pve::build_render_client_scheduler()) {}
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //                                  SCENE UPDATING
@@ -213,8 +212,7 @@ void PveOfflineGameScene::on_viewport_resize(uint32_t width, uint32_t height) {
 void PveOfflineGameScene::on_swap_chain_format_change(
     wgpu::TextureFormat format) {}
 
-void PveOfflineGameScene::attach_io() {
-  desktop_event_emitter_.attach_to_window(base_->window);
+void PveOfflineGameScene::consume_event(io::Event evt) {
+  auto wv = igecs::WorldView::Thin(&client_world_);
+  io::EcsUtil::add_event(&wv, evt);
 }
-
-void PveOfflineGameScene::detach_io() { desktop_event_emitter_.detach(); }

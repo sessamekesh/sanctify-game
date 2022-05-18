@@ -1,21 +1,27 @@
 #include "ecs_util.h"
 
-#include "glfw/desktop_event_emitter.h"
-
 using namespace sanctify::io;
 
 using namespace indigo;
 using namespace core;
 
 namespace {
+
 struct CtxEventsQueue {
   indigo::core::Vector<Event> events;
-
-  indigo::core::Maybe<glm::vec2> mousePos;
+  glm::vec2 lastMousePos;
+  bool isFocused;
 };
 }  // namespace
 
 void EcsUtil::add_event(indigo::igecs::WorldView* wv, Event evt) {
+  evt.get<FocusChangeEvent>().if_present([wv](const io::FocusChangeEvent& evt) {
+    wv->mut_ctx_or_set<::CtxEventsQueue>().isFocused = evt.isFocused;
+  });
+  evt.get<MouseMoveEvent>().if_present([wv](const io::MouseMoveEvent& evt) {
+    wv->mut_ctx_or_set<::CtxEventsQueue>().lastMousePos = evt.endPos;
+  });
+
   wv->mut_ctx_or_set<CtxEventsQueue>().events.push_back(evt);
 }
 
@@ -35,14 +41,10 @@ indigo::core::Vector<Event> EcsUtil::get_events(indigo::igecs::WorldView* wv) {
   return evts;
 }
 
-void EcsUtil::set_mouse_pos(igecs::WorldView* wv, glm::vec2 pos) {
-  wv->mut_ctx_or_set<::CtxEventsQueue>().mousePos = pos;
-}
-
-void EcsUtil::clear_mouse_pos(igecs::WorldView* wv) {
-  wv->mut_ctx_or_set<::CtxEventsQueue>().mousePos = empty_maybe{};
-}
-
 Maybe<glm::vec2> EcsUtil::get_mouse_pos(igecs::WorldView* wv) {
-  return wv->mut_ctx_or_set<::CtxEventsQueue>().mousePos;
+  auto& ctx_events_queue = wv->mut_ctx_or_set<::CtxEventsQueue>();
+  if (!ctx_events_queue.isFocused) {
+    return empty_maybe{};
+  }
+  return ctx_events_queue.lastMousePos;
 }

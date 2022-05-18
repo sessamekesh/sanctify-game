@@ -10,6 +10,7 @@
       "inputs": [
         "../../../cpp/**/*.cc",
         "../../../cpp/**/*.h",
+        "../../../cpp/**/CMakeLists.txt",
         "../../../cpp/**/*.proto",
         "../../../proto/**/*.proto",
         "../../../assets/**/*.wgsl",

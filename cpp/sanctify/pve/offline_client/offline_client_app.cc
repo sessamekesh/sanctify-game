@@ -84,12 +84,6 @@ OfflineClientApp::OfflineClientApp(
       time_to_swap_chain_update_(0.f) {}
 
 void OfflineClientApp::set_scene(std::shared_ptr<ISceneBase> next_scene) {
-  if (active_scene_) {
-    active_scene_->detach_io();
-  }
-
-  next_scene->attach_io();
-
   active_scene_ = next_scene;
 }
 
@@ -143,3 +137,17 @@ void OfflineClientApp::run_tasks_for(float dt) {
 bool OfflineClientApp::should_quit() {
   return active_scene_->should_quit() || glfwWindowShouldClose(base_->window);
 }
+
+void OfflineClientApp::mouse_move(io::MouseMoveEvent evt) {
+  if (active_scene_ != nullptr) {
+    active_scene_->consume_event(io::Event{std::move(evt)});
+  }
+}
+
+void OfflineClientApp::focus_change(io::FocusChangeEvent evt) {
+  if (active_scene_ != nullptr) {
+    active_scene_->consume_event(io::Event{std::move(evt)});
+  }
+}
+
+GLFWwindow* OfflineClientApp::get_window() const { return base_->window; }

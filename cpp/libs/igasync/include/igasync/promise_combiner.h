@@ -215,6 +215,8 @@ class PromiseCombiner : public std::enable_shared_from_this<PromiseCombiner> {
 
     resolve_promise(0u);
 
+    // TODO (sessamekesh): There's a double-resolve bug in here somewhere, this
+    // line is double-resolving a promise
     return final_promise_->then_chain_consuming<RslT>(
         [cb](PromiseCombinerResult rsl) { return cb(std::move(rsl)); },
         task_list);

@@ -13,7 +13,7 @@ namespace sanctify::io {
 
 struct Event {
   typedef std::variant<MouseMoveEvent, MouseDownEvent, MouseUpEvent,
-                       KeyDownEvent, KeyUpEvent, KeyHoldEvent>
+                       KeyDownEvent, KeyUpEvent, KeyHoldEvent, FocusChangeEvent>
       evt_type;
 
   evt_type evt;
@@ -35,8 +35,6 @@ class EcsUtil {
   static indigo::core::Vector<Event> get_events(indigo::igecs::WorldView* wv);
 
   // State
-  static void set_mouse_pos(indigo::igecs::WorldView* wv, glm::vec2 pos);
-  static void clear_mouse_pos(indigo::igecs::WorldView* wv);
   static indigo::core::Maybe<glm::vec2> get_mouse_pos(
       indigo::igecs::WorldView* wv);
 };

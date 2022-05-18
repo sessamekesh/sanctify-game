@@ -1,6 +1,7 @@
 #ifndef SANCTIFY_COMMON_SCENE_SCENE_BASE_H
 #define SANCTIFY_COMMON_SCENE_SCENE_BASE_H
 
+#include <common/user_input/ecs_util.h>
 #include <webgpu/webgpu_cpp.h>
 
 #include <cstdint>
@@ -16,8 +17,7 @@ class ISceneBase {
   virtual void render() {}
   virtual bool should_quit() { return false; }
 
-  virtual void attach_io() {}
-  virtual void detach_io() {}
+  virtual void consume_event(io::Event evt) {}
 };
 
 class ISceneConsumer {

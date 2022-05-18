@@ -31,6 +31,7 @@ struct CtxSolidGeoInputs {
 };
 
 struct CtxTonemappingInputs {
+  bool is_dirty;
   render::tonemap::TonemappingArgsInputs tonemappingInputs;
   render::tonemap::HdrTextureInputs hdrTextureInputs;
 };
@@ -74,6 +75,10 @@ wgpu::TextureView get_hdr_buffer(
     auto view_desc = iggpu::view_desc_of(hdr_tex);
     wgpu::TextureView hdr_view = hdr_tex.GpuTexture.CreateView(&view_desc);
     wv->attach_ctx<CtxHdrBuffer>(std::move(hdr_tex), std::move(hdr_view));
+
+    if (wv->ctx_has<CtxTonemappingInputs>()) {
+      wv->mut_ctx<CtxTonemappingInputs>().is_dirty = true;
+    }
   }
 
   return wv->ctx<CtxHdrBuffer>().view;
@@ -97,8 +102,10 @@ CtxTonemappingInputs& get_tonemapping_inputs(
     const render::CtxPlatformObjects& platform_objects,
     const render::CtxHdrFramebufferParams& hdr_params,
     const render::tonemap::Pipeline& pipeline, igecs::WorldView* wv) {
-  if (!wv->ctx_has<CtxTonemappingInputs>()) {
+  if (!wv->ctx_has<CtxTonemappingInputs>() ||
+      wv->ctx<CtxTonemappingInputs>().is_dirty) {
     wv->attach_ctx<CtxTonemappingInputs>(
+        false,
         pipeline.create_tonemapping_args_inputs(
             platform_objects.device,
             render::tonemap::TonemappingArgumentsData{::kAvgLuminosity}),
@@ -154,8 +161,11 @@ void PveOfflineRenderSystem::render(igecs::WorldView* wv) {
     depth_attachment.stencilStoreOp = wgpu::StoreOp::Discard;
     depth_attachment.view = ::get_depth_view(ctx_platform, wv);
 
+    static float t = 0.1f;
+    t += 0.1f;
+
     wgpu::RenderPassColorAttachment color_attachment{};
-    color_attachment.clearValue = {0.1f, 0.1f, 0.1f, 1.f};
+    color_attachment.clearValue = {glm::cos(t), 0.1f, 0.1f, 1.f};
     color_attachment.loadOp = wgpu::LoadOp::Clear;
     color_attachment.storeOp = wgpu::StoreOp::Store;
     color_attachment.view = ::get_hdr_buffer(ctx_platform, ctx_hdr_params, wv);
@@ -204,9 +214,11 @@ void PveOfflineRenderSystem::render(igecs::WorldView* wv) {
         ::get_tonemapping_inputs(ctx_platform, ctx_hdr_params, pipeline, wv);
 
     render::tonemap::RenderUtil util(&pass, &pipeline);
+
+    bool is_success = false;
     util.set_hdr_texture_inputs(inputs.hdrTextureInputs)
         .set_tonemapping_args_inputs(inputs.tonemappingInputs)
-        .draw();
+        .draw(&is_success);
 
     pass.End();
   }

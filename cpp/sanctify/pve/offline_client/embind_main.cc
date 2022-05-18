@@ -14,7 +14,18 @@ EMSCRIPTEN_BINDINGS(SanctifyPveOfflineClient) {
       .function("render", &sanctify::pve::OfflineClientApp::render)
       .function("run_tasks_for",
                 &sanctify::pve::OfflineClientApp::run_tasks_for)
-      .function("should_quit", &sanctify::pve::OfflineClientApp::should_quit);
+      .function("should_quit", &sanctify::pve::OfflineClientApp::should_quit)
+      .function("mouse_move", &sanctify::pve::OfflineClientApp::mouse_move)
+      .function("focus_change", &sanctify::pve::OfflineClientApp::focus_change);
+
+  // IO types
+  class_<sanctify::io::MouseMoveEvent>("ioMouseMoveEvent")
+      .class_function("of", &sanctify::io::MouseMoveEvent::of);
+  class_<sanctify::io::FocusChangeEvent>("ioFocusChangeEvent")
+      .class_function("of", &sanctify::io::FocusChangeEvent::of);
+  value_array<glm::vec2>("glmVec2")
+      .element(&glm::vec2::x)
+      .element(&glm::vec2::y);
 
   function("evil_hack_set_preferred_wgpu_texture_cb",
            &sanctify::evil_hacks::set_preferred_texture_js_callback);

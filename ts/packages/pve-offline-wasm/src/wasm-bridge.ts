@@ -118,6 +118,26 @@ export class SanctifyPveOfflineClientBridge {
     const configBin = PveOfflineClientConfig.encode(config).finish();
 
     const wasmInstance = this.wasmInstance['SanctifyPveOfflineClient']['Create'](configBin);
+
+    let lastMousePos = [0, 0];
+
+    this.canvas.addEventListener('mousemove', (evt) => {
+      wasmInstance['mouse_move'](this.wasmInstance['ioMouseMoveEvent']['of'](
+        evt.buttons & 1,
+        evt.buttons & 2,
+        lastMousePos,
+        [evt.offsetX, evt.offsetY]));
+      lastMousePos = [evt.offsetX, evt.offsetY];
+    });
+    this.canvas.addEventListener('mouseleave', (evt) => {
+      lastMousePos = [evt.offsetX, evt.offsetY];
+      wasmInstance['focus_change'](this.wasmInstance['ioFocusChangeEvent']['of'](false));
+    });
+    this.canvas.addEventListener('mouseenter', (evt) => {
+      lastMousePos = [evt.offsetX, evt.offsetY];
+      wasmInstance['focus_change'](this.wasmInstance['ioFocusChangeEvent']['of'](true));
+    });
+
     return new SanctifyPveOfflineClientInstance(wasmInstance, this.wasmInstance, this.canvas);
   }
 }

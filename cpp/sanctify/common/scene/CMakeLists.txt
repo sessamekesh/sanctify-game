@@ -8,7 +8,7 @@ set(src_list
   "preload/preload_shader.cc")
 
 add_library(sanctify-common-scene ${header_list} ${src_list})
-target_link_libraries(sanctify-common-scene PUBLIC igasync igcore iggpu igecs)
+target_link_libraries(sanctify-common-scene PUBLIC igasync igcore iggpu igecs sanctify-common-user-input)
 target_include_directories(sanctify-common-scene PUBLIC "${SANCTIFY_INCLUDE_ROOT}")
 
 if (EMSCRIPTEN)
