@@ -161,11 +161,8 @@ void PveOfflineRenderSystem::render(igecs::WorldView* wv) {
     depth_attachment.stencilStoreOp = wgpu::StoreOp::Discard;
     depth_attachment.view = ::get_depth_view(ctx_platform, wv);
 
-    static float t = 0.1f;
-    t += 0.1f;
-
     wgpu::RenderPassColorAttachment color_attachment{};
-    color_attachment.clearValue = {glm::cos(t), 0.1f, 0.1f, 1.f};
+    color_attachment.clearValue = {0.2f, 0.1f, 0.1f, 1.f};
     color_attachment.loadOp = wgpu::LoadOp::Clear;
     color_attachment.storeOp = wgpu::StoreOp::Store;
     color_attachment.view = ::get_hdr_buffer(ctx_platform, ctx_hdr_params, wv);

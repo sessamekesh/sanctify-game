@@ -122,19 +122,23 @@ export class SanctifyPveOfflineClientBridge {
     let lastMousePos = [0, 0];
 
     this.canvas.addEventListener('mousemove', (evt) => {
+      let [x, y] = [evt.offsetX * devicePixelRatio, evt.offsetY * devicePixelRatio];
+
       wasmInstance['mouse_move'](this.wasmInstance['ioMouseMoveEvent']['of'](
         evt.buttons & 1,
         evt.buttons & 2,
         lastMousePos,
-        [evt.offsetX, evt.offsetY]));
-      lastMousePos = [evt.offsetX, evt.offsetY];
+        [x, y]));
+      lastMousePos = [x, y];
     });
     this.canvas.addEventListener('mouseleave', (evt) => {
-      lastMousePos = [evt.offsetX, evt.offsetY];
+      let [x, y] = [evt.offsetX * devicePixelRatio, evt.offsetY * devicePixelRatio];
+      lastMousePos = [x, y];
       wasmInstance['focus_change'](this.wasmInstance['ioFocusChangeEvent']['of'](false));
     });
     this.canvas.addEventListener('mouseenter', (evt) => {
-      lastMousePos = [evt.offsetX, evt.offsetY];
+      let [x, y] = [evt.offsetX * devicePixelRatio, evt.offsetY * devicePixelRatio];
+      lastMousePos = [x, y];
       wasmInstance['focus_change'](this.wasmInstance['ioFocusChangeEvent']['of'](true));
     });
 

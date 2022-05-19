@@ -10,14 +10,20 @@ using namespace render;
 using namespace indigo;
 
 namespace {
+
+struct CtxPerspectiveParams {
+  float lastAspectRatio;
+};
+
 const igecs::WorldView::Decl kUpdateDecl =
     igecs::WorldView::Decl()
+        .ctx_writes<::CtxPerspectiveParams>()
         .ctx_writes<CtxArenaCameraInputs>()
         .ctx_writes<CtxArenaCamera>()
         .ctx_writes<CtxMainCameraCommonUbos>()
         .ctx_reads<CtxHdrFramebufferParams>()
         .ctx_reads<CtxPlatformObjects>();
-}
+}  // namespace
 
 void UpdateArenaCameraSystem::set_camera(indigo::igecs::WorldView* wv,
                                          logic::ArenaCamera camera,
@@ -52,14 +58,17 @@ void UpdateArenaCameraSystem::update(indigo::igecs::WorldView* wv) {
   auto& camera = ctx_camera.arenaCamera;
   auto& framebuffer_params = wv->ctx<CtxHdrFramebufferParams>();
   auto& platform = wv->ctx<CtxPlatformObjects>();
+  auto& ctx_perspective = wv->mut_ctx_or_set<::CtxPerspectiveParams>(-1.f);
   uint32_t vp_width = platform.viewportWidth;
   uint32_t vp_height = platform.viewportHeight;
 
   auto& updates = wv->mut_ctx<CtxArenaCameraInputs>();
 
+  float aspect_ratio = (float)vp_width / (float)vp_height;
   if (updates.lookAtAdjustment != glm::vec3(0.f, 0.f, 0.f) ||
       updates.radiusAdjustment != 0.f ||
-      ubos.cameraVsUbo.get_immutable().matView[3][3] == 0.f) {
+      ubos.cameraVsUbo.get_immutable().matView[3][3] == 0.f ||
+      aspect_ratio != ctx_perspective.lastAspectRatio) {
     camera.set_radius(camera.radius() + updates.radiusAdjustment);
     camera.set_look_at(camera.look_at() + updates.lookAtAdjustment);
 
@@ -70,10 +79,12 @@ void UpdateArenaCameraSystem::update(indigo::igecs::WorldView* wv) {
     auto& fs_params = ubos.cameraFsUbo.get_mutable();
 
     vs_params.matView = camera.mat_view();
-    vs_params.matProj = glm::perspective(
-        ctx_camera.fovy, (float)vp_width / (float)vp_height,
-        ctx_camera.nearClippingPlane, ctx_camera.farClippingPlane);
+    vs_params.matProj = glm::perspective(ctx_camera.fovy, aspect_ratio,
+                                         ctx_camera.nearClippingPlane,
+                                         ctx_camera.farClippingPlane);
     fs_params.cameraPos = camera.position();
+
+    ctx_perspective.lastAspectRatio = aspect_ratio;
   }
 
   ubos.lightingUbo.sync(platform.device);
