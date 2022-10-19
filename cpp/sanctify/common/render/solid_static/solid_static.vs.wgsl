@@ -37,16 +37,35 @@ struct CameraParams {
 // https://gist.github.com/reinsteam/9e291ed75925eb74d827
 // Originally found in Crytek according to comment (I have not verified this)
 fn tbn_from_quat(q: vec4<f32>) -> mat3x3<f32> {
-  let dq = q + q;
-  let wq = (q + q) * q.w;
+  let qxx = q.x * q.x;
+  let qyy = q.y * q.y;
+  let qzz = q.z * q.z;
+  let qxz = q.x * q.z;
+  let qxy = q.x * q.y;
+  let qyz = q.y * q.z;
+  let qwx = q.w * q.x;
+  let qwy = q.w * q.y;
+  let qwz = q.w * q.z;
 
-  let tbn_t_0 = (q.xyz * dq.xxx) + vec3<f32>(-1., 0., 0.);
-  let tbn_b_0 = (q.xyz * dq.yyy) + vec3<f32>(0., -.1, 0.);
+  var tbn: mat3x3<f32>;
 
-  let tbn_t_1 = (wq.wzy * vec3<f32>(1., -1., 1.)) + tbn_t_0;
-  let tbn_b_1 = (wq.zwx * vec3<f32>(1., 1., -1.)) + tbn_b_0;
+  tbn[0][0] = 1.0 - 2.0 * (qyy + qzz);
+  tbn[0][1] = 2.0 * (qxy + qwz);
+  tbn[0][2] = 2.0 * (qxz - qwy);
 
-  return mat3x3<f32>(tbn_t_1, tbn_b_1, cross(tbn_t_0, tbn_b_0));
+  tbn[1][0] = 2.0 * (qxy - qwz);
+  tbn[1][1] = 1.0 - 2.0 * (qxx + qzz);
+  tbn[1][2] = 2.0 * (qyz + qwx);
+
+  tbn[2][0] = 2.0 * (qxz + qwy);
+  tbn[2][1] = 2.0 * (qyz - qwx);
+  tbn[2][2] = 1.0 - 2.0 * (qxx + qyy);
+
+  tbn[0] = normalize(tbn[0]);
+  tbn[1] = normalize(tbn[1]);
+  tbn[2] = normalize(tbn[2]);
+
+  return tbn;
 }
 
 @stage(vertex)
@@ -60,7 +79,7 @@ fn main(vertex: VertexInput) -> VertexOutput {
     vec4<f32>(0., 0., 0., 1.));
 
   out.world_pos = (mat_world * vec4<f32>(vertex.position, 1.)).xyz;
-  out.normal = tbn_from_quat(vertex.tbn_quat)[2];
+  out.normal = (mat_world * vec4<f32>(tbn_from_quat(vertex.tbn_quat)[2], 0.0)).xyz;
   out.albedo = vertex.albedo;
   out.metallic = vertex.metallic;
   out.roughness = vertex.roughness;

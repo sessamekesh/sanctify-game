@@ -79,7 +79,7 @@ fn main(frag: FragmentInput) -> FragmentOutput {
   // Reflectance equation
   var Lo = vec3<f32>(0.);
   {
-    let L = normalize(lightingParams.light_direction - frag.world_pos);
+    let L = normalize(-lightingParams.light_direction);
     let H = normalize(V + L);
     let radiance = lightingParams.light_color;
 

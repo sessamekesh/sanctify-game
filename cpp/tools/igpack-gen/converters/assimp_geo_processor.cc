@@ -56,6 +56,10 @@ core::Maybe<BaseGeoData> extract_base_geo(const aiMesh* mesh) {
                         glm::vec3(mesh->mNormals[idx].x, mesh->mNormals[idx].y,
                                   mesh->mNormals[idx].z));
 
+      if (normal_quat.w < 0.f) {
+        normal_quat = -normal_quat;
+      }
+
       data.NormalQuat =
           glm::vec4(normal_quat.x, normal_quat.y, normal_quat.z, normal_quat.w);
     }

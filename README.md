@@ -1,6 +1,8 @@
 # Sanctify Game
 
-> :warning: This project is still under development, and has known build / cross-platform issues.
+> **Warning**
+> This project is still under development, and has known build / cross-platform issues.
+> I'm publishing it as-is because it does demonstrate a lot of cool stuff around game programming with WebGPU.
 
 Browser-based MoBA style game. This repository contains the full monorepo for the entire Sanctify project, including all server binaries, external dependencies, intermediate libraries, development tools, and web applications used for the Sanctify project.
 

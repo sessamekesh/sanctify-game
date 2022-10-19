@@ -15,6 +15,9 @@ igecs::Scheduler pve::build_render_client_scheduler() {
   auto builder = igecs::Scheduler::Builder();
   builder.max_spin_time(std::chrono::milliseconds(50));
 
+  // TODO (sessamekesh): Re-model the map - it's the geo that's wrong!
+  // Normals are facing in the wrong direction which is fucking up the rendering
+
   auto update_common_ubos =
       builder.add_node()
           .main_thread_only()
