@@ -1,6 +1,11 @@
 # Sanctify Game
 
 > **Warning**
+> For the time being, I've stopped working on this project, but I've kept it here as a reference (mostly for myself, I'm sure!)
+> I don't see myself ever getting back to it, and I might take it down if I end up publishing the source code for other game(s) I've
+> built that use this technology as a base.
+
+> **Warning**
 > This project is still under development, and has known build / cross-platform issues.
 > I'm publishing it as-is because it does demonstrate a lot of cool stuff around game programming with WebGPU.
 
